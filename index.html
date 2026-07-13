@@ -192,12 +192,19 @@
     width: 100% !important; height: 100% !important;
   }
 
-  .viewer-frame {
+  /* Full-bleed row holding the simulation frame and the notes sidebar. */
+  .viewer-layout {
     margin: 22px calc(50% - 50vw);
     width: 100vw;
+    display: flex;
+    align-items: stretch;
     background: var(--surface);
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
+  }
+  .viewer-frame {
+    flex: 1 1 auto;
+    min-width: 0;
     overflow: hidden;
   }
   .placeholder-sim {
@@ -217,9 +224,44 @@
   .prose ul, .prose ol { margin: 0 0 16px 22px; }
   .prose li { margin-bottom: 6px; }
 
-  /* ---------- Teaching notes (viewer) ---------- */
-  .notes-panel { margin: 22px 0 40px; }
-  .notes-content { padding: 4px 18px 20px; }
+  /* ---------- Teaching notes sidebar ---------- */
+  .notes-sidebar {
+    flex: none;
+    display: flex;
+    border-left: 1px solid var(--border);
+    --notes-width: min(340px, 80vw);
+  }
+  .notes-toggle {
+    flex: none; width: 40px;
+    background: none; border: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+    padding: 16px 0; color: var(--text-soft);
+  }
+  .notes-toggle:hover { background: var(--accent-soft); color: var(--accent-dark); }
+  .notes-toggle-arrow { font-size: 0.7rem; transition: transform .2s; }
+  .notes-sidebar.open .notes-toggle-arrow { transform: rotate(180deg); }
+  .notes-toggle-label {
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em; white-space: nowrap;
+  }
+  .notes-resize-handle {
+    flex: none; width: 7px;
+    cursor: col-resize; position: relative; touch-action: none;
+  }
+  .notes-resize-handle::after {
+    content: ""; position: absolute; top: 0; bottom: 0; left: 2px; width: 3px;
+    background: transparent;
+  }
+  .notes-resize-handle:hover::after,
+  .notes-sidebar.resizing .notes-resize-handle::after { background: var(--accent); }
+  .notes-sidebar:not(.open) .notes-resize-handle { display: none; }
+  .notes-body {
+    width: 0; overflow: hidden;
+    transition: width .22s ease;
+  }
+  .notes-sidebar.open .notes-body { width: var(--notes-width); }
+  .notes-sidebar.resizing .notes-body { transition: none; }
+  .notes-content { width: var(--notes-width); padding: 18px; overflow-y: auto; box-sizing: border-box; }
   .notes-content > *:first-child { margin-top: 0; }
   .notes-content h2, .notes-content h3 { margin: 20px 0 8px; font-size: 1.08rem; }
   .notes-content h2:first-child, .notes-content h3:first-child { margin-top: 0; }
@@ -306,14 +348,19 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <div class="viewer-frame" id="viewerFrame"></div>
-    <details class="category notes-panel" id="notesPanel">
-      <summary>
-        <span class="arrow">&#9654;</span>
-        <span>Teaching notes</span>
-      </summary>
-      <div class="notes-content prose" id="notesContent"></div>
-    </details>
+    <div class="viewer-layout">
+      <div class="viewer-frame" id="viewerFrame"></div>
+      <aside class="notes-sidebar" id="notesSidebar">
+        <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
+          <span class="notes-toggle-arrow">&#9664;</span>
+          <span class="notes-toggle-label">Teaching notes</span>
+        </button>
+        <div class="notes-resize-handle" id="notesResizeHandle"></div>
+        <div class="notes-body" id="notesBody">
+          <div class="notes-content prose" id="notesContent"></div>
+        </div>
+      </aside>
+    </div>
   </section>
 
   <!-- RESOURCES -->
@@ -512,15 +559,17 @@
   ];
 
   async function loadNotes(s) {
-    const panel = document.getElementById("notesPanel");
+    const sidebar = document.getElementById("notesSidebar");
+    const toggle = document.getElementById("notesToggle");
     const content = document.getElementById("notesContent");
+    sidebar.classList.remove("open");
+    toggle.setAttribute("aria-expanded", "false");
     if (!s.notes) {
-      panel.style.display = "none";
+      sidebar.style.display = "none";
       content.innerHTML = "";
       return;
     }
-    panel.style.display = "";
-    panel.open = false;
+    sidebar.style.display = "";
     content.innerHTML = "<p>Loading notes&hellip;</p>";
     try {
       const res = await fetch(s.notes);
@@ -533,6 +582,55 @@
     } catch (err) {
       content.innerHTML = "<p>Teaching notes couldn't be loaded.</p>";
     }
+  }
+
+  function toggleNotes() {
+    const sidebar = document.getElementById("notesSidebar");
+    const open = sidebar.classList.toggle("open");
+    document.getElementById("notesToggle").setAttribute("aria-expanded", String(open));
+  }
+
+  /* ---------- Teaching notes: drag to resize ---------- */
+  const NOTES_MIN_WIDTH = 240;
+
+  function notesMaxWidth() {
+    // Leave room for the simulation frame + toggle strip either side.
+    return Math.max(NOTES_MIN_WIDTH, Math.min(700, window.innerWidth - 220));
+  }
+
+  function setNotesWidth(px) {
+    const clamped = Math.min(notesMaxWidth(), Math.max(NOTES_MIN_WIDTH, px));
+    document.getElementById("notesSidebar").style.setProperty("--notes-width", clamped + "px");
+  }
+
+  function initNotesResize() {
+    const handle = document.getElementById("notesResizeHandle");
+    const sidebar = document.getElementById("notesSidebar");
+    const body = document.getElementById("notesBody");
+    let dragging = false, startX = 0, startWidth = 0;
+
+    handle.addEventListener("pointerdown", (e) => {
+      if (!sidebar.classList.contains("open")) return;
+      dragging = true;
+      startX = e.clientX;
+      startWidth = body.offsetWidth;
+      sidebar.classList.add("resizing");
+      handle.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+
+    handle.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      setNotesWidth(startWidth + (startX - e.clientX));
+    });
+
+    function stopDrag() {
+      if (!dragging) return;
+      dragging = false;
+      sidebar.classList.remove("resizing");
+    }
+    handle.addEventListener("pointerup", stopDrag);
+    handle.addEventListener("pointercancel", stopDrag);
   }
 
   /* ---------- Navigation ----------
@@ -633,6 +731,7 @@
   renderSimCategories();
   renderResourceCategories();
   renderFeatured();
+  initNotesResize();
   applyRoute();
 </script>
 </body>

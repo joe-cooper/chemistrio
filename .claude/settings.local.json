@@ -9,7 +9,9 @@
       "Bash(start \"\" \"http://localhost:8743/#sim/maxwell-boltzmann\")",
       "Bash(cat /tmp/server.log)",
       "Read(//tmp/**)",
-      "Bash(rm -f /tmp/server.log)"
+      "Bash(rm -f /tmp/server.log)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:8743/index.html)"
     ],
     "additionalDirectories": [
       "\\tmp"
