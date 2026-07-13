@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maxwell–Boltzmann Emergence</title>
+<style>
+  :root{
+    --bg: #0f1210;
+    --surface: #1a1f1d;
+    --raised: #202624;
+    --border: #2a302d;
+    --border-soft: #232a27;
+    --text: #e8ebe9;
+    --muted: #8a9490;
+    --muted-dim: #5e6a66;
+    --accent: #3daa8a;
+    --gold: #f2e2a8;
+    --gold-dim: #b9a875;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font);
+    -webkit-font-smoothing:antialiased;
+    padding:16px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    border-bottom:1px solid var(--border);
+    padding-bottom:12px;margin-bottom:14px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:10px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--muted-dim);
+    border:1px solid var(--border);border-radius:2px;
+    padding:4px 8px;
+  }
+  .tagline{
+    color:var(--muted);font-size:13px;margin-left:auto;
+    line-height:1.4;
+  }
+  @media(max-width:720px){.tagline{display:none;}}
+
+  /* ---------- main layout ---------- */
+  .stage{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);
+    gap:14px;
+    margin-bottom:14px;
+  }
+  @media(max-width:860px){.stage{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:12px;
+    position:relative;
+  }
+  .card-label{
+    font-family:var(--mono);
+    font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted-dim);
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:10px;
+  }
+  .card-label .right{color:var(--muted);letter-spacing:.04em;}
+  .curve-toggle{
+    font-family:var(--mono);font-size:10px;
+    letter-spacing:.04em;text-transform:uppercase;
+    background:transparent;border:0;cursor:pointer;padding:2px 0;
+    color:var(--gold-dim);display:inline-flex;align-items:center;gap:7px;
+    transition:color .15s;
+  }
+  .curve-toggle .swatch{
+    width:16px;height:2px;border-radius:1px;background:var(--gold);
+    box-shadow:0 0 5px rgba(242,226,168,.7);transition:opacity .15s,background .15s;
+  }
+  .curve-toggle:hover{color:var(--gold);}
+  .curve-toggle[aria-pressed="false"]{color:var(--muted-dim);}
+  .curve-toggle[aria-pressed="false"] .swatch{background:var(--muted-dim);box-shadow:none;opacity:.5;}
+  .curve-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
+
+  canvas{display:block;width:100%;height:auto;border-radius:3px;}
+  #box{background:#090c0a;}
+
+  /* ---------- readout column ---------- */
+  .readout{display:flex;flex-direction:column;}
+  .hist-wrap{flex:1;min-height:0;}
+
+  .stats{
+    display:grid;grid-template-columns:repeat(4,1fr);
+    gap:1px;background:var(--border-soft);
+    border:1px solid var(--border-soft);border-radius:4px;overflow:hidden;
+    margin-top:10px;
+  }
+  .stat{background:var(--raised);padding:8px 10px;}
+  .stat .k{
+    font-family:var(--mono);font-size:9px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--muted-dim);
+    display:block;margin-bottom:4px;
+  }
+  .stat .v{
+    font-family:var(--mono);font-size:16px;font-weight:500;
+    color:var(--text);line-height:1;
+  }
+  .stat .v small{font-size:10px;color:var(--muted);font-weight:400;margin-left:2px;}
+  .stat.accent .v{color:var(--accent);}
+  @media(max-width:520px){.stats{grid-template-columns:repeat(2,1fr);}}
+
+  /* ---------- controls ---------- */
+  .controls{
+    background:var(--surface);border:1px solid var(--border);border-radius:6px;
+    padding:14px 16px;
+    display:grid;
+    grid-template-columns:auto auto 1fr auto;
+    gap:18px 22px;align-items:center;
+  }
+  @media(max-width:860px){
+    .controls{grid-template-columns:1fr 1fr;gap:14px;}
+    .ctl-run{grid-column:1 / -1;}
+  }
+  @media(max-width:460px){.controls{grid-template-columns:1fr;}}
+
+  .ctl-label{
+    font-family:var(--mono);font-size:9.5px;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--muted-dim);
+    margin-bottom:8px;display:block;
+  }
+
+  /* segmented toggle */
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+  .seg button{
+    font-family:var(--mono);font-size:11.5px;
+    background:transparent;color:var(--muted);border:0;
+    padding:7px 13px;cursor:pointer;letter-spacing:.02em;
+    transition:background .15s,color .15s;white-space:nowrap;
+  }
+  .seg button + button{border-left:1px solid var(--border);}
+  .seg button[aria-pressed="true"]{background:var(--raised);color:var(--text);}
+  .seg button:hover:not([aria-pressed="true"]){color:var(--text);}
+
+  /* sliders */
+  .slider-row{display:flex;flex-direction:column;}
+  .slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-head .ctl-label{margin:0;}
+  .slider-head .val{font-family:var(--mono);font-size:13px;color:var(--text);}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:3px;
+    background:var(--border);border-radius:2px;outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--text);border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--border);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:var(--text);
+    border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border);cursor:pointer;
+  }
+  input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--accent);}
+
+  .ctl-run{display:flex;gap:10px;align-items:flex-end;height:100%;}
+  .btn{
+    font-family:var(--mono);font-size:12.5px;font-weight:500;
+    letter-spacing:.04em;cursor:pointer;border-radius:4px;
+    padding:9px 16px;transition:background .15s,border-color .15s,color .15s;
+  }
+  .btn-run{background:var(--accent);color:#0f1210;border:1px solid var(--accent);min-width:100px;}
+  .btn-run:hover{background:#5ec9a8;}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:var(--muted-dim);}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  /* ---------- note ---------- */
+  .note{
+    margin-top:14px;border:1px solid var(--border-soft);border-radius:6px;
+    padding:12px 16px;background:var(--surface);
+    display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;
+  }
+  .note .marker{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--gold-dim);
+    border:1px solid var(--gold-dim);border-radius:2px;padding:4px 7px;white-space:nowrap;
+  }
+  .note p{margin:0;font-size:12.5px;line-height:1.6;color:var(--muted);}
+  .note p b{color:var(--text);font-weight:500;}
+  .note p .mono{font-family:var(--mono);font-size:12px;color:var(--gold-dim);}
+  @media(max-width:560px){.note{grid-template-columns:1fr;}}
+
+  .kbd{font-family:var(--mono);font-size:10.5px;color:var(--muted);
+       border:1px solid var(--border);border-radius:3px;padding:1px 5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="eyebrow">Kinetic Theory · Maxwell–Boltzmann</span>
+    <p class="tagline">Hundreds of particles, elastic collisions, no thermostat — randomness finds the same equilibrium.</p>
+  </header>
+
+  <div class="stage">
+    <!-- particle box -->
+    <div class="card">
+      <div class="card-label">
+        <span>Particle field — speed → colour</span>
+        <span class="right" id="phaseLabel">ready</span>
+      </div>
+      <canvas id="box" width="900" height="900" aria-label="Particle simulation box"></canvas>
+    </div>
+
+    <!-- histogram + stats -->
+    <div class="card readout">
+      <div class="card-label">
+        <span>Speed distribution</span>
+        <button class="curve-toggle" id="curveToggle" aria-pressed="true">
+          <span class="swatch"></span>equilibrium curve (2D)
+        </button>
+      </div>
+      <div class="hist-wrap">
+        <canvas id="hist" width="1100" height="640" aria-label="Live histogram of particle speeds with Maxwell-Boltzmann curve"></canvas>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="k">Mean speed</span><span class="v" id="sMean">—</span></div>
+        <div class="stat"><span class="k">RMS speed</span><span class="v" id="sRms">—</span></div>
+        <div class="stat accent"><span class="k">Most probable</span><span class="v" id="sVp">—</span></div>
+        <div class="stat"><span class="k">Collisions</span><span class="v" id="sColl">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- controls -->
+  <div class="controls">
+    <div>
+      <span class="ctl-label">Start condition</span>
+      <div class="seg" role="group" aria-label="Starting condition">
+        <button id="modeSingle" aria-pressed="true">Single speed</button>
+        <button id="modeUniform" aria-pressed="false">Uniform spread</button>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-head"><span class="ctl-label">Particles</span><span class="val" id="nVal">320</span></div>
+      <input type="range" id="nSlider" min="80" max="560" step="20" value="320">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-head"><span class="ctl-label" id="spdLabel">Initial speed</span><span class="val" id="spdVal">1.40</span></div>
+      <input type="range" id="spdSlider" min="0.4" max="2.4" step="0.05" value="1.40">
+    </div>
+
+    <div class="ctl-run">
+      <button class="btn btn-run" id="runBtn">Run</button>
+      <button class="btn btn-ghost" id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="marker">Why 2D</span>
+    <p>A particle box is two-dimensional, so this settles to the <b>2D</b> Maxwell–Boltzmann distribution, <span class="mono">f(v) ∝ v·e<sup>−mv²/2kT</sup></span>, rather than the 3D textbook form <span class="mono">∝ v²·e<sup>−mv²/2kT</sup></span>. The gold curve is the correct 2D target. What carries over exactly to 3D is everything that matters here: it rises from zero, peaks at a <b>most probable speed</b>, trails into a long high-speed tail, and — the real lesson — it emerges purely from <b>random elastic collisions</b> conserving energy and momentum, with no special starting speeds required. Press <span class="kbd">Space</span> to run, <span class="kbd">R</span> to reset.</p>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- spectral colour ramp (cool -> hot) ----------
+  const STOPS = [
+    [0.00, [43, 58,143]],
+    [0.20, [47,111,208]],
+    [0.40, [40,182,200]],
+    [0.55, [63,191,111]],
+    [0.70, [216,196, 58]],
+    [0.85, [232,137, 58]],
+    [1.00, [224, 69, 47]],
+  ];
+  function ramp(t){
+    t = t<0?0:t>1?1:t;
+    for(let i=1;i<STOPS.length;i++){
+      if(t<=STOPS[i][0]){
+        const [a,ca]=STOPS[i-1], [b,cb]=STOPS[i];
+        const f=(t-a)/(b-a);
+        return [
+          Math.round(ca[0]+(cb[0]-ca[0])*f),
+          Math.round(ca[1]+(cb[1]-ca[1])*f),
+          Math.round(ca[2]+(cb[2]-ca[2])*f),
+        ];
+      }
+    }
+    return STOPS[STOPS.length-1][1];
+  }
+  const rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+
+  // ---------- DOM ----------
+  const boxCanvas  = document.getElementById('box');
+  const histCanvas = document.getElementById('hist');
+  const bctx = boxCanvas.getContext('2d');
+  const hctx = histCanvas.getContext('2d');
+
+  const el = {
+    run: document.getElementById('runBtn'),
+    reset: document.getElementById('resetBtn'),
+    modeSingle: document.getElementById('modeSingle'),
+    modeUniform: document.getElementById('modeUniform'),
+    nSlider: document.getElementById('nSlider'),
+    nVal: document.getElementById('nVal'),
+    spd: document.getElementById('spdSlider'),
+    spdVal: document.getElementById('spdVal'),
+    spdLabel: document.getElementById('spdLabel'),
+    sMean: document.getElementById('sMean'),
+    sRms: document.getElementById('sRms'),
+    sVp: document.getElementById('sVp'),
+    sColl: document.getElementById('sColl'),
+    phase: document.getElementById('phaseLabel'),
+    curveToggle: document.getElementById('curveToggle'),
+  };
+
+  // ---------- world ----------
+  const W = 460, H = 460;       // logical box size (square)
+  const R = 3.4;                // particle radius
+  const NBINS = 32;
+
+  let particles = [];
+  let mode = 'single';          // 'single' | 'uniform'
+  let running = false;
+  let collisions = 0;
+  let vScale = 1;               // fixed: xMax of histogram = vScale, set on reset
+  let showCurve = true;         // golden equilibrium curve visibility
+  let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // ---------- canvas sizing (crisp) ----------
+  function sizeCanvas(canvas, ctx, cssW, cssH){
+    canvas.style.aspectRatio = (cssW/cssH).toString();
+    const w = canvas.clientWidth || cssW;
+    const h = w * cssH/cssW;
+    canvas.width  = Math.round(w*dpr);
+    canvas.height = Math.round(h*dpr);
+    ctx.setTransform(dpr*w/cssW,0,0,dpr*h/cssH,0,0); // scale logical->css->device
+  }
+  function resizeAll(){
+    sizeCanvas(boxCanvas, bctx, W, H);
+    sizeCanvas(histCanvas, hctx, 550, 320);
+  }
+
+  // ---------- initialise particles ----------
+  function init(){
+    const N = +el.nSlider.value;
+    const s = +el.spd.value;
+    particles = [];
+    // place without heavy overlap
+    for(let i=0;i<N;i++){
+      let x,y,ok,tries=0;
+      do{
+        x = R + Math.random()*(W-2*R);
+        y = R + Math.random()*(H-2*R);
+        ok = true;
+        for(let j=0;j<particles.length;j++){
+          const dx=x-particles[j].x, dy=y-particles[j].y;
+          if(dx*dx+dy*dy < (2*R+0.5)*(2*R+0.5)){ ok=false; break; }
+        }
+        tries++;
+      } while(!ok && tries<30);
+      const ang = Math.random()*Math.PI*2;
+      const speed = (mode==='single') ? s : Math.random()*s;
+      particles.push({x,y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed});
+    }
+    collisions = 0;
+    // fix histogram x-range from the conserved mean-square speed (stable target)
+    let ms = 0;
+    for(const p of particles) ms += p.vx*p.vx+p.vy*p.vy;
+    ms /= Math.max(particles.length,1);
+    const vrms = Math.sqrt(ms);
+    vScale = Math.max(2.6*vrms, 0.5);   // xMax
+    el.phase.textContent = running ? 'running' : (mode==='single'?'single-speed start':'uniform start');
+    draw();
+  }
+
+  // ---------- physics ----------
+  function maxSpeed(){
+    let m=0;
+    for(const p of particles){ const v=p.vx*p.vx+p.vy*p.vy; if(v>m)m=v; }
+    return Math.sqrt(m);
+  }
+
+  function integrate(dt){
+    for(const p of particles){
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      if(p.x < R){ p.x=R; p.vx=Math.abs(p.vx); }
+      else if(p.x > W-R){ p.x=W-R; p.vx=-Math.abs(p.vx); }
+      if(p.y < R){ p.y=R; p.vy=Math.abs(p.vy); }
+      else if(p.y > H-R){ p.y=H-R; p.vy=-Math.abs(p.vy); }
+    }
+    // spatial grid for pair collisions
+    const cell = 2*R;
+    const cols = Math.ceil(W/cell)+1;
+    const grid = new Map();
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i];
+      const cx=(p.x/cell)|0, cy=(p.y/cell)|0;
+      const key=cx*100000+cy;
+      let arr=grid.get(key); if(!arr){arr=[];grid.set(key,arr);} arr.push(i);
+    }
+    const d2 = (2*R)*(2*R);
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i];
+      const cx=(p.x/cell)|0, cy=(p.y/cell)|0;
+      for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){
+        const arr=grid.get((cx+ox)*100000+(cy+oy));
+        if(!arr) continue;
+        for(const j of arr){
+          if(j<=i) continue;
+          const q=particles[j];
+          let dx=q.x-p.x, dy=q.y-p.y;
+          const dist2=dx*dx+dy*dy;
+          if(dist2>=d2 || dist2===0) continue;
+          const dist=Math.sqrt(dist2);
+          const nx=dx/dist, ny=dy/dist;
+          // relative velocity along normal (approach speed)
+          const rvx=p.vx-q.vx, rvy=p.vy-q.vy;
+          const a=rvx*nx+rvy*ny;
+          if(a>0){ // approaching -> equal-mass elastic: swap normal components
+            p.vx-=a*nx; p.vy-=a*ny;
+            q.vx+=a*nx; q.vy+=a*ny;
+            collisions++;
+          }
+          // positional separation to kill overlap (energy-neutral)
+          const overlap=(2*R-dist)*0.5;
+          p.x-=nx*overlap; p.y-=ny*overlap;
+          q.x+=nx*overlap; q.y+=ny*overlap;
+        }
+      }
+    }
+  }
+
+  function physicsFrame(){
+    const T = 2.0;                       // time advanced per visual frame
+    const mv = Math.max(maxSpeed(),1e-6);
+    const nsub = Math.min(Math.max(Math.ceil(T/((R*0.6)/mv)),1),16);
+    const dt = T/nsub;
+    for(let k=0;k<nsub;k++) integrate(dt);
+  }
+
+  // ---------- stats ----------
+  function stats(){
+    let sum=0, sumsq=0;
+    for(const p of particles){
+      const v=Math.hypot(p.vx,p.vy);
+      sum+=v; sumsq+=v*v;
+    }
+    const n=Math.max(particles.length,1);
+    const mean=sum/n, ms=sumsq/n, rms=Math.sqrt(ms);
+    const vp=Math.sqrt(ms/2);            // 2D most-probable speed
+    return {mean,rms,vp,ms};
+  }
+
+  // ---------- rendering: particle box ----------
+  function drawBox(){
+    bctx.clearRect(0,0,W,H);
+    bctx.fillStyle='#090c0a';
+    bctx.fillRect(0,0,W,H);
+    // border
+    bctx.strokeStyle='#232a27'; bctx.lineWidth=1;
+    bctx.strokeRect(.5,.5,W-1,H-1);
+    for(const p of particles){
+      const v=Math.hypot(p.vx,p.vy);
+      const c=ramp(v/vScale);
+      bctx.beginPath();
+      bctx.arc(p.x,p.y,R,0,Math.PI*2);
+      bctx.fillStyle=rgb(c);
+      bctx.fill();
+    }
+  }
+
+  // ---------- rendering: histogram ----------
+  function drawHist(st){
+    const w=550, h=320;
+    const padL=8, padR=8, padT=14, padB=30;
+    const plotW=w-padL-padR, plotH=h-padT-padB;
+    hctx.clearRect(0,0,w,h);
+
+    // bins
+    const bins=new Array(NBINS).fill(0);
+    const binW=vScale/NBINS;
+    for(const p of particles){
+      const v=Math.hypot(p.vx,p.vy);
+      let b=(v/binW)|0; if(b>=NBINS)b=NBINS-1; if(b<0)b=0;
+      bins[b]++;
+    }
+    const n=Math.max(particles.length,1);
+    // density per bin (integrates to 1)
+    const dens=bins.map(c => c/(n*binW));
+
+    // theoretical 2D MB peak to fix the y-axis
+    const ms=st.ms||1e-6;
+    const peak=Math.sqrt(2/ms)*Math.exp(-0.5);  // f(v_p)
+    const yMax=peak*1.55;
+
+    const X = v => padL + (v/vScale)*plotW;
+    const Y = d => padT + plotH - (d/yMax)*plotH;
+
+    // baseline + faint grid
+    hctx.strokeStyle='#232a27'; hctx.lineWidth=1;
+    hctx.beginPath(); hctx.moveTo(padL,padT+plotH+.5); hctx.lineTo(padL+plotW,padT+plotH+.5); hctx.stroke();
+
+    // bars (same spectral ramp per bin)
+    for(let i=0;i<NBINS;i++){
+      if(dens[i]<=0) continue;
+      const x0=X(i*binW), x1=X((i+1)*binW);
+      let y=Y(dens[i]); if(y<padT-2)y=padT-2;       // clip tall single-speed spike
+      const c=ramp(((i+0.5)*binW)/vScale);
+      hctx.fillStyle=`rgba(${c[0]},${c[1]},${c[2]},0.82)`;
+      hctx.fillRect(x0+0.5, y, Math.max(x1-x0-1,1), padT+plotH-y);
+    }
+
+    // theoretical 2D Maxwell-Boltzmann curve
+    if(showCurve){
+    hctx.beginPath();
+    for(let px=0;px<=plotW;px++){
+      const v=(px/plotW)*vScale;
+      const f=(2*v/ms)*Math.exp(-v*v/ms);
+      const x=padL+px, y=Y(f);
+      if(px===0)hctx.moveTo(x,y); else hctx.lineTo(x,y);
+    }
+    hctx.strokeStyle='rgba(242,226,168,0.95)';
+    hctx.lineWidth=2;
+    hctx.shadowColor='rgba(242,226,168,0.5)'; hctx.shadowBlur=6;
+    hctx.stroke();
+    hctx.shadowBlur=0;
+    }
+
+    // characteristic-speed markers: vp, mean, rms
+    const marks=[
+      {v:st.vp,  label:'vₚ'},
+      {v:st.mean,label:'v̄'},
+      {v:st.rms, label:'v_rms'},
+    ];
+    hctx.font='10px "IBM Plex Mono", monospace';
+    hctx.textAlign='center';
+    for(const m of marks){
+      if(m.v>vScale) continue;
+      const x=X(m.v);
+      hctx.strokeStyle='rgba(125,136,150,0.45)';
+      hctx.setLineDash([3,3]); hctx.lineWidth=1;
+      hctx.beginPath(); hctx.moveTo(x,padT+4); hctx.lineTo(x,padT+plotH); hctx.stroke();
+      hctx.setLineDash([]);
+      hctx.fillStyle='#9aa6b3';
+      hctx.fillText(m.label, x, padT+plotH+20);
+    }
+    // x-axis caption
+    hctx.fillStyle='#586471'; hctx.textAlign='right';
+    hctx.fillText('speed →', padL+plotW, padT-2);
+    hctx.textAlign='left';
+    hctx.fillText('0', padL, padT+plotH+20);
+  }
+
+  // ---------- draw + update ----------
+  function draw(){
+    const st=stats();
+    drawBox();
+    drawHist(st);
+    el.sMean.innerHTML = st.mean.toFixed(2);
+    el.sRms.innerHTML  = st.rms.toFixed(2);
+    el.sVp.innerHTML   = st.vp.toFixed(2);
+    el.sColl.textContent = collisions.toLocaleString();
+  }
+
+  function loop(){
+    if(!running) return;
+    physicsFrame();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- controls ----------
+  function setRunning(on){
+    running=on;
+    el.run.textContent = on ? 'Pause' : 'Run';
+    el.phase.textContent = on ? 'running' : 'paused';
+    if(on) requestAnimationFrame(loop);
+  }
+  function setMode(m){
+    mode=m;
+    const single = m==='single';
+    el.modeSingle.setAttribute('aria-pressed', single);
+    el.modeUniform.setAttribute('aria-pressed', !single);
+    el.spdLabel.textContent = single ? 'Initial speed' : 'Max speed';
+    setRunning(false);
+    init();
+  }
+
+  el.run.addEventListener('click', ()=>setRunning(!running));
+  el.reset.addEventListener('click', ()=>{ setRunning(false); init(); el.phase.textContent = mode==='single'?'single-speed start':'uniform start'; });
+  el.modeSingle.addEventListener('click', ()=>setMode('single'));
+  el.modeUniform.addEventListener('click', ()=>setMode('uniform'));
+  el.curveToggle.addEventListener('click', ()=>{
+    showCurve=!showCurve;
+    el.curveToggle.setAttribute('aria-pressed', showCurve);
+    if(!running) draw();
+  });
+
+  el.nSlider.addEventListener('input', ()=>{ el.nVal.textContent=el.nSlider.value; setRunning(false); init(); });
+  el.spd.addEventListener('input', ()=>{ el.spdVal.textContent=(+el.spd.value).toFixed(2); setRunning(false); init(); });
+
+  window.addEventListener('keydown', e=>{
+    if(e.code==='Space'){ e.preventDefault(); setRunning(!running); }
+    else if(e.key==='r'||e.key==='R'){ setRunning(false); init(); }
+    else if(e.key==='c'||e.key==='C'){ el.curveToggle.click(); }
+  });
+
+  let rt;
+  window.addEventListener('resize', ()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resizeAll(); draw(); reportHeight(); },120); });
+
+  function reportHeight() {
+    const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    window.parent.postMessage({ type: 'simHeight', height: h }, '*');
+  }
+
+  // ---------- boot ----------
+  resizeAll();
+  init();
+  // Report height after canvases have been sized and painted
+  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>

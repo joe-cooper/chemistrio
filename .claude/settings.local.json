@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"c:\\\\Users\\\\Joe\\\\Documents\\\\chemistrio\\\\Live\\\\index.html\")",
+      "Bash(curl -s -o /dev/null -w \"katex.min.css: %{http_code}\\\\n\" https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css)",
+      "Bash(curl -s -o /dev/null -w \"katex.min.js: %{http_code}\\\\n\" https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js)",
+      "Bash(curl -s -o /dev/null -w \"auto-render.min.js: %{http_code}\\\\n\" https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js)",
+      "Bash(curl -s -o /dev/null -w \"marked.min.js: %{http_code}\\\\n\" https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js)",
+      "Bash(start \"\" \"http://localhost:8743/#sim/maxwell-boltzmann\")",
+      "Bash(cat /tmp/server.log)",
+      "Read(//tmp/**)",
+      "Bash(rm -f /tmp/server.log)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}
