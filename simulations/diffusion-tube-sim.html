@@ -1,0 +1,416 @@
+
+<style>
+  .sim-wrap { padding: 1rem 0; font-family: var(--font-sans); }
+  canvas { display: block; width: 100%; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
+  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .ctrl-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text-secondary); }
+  .ctrl-row label { min-width: 90px; }
+  .ctrl-row input[type=range] { flex: 1; }
+  .ctrl-row span { min-width: 40px; text-align: right; font-weight: 500; color: var(--color-text-primary); }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
+  .btn { background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 6px 14px; font-size: 13px; cursor: pointer; color: var(--color-text-primary); }
+  .btn:hover { background: var(--color-background-secondary); }
+  .btn.primary { background: var(--color-background-info); border-color: var(--color-border-info); color: var(--color-text-info); }
+  .btn.toggle.on { background: var(--color-background-success); border-color: var(--color-border-success); color: var(--color-text-success); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; }
+  .stat-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 3px; }
+  .stat-val { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
+  .legend { display: flex; gap: 16px; margin-top: 10px; font-size: 13px; color: var(--color-text-secondary); align-items: center; flex-wrap: wrap; }
+  .ldot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
+  .status-txt { font-size: 13px; color: var(--color-text-secondary); flex: 1; text-align: right; }
+</style>
+
+<div class="sim-wrap">
+  <canvas id="c"></canvas>
+
+  <div class="legend">
+    <span><span class="ldot" style="background:#378ADD"></span>NH₃</span>
+    <span><span class="ldot" style="background:#E24B4A"></span>HCl</span>
+    <span><span class="ldot" style="background:white;border:1.5px solid #888;"></span>NH₄Cl</span>
+    <span><span class="ldot" style="background:rgba(136,135,128,0.5)"></span>Air (N₂/O₂)</span>
+    <span><span style="display:inline-block;width:11px;height:2px;background:#0F6E56;vertical-align:middle;margin-right:4px"></span>Mean position</span>
+    <span><span style="display:inline-block;width:11px;height:2px;background:#8B5CF6;border-top:2px dashed #8B5CF6;vertical-align:middle;margin-right:4px"></span>Expected position</span>
+  </div>
+
+  <div class="controls">
+    <div class="ctrl-row">
+      <label>NH₃ / HCl</label>
+      <input type="range" id="nSlider" min="20" max="250" step="10" value="120" oninput="onNChange(this.value)">
+      <span id="nVal">120</span>
+    </div>
+    <div class="ctrl-row">
+      <label>Temperature</label>
+      <input type="range" id="tSlider" min="200" max="600" step="10" value="300" oninput="onTChange(this.value)">
+      <span id="tVal">300 K</span>
+    </div>
+    <div class="ctrl-row">
+      <label>Air density</label>
+      <input type="range" id="aSlider" min="0" max="2000" step="50" value="80" oninput="onAChange(this.value)">
+      <span id="aVal">80</span>
+    </div>
+    <div class="ctrl-row">
+      <label>Show air</label>
+      <button class="btn toggle" id="airToggle" onclick="toggleAir()" style="flex:1">Hidden</button>
+    </div>
+    <div class="ctrl-row">
+      <label>Expected pos.</label>
+      <button class="btn toggle" id="expectedToggle" onclick="toggleExpected()" style="flex:1">Hidden</button>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn primary" id="startBtn" onclick="toggle()">Start</button>
+    <button class="btn" onclick="reset()">Full reset</button>
+    <span class="status-txt" id="statusTxt">Adjust controls, then press Start</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">NH₃ remaining</div><div class="stat-val" id="sNH3" style="color:#185FA5">—</div></div>
+    <div class="stat"><div class="stat-label">HCl remaining</div><div class="stat-val" id="sHCl" style="color:#A32D2D">—</div></div>
+    <div class="stat"><div class="stat-label">NH₄Cl mean position</div><div class="stat-val" id="sRingPos" style="color:#0F6E56">—</div></div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const W = 660;
+const TUBE_TOP = 92, TUBE_BOT = 122;
+const TUBE_H = TUBE_BOT - TUBE_TOP;
+const H = TUBE_BOT + 30;
+canvas.width = W; canvas.height = H;
+canvas.style.height = H + 'px';
+
+const WALL_L = 20, WALL_R = W - 20;
+const PLUG_W = 18;
+const R = 1.8, AIR_R = 1.1;
+const NH3_M = 17, HCL_M = 36.5, AIR_M = 29;
+const T_REF = 300;
+
+// Theoretical ring position: NH3 fraction = v_NH3 / (v_NH3 + v_HCl)
+// = sqrt(HCL_M) / (sqrt(NH3_M) + sqrt(HCL_M))
+const THEORY_FRAC = Math.sqrt(HCL_M) / (Math.sqrt(NH3_M) + Math.sqrt(HCL_M));
+
+let particles = [], airParticles = [], products = [];
+let running = false, raf = null, reacted = 0, frameCount = 0;
+let nEach = 120, tempK = 300, airCount = 80;
+let airVisible = false, expectedVisible = false;
+
+function speedFor(mass, T) {
+  return 1.15 * Math.sqrt(T / T_REF) * Math.sqrt(NH3_M / mass) * 1.6;
+}
+
+function newParticle(type) {
+  const innerL = WALL_L + PLUG_W, innerR = WALL_R - PLUG_W;
+  const spawnZone = Math.min(80, (innerR - innerL) * 0.18);
+  const isNH3 = type === 'NH3';
+  const mass = isNH3 ? NH3_M : HCL_M;
+  const spd = speedFor(mass, tempK) * (0.85 + Math.random() * 0.3);
+  const ang = Math.random() * 2 * Math.PI;
+  return {
+    x: isNH3 ? innerL + R + Math.random() * spawnZone
+              : innerR - R - Math.random() * spawnZone,
+    y: TUBE_TOP + R + Math.random() * (TUBE_H - 2*R),
+    vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+    mass, type, alive: true
+  };
+}
+
+function newAir() {
+  const innerL = WALL_L + PLUG_W, innerR = WALL_R - PLUG_W;
+  const spd = speedFor(AIR_M, tempK) * (0.85 + Math.random() * 0.3);
+  const ang = Math.random() * 2 * Math.PI;
+  return {
+    x: innerL + AIR_R + Math.random() * (innerR - innerL - 2*AIR_R),
+    y: TUBE_TOP + AIR_R + Math.random() * (TUBE_H - 2*AIR_R),
+    vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd,
+    mass: AIR_M
+  };
+}
+
+function makeParticles() {
+  particles = []; airParticles = []; products = []; reacted = 0;
+  for (let i = 0; i < nEach; i++) particles.push(newParticle('NH3'));
+  for (let i = 0; i < nEach; i++) particles.push(newParticle('HCl'));
+  for (let i = 0; i < airCount; i++) airParticles.push(newAir());
+}
+
+function setNH3HClCount(target) {
+  nEach = target;
+  let nh3 = particles.filter(p => p.alive && p.type === 'NH3');
+  let hcl = particles.filter(p => p.alive && p.type === 'HCl');
+  particles = particles.filter(p => p.alive);
+  while (nh3.length < target) { const np = newParticle('NH3'); particles.push(np); nh3.push(np); }
+  while (nh3.length > target) { const r = nh3.pop(); particles.splice(particles.indexOf(r), 1); }
+  while (hcl.length < target) { const np = newParticle('HCl'); particles.push(np); hcl.push(np); }
+  while (hcl.length > target) { const r = hcl.pop(); particles.splice(particles.indexOf(r), 1); }
+}
+
+function setAirCount(target) {
+  airCount = target;
+  while (airParticles.length < target) airParticles.push(newAir());
+  while (airParticles.length > target) airParticles.pop();
+}
+
+function theoreticalX() {
+  const innerL = WALL_L + PLUG_W, innerR = WALL_R - PLUG_W;
+  return innerL + THEORY_FRAC * (innerR - innerL);
+}
+
+function drawTube() {
+  ctx.clearRect(0, 0, W, H);
+  const warm = Math.max(0, Math.min(1, (tempK - 200) / 400));
+  const r = Math.round(200 + warm*55), g = Math.round(220 - warm*80), b = Math.round(255 - warm*120);
+  ctx.fillStyle = `rgba(${r},${g},${b},0.07)`;
+  ctx.fillRect(WALL_L, TUBE_TOP, WALL_R - WALL_L, TUBE_H);
+  ctx.strokeStyle = 'rgba(128,128,128,0.3)';
+  ctx.lineWidth = 1.2;
+  ctx.strokeRect(WALL_L, TUBE_TOP, WALL_R - WALL_L, TUBE_H);
+  ctx.fillStyle = 'rgba(55,138,221,0.15)';
+  ctx.fillRect(WALL_L, TUBE_TOP, PLUG_W, TUBE_H);
+  ctx.fillStyle = 'rgba(226,75,74,0.15)';
+  ctx.fillRect(WALL_R - PLUG_W, TUBE_TOP, PLUG_W, TUBE_H);
+  ctx.font = '500 10px var(--font-sans)';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#185FA5'; ctx.fillText('NH₃', WALL_L + PLUG_W/2, TUBE_TOP - 8);
+  ctx.fillStyle = '#A32D2D'; ctx.fillText('HCl', WALL_R - PLUG_W/2, TUBE_TOP - 8);
+  ctx.font = '10px var(--font-sans)';
+  ctx.fillStyle = 'rgba(128,128,128,0.5)';
+  ctx.textAlign = 'left';   ctx.fillText('0', WALL_L + PLUG_W + 4, TUBE_BOT + 16);
+  ctx.textAlign = 'center'; ctx.fillText('50 cm', (WALL_L+WALL_R)/2, TUBE_BOT + 16);
+  ctx.textAlign = 'right';  ctx.fillText('100 cm', WALL_R - PLUG_W - 4, TUBE_BOT + 16);
+}
+
+function drawExpectedMarker() {
+  if (!expectedVisible) return;
+  const tx = theoreticalX();
+  ctx.save();
+  ctx.strokeStyle = '#8B5CF6';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(tx, TUBE_TOP - 4); ctx.lineTo(tx, TUBE_BOT + 4); ctx.stroke();
+  ctx.setLineDash([]);
+  // label
+  ctx.font = '9px var(--font-sans)';
+  ctx.fillStyle = '#8B5CF6';
+  ctx.textAlign = 'center';
+  ctx.fillText('expected', tx, TUBE_TOP - 14);
+  ctx.fillText(`(${Math.round(THEORY_FRAC * 100)}%)`, tx, TUBE_TOP - 5);
+  ctx.restore();
+}
+
+function meanRingX() {
+  if (products.length === 0) return null;
+  return products.reduce((a,p) => a + p.x, 0) / products.length;
+}
+
+function drawMeanMarker() {
+  const mx = meanRingX();
+  if (mx === null) return;
+  ctx.save();
+  ctx.strokeStyle = '#0F6E56';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(mx, TUBE_TOP - 4); ctx.lineTo(mx, TUBE_BOT + 4); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(mx - 5, TUBE_TOP - 4); ctx.lineTo(mx + 5, TUBE_TOP - 4); ctx.lineTo(mx, TUBE_TOP + 2);
+  ctx.closePath(); ctx.fillStyle = '#0F6E56'; ctx.fill();
+  ctx.restore();
+}
+
+function drawParticles() {
+  if (airVisible) {
+    for (const a of airParticles) {
+      ctx.beginPath(); ctx.arc(a.x, a.y, AIR_R, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(136,135,128,0.35)'; ctx.fill();
+    }
+  }
+  for (const pr of products) {
+    ctx.beginPath(); ctx.arc(pr.x, pr.y, R + 0.4, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(136,135,128,0.6)'; ctx.lineWidth = 0.5; ctx.stroke();
+  }
+  for (const p of particles) {
+    if (!p.alive) continue;
+    ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, Math.PI*2);
+    ctx.fillStyle = p.type === 'NH3' ? 'rgba(55,138,221,0.85)' : 'rgba(226,75,74,0.85)';
+    ctx.fill();
+  }
+  drawExpectedMarker();
+  drawMeanMarker();
+}
+
+function bounceWalls(p, rad) {
+  const innerL = WALL_L + PLUG_W, innerR = WALL_R - PLUG_W;
+  if (p.x - rad < innerL) { p.x = innerL + rad; p.vx =  Math.abs(p.vx); }
+  if (p.x + rad > innerR) { p.x = innerR - rad; p.vx = -Math.abs(p.vx); }
+  if (p.y - rad < TUBE_TOP) { p.y = TUBE_TOP + rad; p.vy =  Math.abs(p.vy); }
+  if (p.y + rad > TUBE_BOT) { p.y = TUBE_BOT - rad; p.vy = -Math.abs(p.vy); }
+}
+
+function elasticCollide(a, b, ra, rb) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const dist = Math.hypot(dx, dy);
+  const minDist = ra + rb;
+  if (dist === 0 || dist >= minDist) return;
+  const nx = dx / dist, ny = dy / dist;
+  const overlap = (minDist - dist) / 2;
+  a.x -= nx * overlap; a.y -= ny * overlap;
+  b.x += nx * overlap; b.y += ny * overlap;
+  const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+  const relNorm = dvx * nx + dvy * ny;
+  if (relNorm < 0) return;
+  const impulse = (2 * relNorm) / (a.mass + b.mass);
+  a.vx -= impulse * b.mass * nx; a.vy -= impulse * b.mass * ny;
+  b.vx += impulse * a.mass * nx; b.vy += impulse * a.mass * ny;
+}
+
+const CELL = Math.max(R * 2.4, AIR_R * 2) * 1.05;
+let grid = new Map();
+let idCounter = 0;
+
+function cellKey(cx, cy) { return (cx & 0xFFFF) << 16 | (cy & 0xFFFF); }
+
+function buildGrid(all) {
+  grid = new Map();
+  for (const p of all) {
+    if (p.__id === undefined) p.__id = idCounter++;
+    const cx = Math.floor(p.x / CELL), cy = Math.floor(p.y / CELL);
+    const key = cellKey(cx, cy);
+    let b = grid.get(key); if (!b) { b = []; grid.set(key, b); }
+    b.push(p);
+  }
+}
+
+function forEachNearbyPair(cb) {
+  for (const [key, bucket] of grid) {
+    const cx = (key >> 16) & 0xFFFF, cy = key & 0xFFFF;
+    for (let i = 0; i < bucket.length; i++) {
+      for (let j = i+1; j < bucket.length; j++) cb(bucket[i], bucket[j]);
+      for (const [ddx, ddy] of [[1,0],[0,1],[1,1],[-1,1]]) {
+        const nb = grid.get(cellKey(cx+ddx, cy+ddy));
+        if (!nb) continue;
+        for (const q of nb) cb(bucket[i], q);
+      }
+    }
+  }
+}
+
+function step() {
+  for (const p of particles) {
+    if (!p.alive) continue;
+    p.x += p.vx; p.y += p.vy; bounceWalls(p, R);
+  }
+  for (const a of airParticles) {
+    a.x += a.vx; a.y += a.vy; bounceWalls(a, AIR_R);
+  }
+  const allMobile = particles.filter(p => p.alive).concat(airParticles);
+  buildGrid(allMobile);
+  forEachNearbyPair((p, q) => {
+    elasticCollide(p, q, p.type ? R : AIR_R, q.type ? R : AIR_R);
+  });
+  forEachNearbyPair((p, q) => {
+    let a, b;
+    if      (p.type === 'NH3' && q.type === 'HCl') { a = p; b = q; }
+    else if (p.type === 'HCl' && q.type === 'NH3') { a = q; b = p; }
+    else return;
+    if (!a.alive || !b.alive) return;
+    const dx = a.x - b.x, dy = a.y - b.y;
+    if (dx*dx + dy*dy < (R*2.4)*(R*2.4)) {
+      products.push({ x: (a.x+b.x)/2, y: (a.y+b.y)/2 });
+      a.alive = false; b.alive = false; reacted++;
+    }
+  });
+}
+
+function updateStats() {
+  const nh3 = particles.filter(p=>p.alive&&p.type==='NH3').length;
+  const hcl = particles.filter(p=>p.alive&&p.type==='HCl').length;
+  document.getElementById('sNH3').textContent = nh3;
+  document.getElementById('sHCl').textContent = hcl;
+  const mx = meanRingX();
+  if (mx !== null) {
+    const innerL = WALL_L + PLUG_W, innerR = WALL_R - PLUG_W;
+    const pct = Math.round(((mx - innerL) / (innerR - innerL)) * 100);
+    document.getElementById('sRingPos').textContent = pct + '% from NH₃ end';
+  } else {
+    document.getElementById('sRingPos').textContent = '—';
+  }
+  if (nh3 === 0 && hcl === 0 && nEach > 0) {
+    document.getElementById('statusTxt').textContent = `All molecules reacted · ${reacted} NH₄Cl formed`;
+    stop(); return;
+  }
+  document.getElementById('statusTxt').textContent = `NH₄Cl formed: ${reacted}`;
+}
+
+function loop() {
+  const total = nEach * 2 + airCount;
+  const spf = total > 600 ? 1 : total > 300 ? 2 : 3;
+  for (let i = 0; i < spf; i++) step();
+  drawTube(); drawParticles();
+  frameCount++;
+  if (frameCount % 6 === 0) updateStats();
+  raf = requestAnimationFrame(loop);
+}
+
+function toggle() { running ? stop() : start(); }
+function start() {
+  running = true;
+  document.getElementById('startBtn').textContent = 'Pause';
+  raf = requestAnimationFrame(loop);
+}
+function stop() {
+  running = false; cancelAnimationFrame(raf);
+  document.getElementById('startBtn').textContent = products.length > 0 ? 'Resume' : 'Start';
+}
+function reset() {
+  stop();
+  nEach    = parseInt(document.getElementById('nSlider').value);
+  tempK    = parseInt(document.getElementById('tSlider').value);
+  airCount = parseInt(document.getElementById('aSlider').value);
+  makeParticles();
+  document.getElementById('startBtn').textContent = 'Start';
+  document.getElementById('statusTxt').textContent = 'Adjust controls, then press Start';
+  document.getElementById('sNH3').textContent = '—';
+  document.getElementById('sHCl').textContent = '—';
+  document.getElementById('sRingPos').textContent = '—';
+  drawTube(); drawParticles(); frameCount = 0;
+}
+function onNChange(v) {
+  document.getElementById('nVal').textContent = v;
+  setNH3HClCount(parseInt(v));
+  if (!running) { drawTube(); drawParticles(); }
+}
+function onAChange(v) {
+  document.getElementById('aVal').textContent = v;
+  setAirCount(parseInt(v));
+  if (!running) { drawTube(); drawParticles(); }
+}
+function onTChange(v) {
+  document.getElementById('tVal').textContent = v + ' K';
+  const newT = parseInt(v), factor = Math.sqrt(newT / tempK);
+  tempK = newT;
+  for (const p of particles) { if (!p.alive) continue; p.vx *= factor; p.vy *= factor; }
+  for (const a of airParticles) { a.vx *= factor; a.vy *= factor; }
+  if (!running) { drawTube(); drawParticles(); }
+}
+function toggleAir() {
+  airVisible = !airVisible;
+  const btn = document.getElementById('airToggle');
+  btn.textContent = airVisible ? 'Visible' : 'Hidden';
+  btn.classList.toggle('on', airVisible);
+  if (!running) { drawTube(); drawParticles(); }
+}
+function toggleExpected() {
+  expectedVisible = !expectedVisible;
+  const btn = document.getElementById('expectedToggle');
+  btn.textContent = expectedVisible ? 'Visible' : 'Hidden';
+  btn.classList.toggle('on', expectedVisible);
+  if (!running) { drawTube(); drawParticles(); }
+}
+
+makeParticles();
+drawTube();
+drawParticles();
+</script>

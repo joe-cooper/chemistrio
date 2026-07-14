@@ -223,7 +223,7 @@
     <div class="card readout">
       <div class="card-label">
         <span>Speed distribution</span>
-        <button class="curve-toggle" id="curveToggle" aria-pressed="true">
+        <button class="curve-toggle" id="curveToggle" aria-pressed="false">
           <span class="swatch"></span>equilibrium curve (2D)
         </button>
       </div>
@@ -265,10 +265,10 @@
     </div>
   </div>
 
-  <div class="note">
+  <!-- <div class="note">
     <span class="marker">Why 2D</span>
     <p>A particle box is two-dimensional, so this settles to the <b>2D</b> Maxwell–Boltzmann distribution, <span class="mono">f(v) ∝ v·e<sup>−mv²/2kT</sup></span>, rather than the 3D textbook form <span class="mono">∝ v²·e<sup>−mv²/2kT</sup></span>. The gold curve is the correct 2D target. What carries over exactly to 3D is everything that matters here: it rises from zero, peaks at a <b>most probable speed</b>, trails into a long high-speed tail, and — the real lesson — it emerges purely from <b>random elastic collisions</b> conserving energy and momentum, with no special starting speeds required. Press <span class="kbd">Space</span> to run, <span class="kbd">R</span> to reset.</p>
-  </div>
+  </div> -->
 
 </div>
 
@@ -337,7 +337,7 @@
   let running = false;
   let collisions = 0;
   let vScale = 1;               // fixed: xMax of histogram = vScale, set on reset
-  let showCurve = true;         // golden equilibrium curve visibility
+  let showCurve = false;         // golden equilibrium curve visibility
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
 
   // ---------- canvas sizing (crisp) ----------

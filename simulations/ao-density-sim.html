@@ -1,0 +1,337 @@
+<style>
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+#playBtn,#resetBtn{display:inline-flex;align-items:center;}
+</style>
+
+<h2 class="sr-only">Interactive simulation that builds up hydrogen atomic orbitals, including 1s, 2s, the separate 2px, 2py and 2pz orbitals, and the five 3d orbitals, by randomly sampling electron positions from each orbital's probability distribution. Particles are colored by the sign of the wavefunction to show nodes and lobes, and their opacity can be adjusted with a slider. Below the 3D view, three small plots show thin slices of the accumulated points through the xy, xz and yz planes. The cloud can be rotated by dragging and zoomed with the scroll wheel.</h2>
+
+<div style="display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0 0 10px;">
+  <select id="orbitalSelect" aria-label="Orbital" style="min-width:150px;">
+    <optgroup label="s orbitals">
+      <option value="1s">1s</option>
+      <option value="2s">2s</option>
+    </optgroup>
+    <optgroup label="p orbitals (n=2)">
+      <option value="2px">2px</option>
+      <option value="2py">2py</option>
+      <option value="2pz">2pz</option>
+    </optgroup>
+    <optgroup label="d orbitals (n=3)">
+      <option value="3dz2">3dz&sup2;</option>
+      <option value="3dx2y2">3dx&sup2;-y&sup2;</option>
+      <option value="3dxy">3dxy</option>
+      <option value="3dxz">3dxz</option>
+      <option value="3dyz">3dyz</option>
+    </optgroup>
+  </select>
+  <button id="playBtn" aria-label="Pause"><i class="ti ti-player-pause" aria-hidden="true" style="margin-right:6px;"></i>Pause</button>
+  <button id="resetBtn"><i class="ti ti-refresh" aria-hidden="true" style="margin-right:6px;"></i>Reset</button>
+  <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:150px;">
+    <label for="speed" style="font-size:13px; color:var(--text-secondary); white-space:nowrap;">Speed</label>
+    <input type="range" id="speed" min="1" max="50" step="1" value="12" style="flex:1;">
+    <span id="speedOut" style="font-size:13px; font-weight:500; min-width:22px;">12</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:150px;">
+    <label for="opacity" style="font-size:13px; color:var(--text-secondary); white-space:nowrap;">Opacity</label>
+    <input type="range" id="opacity" min="5" max="60" step="1" value="22" style="flex:1;">
+    <span id="opacityOut" style="font-size:13px; font-weight:500; min-width:32px;">22%</span>
+  </div>
+</div>
+
+<div style="display:flex; align-items:center; gap:14px; font-size:12px; color:var(--text-secondary); margin-bottom:8px;">
+  <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#7ab4ff;margin-right:5px;"></span>positive phase</span>
+  <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#e66ec8;margin-right:5px;"></span>negative phase</span>
+</div>
+
+<div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-secondary); margin-bottom:8px;">
+  <span>Particles placed: <strong id="countOut" style="color:var(--text-primary); font-weight:500;">0</strong></span>
+  <span>Drag to rotate &middot; scroll to zoom</span>
+</div>
+
+<div style="position:relative; width:100%; aspect-ratio:4/3; border-radius:var(--radius); overflow:hidden; border:0.5px solid var(--border);">
+  <canvas id="sim" style="width:100%; height:100%; display:block; touch-action:none; cursor:grab;"></canvas>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-top:14px;">
+  <div>
+    <div style="aspect-ratio:1; border-radius:var(--radius); overflow:hidden; border:0.5px solid var(--border);">
+      <canvas id="sliceXY" style="width:100%; height:100%; display:block;"></canvas>
+    </div>
+    <p style="text-align:center; font-size:12px; color:var(--text-secondary); margin:4px 0 0;">xy-plane slice</p>
+  </div>
+  <div>
+    <div style="aspect-ratio:1; border-radius:var(--radius); overflow:hidden; border:0.5px solid var(--border);">
+      <canvas id="sliceXZ" style="width:100%; height:100%; display:block;"></canvas>
+    </div>
+    <p style="text-align:center; font-size:12px; color:var(--text-secondary); margin:4px 0 0;">xz-plane slice</p>
+  </div>
+  <div>
+    <div style="aspect-ratio:1; border-radius:var(--radius); overflow:hidden; border:0.5px solid var(--border);">
+      <canvas id="sliceYZ" style="width:100%; height:100%; display:block;"></canvas>
+    </div>
+    <p style="text-align:center; font-size:12px; color:var(--text-secondary); margin:4px 0 0;">yz-plane slice</p>
+  </div>
+</div>
+
+<script>
+(function(){
+const canvas = document.getElementById('sim');
+const ctx = canvas.getContext('2d');
+const sliceXY = document.getElementById('sliceXY');
+const sliceXZ = document.getElementById('sliceXZ');
+const sliceYZ = document.getElementById('sliceYZ');
+const ctxXY = sliceXY.getContext('2d');
+const ctxXZ = sliceXZ.getContext('2d');
+const ctxYZ = sliceYZ.getContext('2d');
+const countOut = document.getElementById('countOut');
+const playBtn = document.getElementById('playBtn');
+const resetBtn = document.getElementById('resetBtn');
+const speedInput = document.getElementById('speed');
+const speedOut = document.getElementById('speedOut');
+const opacityInput = document.getElementById('opacity');
+const opacityOut = document.getElementById('opacityOut');
+const orbitalSelect = document.getElementById('orbitalSelect');
+
+const ORBITALS = {
+  '1s': {
+    maxR:6, densityMax:1, viewDist:16, zoomMin:8, zoomMax:30,
+    density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return Math.exp(-2*r); },
+    sign(){ return 1; }
+  },
+  '2s': {
+    maxR:9, densityMax:4, viewDist:20, zoomMin:10, zoomMax:40,
+    density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); const v=(2-r); return v*v*Math.exp(-r); },
+    sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return (2-r)>=0?1:-1; }
+  },
+  '2px': {
+    maxR:9, densityMax:0.5413, viewDist:20, zoomMin:10, zoomMax:40,
+    density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return x*x*Math.exp(-r); },
+    sign(x){ return x>=0?1:-1; }
+  },
+  '2py': {
+    maxR:9, densityMax:0.5413, viewDist:20, zoomMin:10, zoomMax:40,
+    density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return y*y*Math.exp(-r); },
+    sign(x,y){ return y>=0?1:-1; }
+  },
+  '2pz': {
+    maxR:9, densityMax:0.5413, viewDist:20, zoomMin:10, zoomMax:40,
+    density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return z*z*Math.exp(-r); },
+    sign(x,y,z){ return z>=0?1:-1; }
+  },
+  '3dz2': {
+    maxR:20, densityMax:94.94, viewDist:34, zoomMin:16, zoomMax:70,
+    density(x,y,z){ const r2=x*x+y*y+z*z; const r=Math.sqrt(r2); const v=(3*z*z-r2); return v*v*Math.exp(-2*r/3); },
+    sign(x,y,z){ const r2=x*x+y*y+z*z; return (3*z*z-r2)>=0?1:-1; }
+  },
+  '3dx2y2': {
+    maxR:20, densityMax:23.74, viewDist:34, zoomMin:16, zoomMax:70,
+    density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); const v=(x*x-y*y); return v*v*Math.exp(-2*r/3); },
+    sign(x,y){ return (x*x-y*y)>=0?1:-1; }
+  },
+  '3dxy': {
+    maxR:20, densityMax:5.934, viewDist:34, zoomMin:16, zoomMax:70,
+    density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); const v=x*y; return v*v*Math.exp(-2*r/3); },
+    sign(x,y){ return (x*y)>=0?1:-1; }
+  },
+  '3dxz': {
+    maxR:20, densityMax:5.934, viewDist:34, zoomMin:16, zoomMax:70,
+    density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); const v=x*z; return v*v*Math.exp(-2*r/3); },
+    sign(x,y,z){ return (x*z)>=0?1:-1; }
+  },
+  '3dyz': {
+    maxR:20, densityMax:5.934, viewDist:34, zoomMin:16, zoomMax:70,
+    density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); const v=y*z; return v*v*Math.exp(-2*r/3); },
+    sign(x,y,z){ return (y*z)>=0?1:-1; }
+  }
+};
+
+let currentOrbital = ORBITALS['1s'];
+let particles = [];
+const MAX_PARTICLES = 15000;
+let playing = true;
+let speed = parseInt(speedInput.value,10);
+let opacity = parseInt(opacityInput.value,10)/100;
+let yaw = 0.6, pitch = 0.35, camDist = currentOrbital.viewDist;
+let autoRotate = true, dragging = false, lastX=0, lastY=0;
+
+function makeSprite(r,g,b){
+  const c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const sc = c.getContext('2d');
+  const grad = sc.createRadialGradient(16,16,0,16,16,16);
+  grad.addColorStop(0,'rgba('+r+','+g+','+b+',0.85)');
+  grad.addColorStop(0.45,'rgba('+r+','+g+','+b+',0.45)');
+  grad.addColorStop(1,'rgba('+r+','+g+','+b+',0)');
+  sc.fillStyle = grad;
+  sc.fillRect(0,0,32,32);
+  return c;
+}
+const spritePos = makeSprite(122,180,255);
+const spriteNeg = makeSprite(230,110,200);
+
+function sampleParticle(orbital){
+  const R = orbital.maxR;
+  for(let i=0;i<5000;i++){
+    const x=(Math.random()*2-1)*R;
+    const y=(Math.random()*2-1)*R;
+    const z=(Math.random()*2-1)*R;
+    const rho = orbital.density(x,y,z);
+    if(Math.random()*orbital.densityMax < rho) return {x,y,z,s:orbital.sign(x,y,z)};
+  }
+  return null;
+}
+
+function setupResize(cv){
+  function resize(){
+    const rect = cv.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio||1,2);
+    cv.width = Math.round(rect.width*dpr);
+    cv.height = Math.round(rect.height*dpr);
+  }
+  new ResizeObserver(resize).observe(cv);
+  resize();
+}
+setupResize(canvas);
+setupResize(sliceXY);
+setupResize(sliceXZ);
+setupResize(sliceYZ);
+
+canvas.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId);canvas.style.cursor='grabbing';});
+canvas.addEventListener('pointermove',e=>{
+  if(!dragging) return;
+  const dx=e.clientX-lastX, dy=e.clientY-lastY;
+  lastX=e.clientX; lastY=e.clientY;
+  yaw += dx*0.006;
+  pitch += dy*0.006;
+  pitch = Math.max(-1.4,Math.min(1.4,pitch));
+});
+canvas.addEventListener('pointerup',()=>{dragging=false;canvas.style.cursor='grab';});
+canvas.addEventListener('pointercancel',()=>{dragging=false;canvas.style.cursor='grab';});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const step = e.deltaY*0.01*(currentOrbital.viewDist/16);
+  camDist = Math.max(currentOrbital.zoomMin,Math.min(currentOrbital.zoomMax,camDist+step));
+},{passive:false});
+
+playBtn.addEventListener('click',()=>{
+  playing = !playing;
+  playBtn.innerHTML = playing ? '<i class="ti ti-player-pause" aria-hidden="true" style="margin-right:6px;"></i>Pause' : '<i class="ti ti-player-play" aria-hidden="true" style="margin-right:6px;"></i>Play';
+  playBtn.setAttribute('aria-label', playing?'Pause':'Play');
+});
+
+resetBtn.addEventListener('click',()=>{
+  particles = [];
+  countOut.textContent = '0';
+});
+
+speedInput.addEventListener('input',()=>{
+  speed = parseInt(speedInput.value,10);
+  speedOut.textContent = speed;
+});
+
+opacityInput.addEventListener('input',()=>{
+  const v = parseInt(opacityInput.value,10);
+  opacity = v/100;
+  opacityOut.textContent = v+'%';
+});
+
+orbitalSelect.addEventListener('change',e=>{
+  const val = e.target.value;
+  if(ORBITALS[val]){
+    currentOrbital = ORBITALS[val];
+    particles = [];
+    countOut.textContent = '0';
+    camDist = currentOrbital.viewDist;
+  }
+});
+
+function drawSlice(mctx, mcanvas, pick, slabOf){
+  const w = mcanvas.width, h = mcanvas.height;
+  if(w===0||h===0) return;
+  mctx.fillStyle = '#03050d';
+  mctx.fillRect(0,0,w,h);
+  const R = currentOrbital.maxR;
+  const slab = R*0.1;
+  const scale = (Math.min(w,h)/2 - 4) / R;
+  const cx = w/2, cy = h/2;
+  const msize = Math.max(1.4, w*0.012);
+  mctx.globalCompositeOperation = 'lighter';
+  for(let i=0;i<particles.length;i++){
+    const p = particles[i];
+    if(Math.abs(slabOf(p)) > slab) continue;
+    const ab = pick(p);
+    const sx = cx + ab[0]*scale;
+    const sy = cy - ab[1]*scale;
+    mctx.globalAlpha = Math.min(1, opacity*2.5);
+    mctx.drawImage(p.s>=0?spritePos:spriteNeg, sx-msize, sy-msize, msize*2, msize*2);
+  }
+  mctx.globalCompositeOperation = 'source-over';
+  mctx.globalAlpha = 1;
+  mctx.fillStyle = 'rgba(255,200,120,0.9)';
+  mctx.beginPath();
+  mctx.arc(cx,cy,Math.max(1.5,w*0.01),0,Math.PI*2);
+  mctx.fill();
+}
+
+function render(){
+  const w = canvas.width, h = canvas.height;
+  if(w===0||h===0){ requestAnimationFrame(render); return; }
+  ctx.fillStyle = '#03050d';
+  ctx.fillRect(0,0,w,h);
+
+  if(autoRotate && !dragging) yaw += 0.0022;
+
+  const cosY=Math.cos(yaw), sinY=Math.sin(yaw);
+  const cosP=Math.cos(pitch), sinP=Math.sin(pitch);
+  const cx=w/2, cy=h/2;
+  const f = Math.min(w,h)*1.05;
+  const D = camDist;
+  const unit = w/600;
+
+  ctx.globalCompositeOperation = 'lighter';
+  for(let i=0;i<particles.length;i++){
+    const p = particles[i];
+    const x1 = p.x*cosY + p.z*sinY;
+    const z1 = -p.x*sinY + p.z*cosY;
+    const y2 = p.y*cosP - z1*sinP;
+    const z2 = p.y*sinP + z1*cosP;
+    const zc = z2 + D;
+    if(zc <= 0.6) continue;
+    const scale = f/zc;
+    const sx = cx + x1*scale;
+    const sy = cy - y2*scale;
+    const size = Math.max(1.1, 3*(D/zc))*unit;
+    ctx.globalAlpha = Math.min(1, opacity*(D/zc));
+    ctx.drawImage(p.s>=0?spritePos:spriteNeg, sx-size, sy-size, size*2, size*2);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+
+  const nr = 7*unit;
+  const ngrad = ctx.createRadialGradient(cx,cy,0,cx,cy,nr*2.4);
+  ngrad.addColorStop(0,'rgba(255,228,150,1)');
+  ngrad.addColorStop(0.5,'rgba(255,170,60,0.9)');
+  ngrad.addColorStop(1,'rgba(255,170,60,0)');
+  ctx.fillStyle = ngrad;
+  ctx.beginPath();
+  ctx.arc(cx,cy,nr*2.4,0,Math.PI*2);
+  ctx.fill();
+
+  if(playing){
+    let added = 0;
+    while(added<speed && particles.length<MAX_PARTICLES){
+      const pt = sampleParticle(currentOrbital);
+      if(pt){ particles.push(pt); added++; } else { break; }
+    }
+    countOut.textContent = particles.length.toLocaleString();
+  }
+
+  drawSlice(ctxXY, sliceXY, p=>[p.x,p.y], p=>p.z);
+  drawSlice(ctxXZ, sliceXZ, p=>[p.x,p.z], p=>p.y);
+  drawSlice(ctxYZ, sliceYZ, p=>[p.y,p.z], p=>p.x);
+
+  requestAnimationFrame(render);
+}
+requestAnimationFrame(render);
+})();
+</script>

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Equilibrium — rates, concentrations and Kc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d1422; --panel:#141f36; --panel-2:#1a2742; --line:#28385c;
+    --text:#e9eff8; --muted:#90a2c0; --faint:#5e6f8e; --accent:#6ea8fe;
+    --sp0:#4d9fff; --sp1:#2dd4bf; --sp2:#ff8a3d; --sp3:#f472b6;
+    --fwd:#ffd23f; --rev:#8b80f9; --q:#7ee787;
+    --temp:#ff7a59; --dh:#36c2cf;
+    --radius:12px;
+    --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
+    --ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:radial-gradient(1000px 560px at 82% -12%, #15233f 0, transparent 60%), var(--bg);
+    color:var(--text); font-family:var(--ui); line-height:1.45;
+    -webkit-font-smoothing:antialiased; padding:13px; min-height:100vh; font-size:14px;
+  }
+  .wrap{max-width:1280px;margin:0 auto}
+
+  header{
+    display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between;
+    padding-bottom:11px;margin-bottom:13px;border-bottom:1px solid var(--line);
+  }
+  .title h1{font-family:var(--display);font-weight:700;font-size:clamp(1.3rem,2.8vw,1.8rem);
+    letter-spacing:-.02em;margin:0;line-height:1.05}
+  .title p{margin:4px 0 0;color:var(--muted);font-size:.82rem;max-width:54ch}
+  .eqn-wrap{text-align:right}
+  .eqn-label{font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+  .eqn{font-family:var(--mono);font-size:clamp(.95rem,2.1vw,1.3rem);font-weight:500;white-space:nowrap}
+  .eqn sub{font-size:.62em}
+  .eqn .arrow{color:var(--muted);margin:0 .3em}
+  .eqn .plus{color:var(--faint);margin:0 .28em}
+
+  .layout{display:flex;flex-direction:column;gap:13px}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
+  /* controls: a responsive band of cards across the top */
+  .controls{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;align-items:stretch}
+  @media(max-width:1180px){.controls{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:760px){.controls{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:480px){.controls{grid-template-columns:1fr}}
+  .block{padding:10px 13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
+  .block h2{font-family:var(--display);font-weight:600;font-size:.66rem;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--muted);margin:0 0 9px;display:flex;align-items:center;gap:8px}
+  .block h2 .tag{margin-left:auto;font-size:.58rem;letter-spacing:.1em;color:var(--accent);
+    border:1px solid #2c4677;background:#15233f;padding:1px 6px;border-radius:999px;text-transform:none}
+
+  .chips{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{font-family:var(--mono);font-size:.76rem;color:var(--muted);background:var(--panel-2);
+    border:1px solid var(--line);padding:5px 8px;border-radius:8px;cursor:pointer;transition:.12s}
+  .chip sub{font-size:.62em}
+  .chip:hover{color:var(--text);border-color:#3a5587}
+  .chip.active{color:#07101f;background:var(--accent);border-color:var(--accent);font-weight:600}
+
+  .ctrl{margin-bottom:9px}
+  .ctrl:last-child{margin-bottom:0}
+  .ctrl .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;gap:8px}
+  .ctrl label{font-size:.8rem;color:var(--text);display:flex;align-items:center;gap:6px}
+  .ctrl label .dot{width:8px;height:8px;border-radius:3px;flex:none}
+  .ctrl label sub{font-size:.66em}
+  .ctrl .val{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;
+    background:var(--line);border-radius:99px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;
+    border-radius:50%;background:var(--thumb,var(--accent));border:3px solid #0d1422;
+    box-shadow:0 0 0 1px var(--thumb,var(--accent));cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--thumb,var(--accent));
+    border:3px solid #0d1422;box-shadow:0 0 0 1px var(--thumb,var(--accent));cursor:pointer}
+  input[type=range]:disabled{opacity:.4;cursor:not-allowed}
+  .hint{font-size:.7rem;color:var(--faint);margin-top:7px;line-height:1.35}
+
+  .kbox{display:flex;align-items:baseline;gap:9px;margin-top:2px}
+  .kbox .keq{font-family:var(--mono);color:var(--muted);font-size:.82rem}
+  .kbox .kval{font-family:var(--mono);font-weight:600;font-size:1.35rem;color:var(--accent);margin-left:auto}
+
+  .transport{display:flex;gap:7px}
+  .btn{flex:1;font-family:var(--ui);font-size:.82rem;font-weight:600;padding:8px;border-radius:9px;
+    cursor:pointer;transition:.12s;background:var(--panel-2);color:var(--text);border:1px solid var(--line)}
+  .btn:hover{border-color:#3a5587}
+  .btn.primary{background:var(--accent);color:#07101f;border-color:var(--accent)}
+  .btn.primary:hover{filter:brightness(1.07)}
+  .btn:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .speed{display:flex;align-items:center;gap:9px;margin-top:9px}
+  .speed span{font-size:.75rem;color:var(--muted);white-space:nowrap}
+
+  .disturb{display:flex;gap:7px;align-items:stretch}
+  select{flex:1;font-family:var(--mono);font-size:.8rem;color:var(--text);background:var(--panel-2);
+    border:1px solid var(--line);border-radius:8px;padding:7px 9px;cursor:pointer}
+  select:disabled{opacity:.45}
+
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .stat{padding:2px 0}
+  .stat .k{font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:5px}
+  .stat .k .dot{width:7px;height:7px;border-radius:2px;flex:none}
+  .stat .v{font-family:var(--mono);font-size:.95rem;font-weight:500;margin-top:2px}
+  .status{grid-column:1/-1;text-align:center;font-size:.76rem;font-family:var(--mono);padding:7px;
+    border-radius:9px;border:1px dashed var(--line);color:var(--muted);transition:.2s}
+  .status.eq{color:#9be6b4;border-color:#2f6b48;border-style:solid;background:#10261b}
+
+  .graphs{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+  @media(max-width:1000px){.graphs{grid-template-columns:1fr}}
+  .gcard{padding:9px 12px 6px}
+  .ghead{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:3px}
+  .gtitle{font-family:var(--display);font-weight:600;font-size:.86rem;line-height:1.15}
+  .gtitle .sub{display:block;font-family:var(--ui);font-weight:400;font-size:.7rem;color:var(--muted);margin-top:1px}
+  .gtitle .sub .expr{font-family:var(--mono);color:var(--q)}
+  .gtitle .sub .expr sub{font-size:.7em} .gtitle .sub .expr sup{font-size:.7em}
+  .legend{display:flex;flex-wrap:wrap;gap:9px;padding-top:1px}
+  .legend .item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--muted);font-family:var(--mono)}
+  .legend .swatch{width:14px;height:3px;border-radius:99px;flex:none}
+  .legend .swatch.dash{background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px)!important;height:0;border-top:2px dashed}
+  .legend .item sub{font-size:.7em}
+  .canvas-host{position:relative;width:100%}
+  canvas{display:block;width:100%;height:auto;touch-action:none}
+  .cursor-readout{position:absolute;top:6px;pointer-events:none;transform:translateX(-50%);
+    font-family:var(--mono);font-size:.68rem;background:#0b1322f2;border:1px solid var(--line);
+    border-radius:7px;padding:5px 8px;white-space:nowrap;opacity:0;transition:opacity .1s;z-index:3}
+  .cursor-readout.on{opacity:1}
+  .cursor-readout .ln{display:flex;justify-content:space-between;gap:12px}
+  .cursor-readout .ln span:first-child{color:var(--muted)}
+
+  footer{margin-top:13px;padding-top:11px;border-top:1px solid var(--line);color:var(--faint);
+    font-size:.72rem;max-width:90ch;line-height:1.5}
+  footer code{font-family:var(--mono);color:var(--muted)}
+  footer sub{font-size:.7em} footer sup{font-size:.7em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <h1>Dynamic Equilibrium</h1>
+      <p>How the forward and reverse rates, the concentrations, and the equilibrium constant all lock together as a reversible reaction settles.</p>
+    </div>
+    <div class="eqn-wrap">
+      <div class="eqn-label">Reaction</div>
+      <div class="eqn" id="equation"></div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- ============ CONTROLS (top band) ============ -->
+    <div class="controls">
+      <div class="block">
+        <h2>Reaction</h2>
+        <div class="chips" id="presets"></div>
+      </div>
+
+      <div class="block">
+        <h2><span>Temperature &amp; K<sub>c</sub></span></h2>
+        <div class="ctrl">
+          <div class="row"><label><span class="dot" style="background:var(--temp)"></span>T</label><span class="val" id="tVal">350 K</span></div>
+          <input type="range" id="temp" min="250" max="550" step="5" value="350" style="--thumb:var(--temp)">
+        </div>
+        <div class="ctrl">
+          <div class="row"><label><span class="dot" style="background:var(--dh)"></span>ΔH</label><span class="val" id="dhVal">−45 kJ mol⁻¹</span></div>
+          <input type="range" id="dh" min="-100" max="100" step="5" value="-45" style="--thumb:var(--dh)">
+        </div>
+        <div class="kbox"><div class="keq">K<sub>c</sub></div><div class="kval" id="kVal">2.80</div></div>
+      </div>
+
+      <div class="block">
+        <h2>Starting amounts</h2>
+        <div id="initConc"></div>
+      </div>
+
+      <div class="block">
+        <h2>Run</h2>
+        <div class="transport">
+          <button class="btn primary" id="playBtn">Play</button>
+          <button class="btn" id="resetBtn">Reset</button>
+        </div>
+        <div class="speed"><span>Speed</span><input type="range" id="speed" min="0.25" max="4" step="0.25" value="1"><span class="val" id="speedVal" style="font-family:var(--mono)">1.0×</span></div>
+      </div>
+
+      <div class="block">
+        <h2>Disturb</h2>
+        <div class="disturb"><select id="disturbSpecies"></select><button class="btn" id="disturbBtn">+ Add</button></div>
+      </div>
+
+      <div class="block">
+        <h2>Live values</h2>
+        <div class="readout" id="readout"></div>
+      </div>
+    </div>
+
+    <!-- ============ GRAPHS ============ -->
+    <div class="graphs">
+      <div class="panel gcard">
+        <div class="ghead">
+          <div class="gtitle">Concentration vs time<span class="sub">Amounts level off at equilibrium</span></div>
+        </div>
+        <div class="legend" id="legendConc" style="margin-bottom:2px"></div>
+        <div class="canvas-host" id="hostConc"><canvas id="cConc"></canvas><div class="cursor-readout" id="roConc"></div></div>
+      </div>
+
+      <div class="panel gcard">
+        <div class="ghead">
+          <div class="gtitle">Rate vs time<span class="sub">Forward and reverse rates become equal</span></div>
+        </div>
+        <div class="legend" style="margin-bottom:2px">
+          <div class="item"><span class="swatch" style="background:var(--fwd)"></span>forward</div>
+          <div class="item"><span class="swatch" style="background:var(--rev)"></span>reverse</div>
+        </div>
+        <div class="canvas-host" id="hostRate"><canvas id="cRate"></canvas><div class="cursor-readout" id="roRate"></div></div>
+      </div>
+
+      <div class="panel gcard">
+        <div class="ghead">
+          <div class="gtitle">The K<sub>c</sub> expression vs time<span class="sub">Q<sub>c</sub> = <span class="expr" id="kcExpr"></span> &nbsp;→&nbsp; rises or falls onto the K<sub>c</sub> line</span></div>
+          <div class="legend">
+            <div class="item" style="color:var(--q)"><span class="swatch" style="background:var(--q)"></span><span>Q<sub>c</sub> (current)</span></div>
+            <div class="item" style="color:var(--accent)"><span class="swatch dash"></span><span>K<sub>c</sub> = k<sub>f</sub>/k<sub>r</sub></span></div>
+          </div>
+        </div>
+        <div class="canvas-host" id="hostKc"><canvas id="cKc"></canvas><div class="cursor-readout" id="roKc"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <strong style="color:var(--muted)">Model.</strong> Elementary kinetics assumed, so orders equal the stoichiometric coefficients:
+    rate<sub>f</sub> = k<sub>f</sub>·∏[reactant]<sup>coeff</sup>, rate<sub>r</sub> = k<sub>r</sub>·∏[product]<sup>coeff</sup>.
+    At equilibrium the rates are equal, which rearranges to <code>K<sub>c</sub> = k<sub>f</sub>/k<sub>r</sub></code>. The plotted Q<sub>c</sub> is that same expression at the current concentrations — equal to K<sub>c</sub> only once equilibrium is reached. Rate-constant units are illustrative.
+  </footer>
+</div>
+
+<script>
+"use strict";
+const SP_RAW=["#4d9fff","#2dd4bf","#ff8a3d","#f472b6"];
+
+const REACTIONS=[
+  {id:"iso",label:"A \u21CC B",kf:1.4,kr:0.5,dH:-30,species:[
+    {sym:"A",role:"reactant",coeff:1,init:1.0},{sym:"B",role:"product",coeff:1,init:0.0}]},
+  {id:"abcd",label:"A + B \u21CC C + D",kf:1.2,kr:0.4,dH:-20,species:[
+    {sym:"A",role:"reactant",coeff:1,init:1.0},{sym:"B",role:"reactant",coeff:1,init:0.8},
+    {sym:"C",role:"product",coeff:1,init:0.0},{sym:"D",role:"product",coeff:1,init:0.0}]},
+  {id:"hi",label:"H2 + I2 \u21CC 2HI",kf:1.6,kr:0.1,dH:-10,species:[
+    {sym:"H2",role:"reactant",coeff:1,init:1.0},{sym:"I2",role:"reactant",coeff:1,init:1.0},
+    {sym:"HI",role:"product",coeff:2,init:0.0}]},
+  {id:"no2",label:"2NO2 \u21CC N2O4",kf:1.5,kr:0.5,dH:-57,species:[
+    {sym:"NO2",role:"reactant",coeff:2,init:1.0},{sym:"N2O4",role:"product",coeff:1,init:0.0}]},
+  {id:"haber",label:"N2 + 3H2 \u21CC 2NH3",kf:1.0,kr:0.15,dH:-90,species:[
+    {sym:"N2",role:"reactant",coeff:1,init:0.8},{sym:"H2",role:"reactant",coeff:3,init:1.5},
+    {sym:"NH3",role:"product",coeff:2,init:0.0}]},
+];
+
+function fmtFormula(sym){return sym.replace(/([A-Za-z\)])(\d+)/g,"$1<sub>$2</sub>");}
+function orderedSpecies(rx){return [...rx.species.filter(s=>s.role==="reactant"),...rx.species.filter(s=>s.role==="product")];}
+function colorIndex(rx,sym){return orderedSpecies(rx).findIndex(s=>s.sym===sym);}
+function speciesColor(rx,sym){return SP_RAW[colorIndex(rx,sym)];}
+function qExprHTML(rx){
+  const term=s=>`[${fmtFormula(s.sym)}]${s.coeff>1?`<sup>${s.coeff}</sup>`:""}`;
+  const num=rx.species.filter(s=>s.role==="product").map(term).join("");
+  const den=rx.species.filter(s=>s.role==="reactant").map(term).join("");
+  return `${num} / ${den}`;
+}
+
+/* ---- numerical core (validated) ---- */
+function rates(state,rx,kf,kr){let rf=kf,rr=kr;for(const s of rx.species){const c=Math.max(state[s.sym],0);
+  if(s.role==="reactant")rf*=Math.pow(c,s.coeff);else rr*=Math.pow(c,s.coeff);}return{rf,rr};}
+function deriv(state,rx,kf,kr){const{rf,rr}=rates(state,rx,kf,kr);const net=rf-rr;const d={};
+  for(const s of rx.species)d[s.sym]=(s.role==="reactant"?-1:1)*s.coeff*net;return d;}
+function rk4(state,rx,kf,kr,h){const syms=rx.species.map(s=>s.sym);
+  const add=(st,k,f)=>{const o={};for(const s of syms)o[s]=st[s]+k[s]*f;return o;};
+  const k1=deriv(state,rx,kf,kr),k2=deriv(add(state,k1,h/2),rx,kf,kr),
+        k3=deriv(add(state,k2,h/2),rx,kf,kr),k4=deriv(add(state,k3,h),rx,kf,kr);
+  const o={};for(const s of syms){o[s]=state[s]+h/6*(k1[s]+2*k2[s]+2*k3[s]+k4[s]);if(o[s]<0)o[s]=0;}return o;}
+function quotient(state,rx){let num=1,den=1;for(const s of rx.species){const c=Math.max(state[s.sym],1e-12);
+  if(s.role==="product")num*=Math.pow(c,s.coeff);else den*=Math.pow(c,s.coeff);}return num/den;}
+
+/* ---- state ---- */
+const HSTEP=0.0025,SIM_PER_FRAME=0.05,MAX_SAMPLES=6000;
+const GH=215,KH=215;
+const R_GAS=8.314, T_REF=350, EA_APP=25000;   // J/mol; T_REF anchors van't Hoff & Arrhenius
+let rx,kf,kr,speed=1,state={},init={},hist,running=false,simTime=0,eqEvents=[],atEq=false,raf=null;
+let temp=350,dH=-45,KcRef=2.8,mRef=0.836;      // temperature(K), enthalpy(kJ/mol), reference Kc & pace
+const $=id=>document.getElementById(id);
+const cConc=$("cConc"),cRate=$("cRate"),cKc=$("cKc");
+const ctxC=cConc.getContext("2d"),ctxR=cRate.getContext("2d"),ctxK=cKc.getContext("2d");
+let dpr=Math.max(1,window.devicePixelRatio||1);
+
+/* Temperature -> rate constants.
+   Kc follows van't Hoff:   Kc(T) = Kc_ref · exp(-(ΔH/R)(1/T - 1/T_ref))
+   Overall pace follows Arrhenius-style increase with T.
+   Split into kf, kr by geometric mean so kf/kr = Kc and both stay positive. */
+function clamp(v,lo,hi){return Math.max(lo,Math.min(hi,v));}
+function recalcRateConstants(){
+  let Kc = KcRef*Math.exp(-(dH*1000/R_GAS)*(1/temp - 1/T_REF));
+  Kc = clamp(Kc, 0.05, 30);
+  const pace = clamp(Math.exp((EA_APP/R_GAS)*(1/T_REF - 1/temp)), 0.3, 3);
+  const m = mRef*pace, root=Math.sqrt(Kc);
+  kf = m*root; kr = m/root;
+  $("tVal").textContent = temp+" K";
+  $("dhVal").textContent = (dH>0?"+":"\u2212")+Math.abs(dH)+" kJ mol⁻¹";
+  updateKLabels();
+}
+function updateVHHint(){
+  const el=$("vhHint"); if(!el) return;
+  if(dH<-3) el.innerHTML="Exothermic (ΔH&lt;0): heating <b>lowers</b> K<sub>c</sub> — equilibrium shifts back to reactants.";
+  else if(dH>3) el.innerHTML="Endothermic (ΔH&gt;0): heating <b>raises</b> K<sub>c</sub> — equilibrium shifts towards products.";
+  else el.innerHTML="≈ Thermoneutral: temperature changes the rate but barely moves K<sub>c</sub>.";
+}
+
+function loadReaction(def){
+  rx=JSON.parse(JSON.stringify(def));
+  KcRef=def.kf/def.kr; mRef=Math.sqrt(def.kf*def.kr);
+  temp=350; dH=def.dH;
+  $("temp").value=temp; $("dh").value=dH;
+  recalcRateConstants(); updateVHHint();
+  buildEquation();buildInitControls();buildLegendConc();buildDisturbOptions();buildReadout();
+  $("kcExpr").innerHTML=qExprHTML(rx);
+  resetSim();updateKLabels();
+}
+function buildEquation(){
+  const part=s=>`<span style="color:${speciesColor(rx,s.sym)}">${s.coeff>1?s.coeff:""}${fmtFormula(s.sym)}</span>`;
+  const r=rx.species.filter(s=>s.role==="reactant").map(part).join('<span class="plus">+</span>');
+  const p=rx.species.filter(s=>s.role==="product").map(part).join('<span class="plus">+</span>');
+  $("equation").innerHTML=`${r}<span class="arrow">\u21CC</span>${p}`;
+}
+function buildInitControls(){
+  const host=$("initConc");host.innerHTML="";
+  rx.species.forEach(s=>{const col=speciesColor(rx,s.sym);const wrap=document.createElement("div");wrap.className="ctrl";
+    wrap.innerHTML=`<div class="row"><label><span class="dot" style="background:${col}"></span><span>[${fmtFormula(s.sym)}]<sub>0</sub></span></label>
+      <span class="val" id="ic_${s.sym}">${s.init.toFixed(2)}</span></div>
+      <input type="range" min="0" max="2" step="0.05" value="${s.init}" data-sym="${s.sym}" style="--thumb:${col}">`;
+    host.appendChild(wrap);
+    wrap.querySelector("input").addEventListener("input",e=>{const v=parseFloat(e.target.value);
+      s.init=v;$("ic_"+s.sym).textContent=v.toFixed(2);if(!running)resetSim();});
+  });
+}
+function buildLegendConc(){
+  const host=$("legendConc");host.innerHTML="";
+  rx.species.forEach(s=>{const col=speciesColor(rx,s.sym);const el=document.createElement("div");el.className="item";
+    el.innerHTML=`<span class="swatch" style="background:${col}"></span><span>[${fmtFormula(s.sym)}]</span>`;host.appendChild(el);});
+}
+function buildDisturbOptions(){
+  const sel=$("disturbSpecies");sel.innerHTML="";
+  rx.species.forEach(s=>{const o=document.createElement("option");o.value=s.sym;o.textContent=s.sym;sel.appendChild(o);});
+}
+function buildReadout(){
+  const host=$("readout");host.innerHTML="";
+  rx.species.forEach(s=>{const col=speciesColor(rx,s.sym);const el=document.createElement("div");el.className="stat";
+    el.innerHTML=`<div class="k"><span class="dot" style="background:${col}"></span><span>[${fmtFormula(s.sym)}]</span></div><div class="v" id="rd_${s.sym}">–</div>`;
+    host.appendChild(el);});
+  host.insertAdjacentHTML("beforeend",
+    `<div class="stat"><div class="k"><span class="dot" style="background:var(--fwd)"></span><span>rate<sub>f</sub></span></div><div class="v" id="rd_rf">–</div></div>
+     <div class="stat"><div class="k"><span class="dot" style="background:var(--rev)"></span><span>rate<sub>r</sub></span></div><div class="v" id="rd_rr">–</div></div>
+     <div class="stat"><div class="k"><span class="dot" style="background:var(--q)"></span><span>Q<sub>c</sub> now</span></div><div class="v" id="rd_q">–</div></div>
+     <div class="stat"><div class="k"><span class="dot" style="background:var(--accent)"></span><span>K<sub>c</sub> target</span></div><div class="v" id="rd_k">–</div></div>
+     <div class="status" id="rd_status">Idle — press Play</div>`);
+}
+
+function resetSim(){
+  state={};init={};rx.species.forEach(s=>{state[s.sym]=s.init;init[s.sym]=s.init;});
+  const r0=rates(state,rx,kf,kr);
+  hist={t:[0],conc:{},rf:[r0.rf],rr:[r0.rr],q:[quotient(state,rx)]};
+  rx.species.forEach(s=>hist.conc[s.sym]=[s.init]);
+  simTime=0;eqEvents=[];atEq=false;setStatus("Idle — press Play",false);
+  draw();updateReadout(currentSnapshot());setInitDisabled(false);
+}
+function record(){
+  hist.t.push(simTime);
+  rx.species.forEach(s=>hist.conc[s.sym].push(state[s.sym]));
+  const{rf,rr}=rates(state,rx,kf,kr);hist.rf.push(rf);hist.rr.push(rr);hist.q.push(quotient(state,rx));
+  // equilibrium state machine (hysteresis stops flicker near the boundary)
+  const imbalance=Math.abs(rf-rr)/Math.max(rf,rr,1e-9);
+  if(!atEq){ if(imbalance<1.5e-3 && simTime>0.2){ eqEvents.push({t:simTime,conc:{...state}}); atEq=true; } }
+  else { if(imbalance>8e-3) atEq=false; }   // a disturbance / condition change knocks it out
+  if(hist.t.length>MAX_SAMPLES)downsample();
+}
+function downsample(){const keep=i=>i%2===0;
+  hist.t=hist.t.filter((_,i)=>keep(i));hist.rf=hist.rf.filter((_,i)=>keep(i));
+  hist.rr=hist.rr.filter((_,i)=>keep(i));hist.q=hist.q.filter((_,i)=>keep(i));
+  for(const k in hist.conc)hist.conc[k]=hist.conc[k].filter((_,i)=>keep(i));}
+function step(sec){let rem=sec;while(rem>1e-9){const h=Math.min(HSTEP,rem);state=rk4(state,rx,kf,kr,h);simTime+=h;rem-=h;}record();}
+function frame(){if(running){step(SIM_PER_FRAME*speed);draw();updateReadout(currentSnapshot());refreshEqStatus();}raf=requestAnimationFrame(frame);}
+function currentSnapshot(){const{rf,rr}=rates(state,rx,kf,kr);return{conc:{...state},rf,rr,Q:quotient(state,rx)};}
+function refreshEqStatus(){
+  if(atEq) setStatus("Equilibrium reached — rates equal, Q<sub>c</sub> = K<sub>c</sub>",true);
+  else setStatus(eqEvents.length?"Conditions changed — re-establishing equilibrium…":"Approaching equilibrium…",false);
+}
+function setStatus(t,eq){const el=$("rd_status");el.innerHTML=t;el.classList.toggle("eq",!!eq);}
+
+function updateReadout(s){
+  rx.species.forEach(sp=>{$("rd_"+sp.sym).textContent=s.conc[sp.sym].toFixed(3);});
+  $("rd_rf").textContent=s.rf.toFixed(4);$("rd_rr").textContent=s.rr.toFixed(4);
+  $("rd_q").textContent=isFinite(s.Q)?s.Q.toFixed(2):"∞";$("rd_k").textContent=(kf/kr).toFixed(2);
+}
+function updateKLabels(){const Kc=kf/kr;
+  $("kVal").textContent=Kc.toFixed(2);
+  if($("kForms"))$("kForms").innerHTML=`k<sub>f</sub> ${kf.toFixed(2)} · k<sub>r</sub> ${kr.toFixed(2)}`;
+  if($("rd_k"))$("rd_k").textContent=Kc.toFixed(2);}
+
+/* ---- drawing ---- */
+const PAD={l:48,r:14,t:12,b:28};
+function sizeCanvas(canvas,ctx,h){const w=canvas.parentElement.clientWidth;canvas.style.height=h+"px";
+  canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);return{w,h};}
+function niceMax(v){if(v<=0)return 1;const pow=Math.pow(10,Math.floor(Math.log10(v)));const n=v/pow;
+  const step=n<=1?1:n<=2?2:n<=5?5:10;return step*pow;}
+function getCSS(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+/* draw "base" + subscript "sub" + "tail", right-aligned so the text ends at xRight */
+function fillSubscript(ctx,base,sub,tail,xRight,y){
+  const f=ctx.font, px=parseInt(f,10)||10, subF=f.replace(/\d+px/,Math.round(px*0.72)+"px");
+  ctx.textAlign="left";
+  ctx.font=f;   const wB=ctx.measureText(base).width, wT=ctx.measureText(tail).width;
+  ctx.font=subF;const wS=ctx.measureText(sub).width;
+  let x=xRight-(wB+wS+wT);
+  ctx.font=f;   ctx.fillText(base,x,y); x+=wB;
+  ctx.font=subF;ctx.fillText(sub,x,y+px*0.18); x+=wS;
+  ctx.font=f;   ctx.fillText(tail,x,y);
+}
+function curXMax(){return niceMax(Math.max(hist.t[hist.t.length-1]*1.05,1));}
+
+function drawAxes(ctx,dims,xMax,yMax,yLabel){
+  const{w,h}=dims;const x0=PAD.l,y0=h-PAD.b,x1=w-PAD.r,y1=PAD.t;
+  ctx.clearRect(0,0,w,h);ctx.font='10px "IBM Plex Mono",monospace';ctx.textBaseline="middle";
+  ctx.strokeStyle="#22324f";ctx.fillStyle="#5e6f8e";ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){const yy=y0-(y0-y1)*i/5;ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);ctx.stroke();
+    ctx.textAlign="right";ctx.fillText((yMax*i/5).toFixed(2),x0-7,yy);}
+  ctx.textAlign="center";ctx.textBaseline="top";
+  for(let i=0;i<=5;i++){const xx=x0+(x1-x0)*i/5;ctx.fillText((xMax*i/5).toFixed(1),xx,y0+7);}
+  ctx.fillStyle="#90a2c0";ctx.textBaseline="alphabetic";ctx.fillText("time",(x0+x1)/2,h-3);
+  ctx.save();ctx.translate(12,(y0+y1)/2);ctx.rotate(-Math.PI/2);ctx.fillText(yLabel,0,0);ctx.restore();
+  return{x0,y0,x1,y1};
+}
+function plot(ctx,box,xs,ys,xMax,yMax,color,w,clampTop){
+  const{x0,y0,x1,y1}=box;const X=t=>x0+(x1-x0)*(xMax>0?t/xMax:0);
+  const Y=v=>{let vv=clampTop?Math.min(v,yMax):v;return y0-(y0-y1)*(yMax>0?vv/yMax:0);};
+  ctx.beginPath();for(let i=0;i<xs.length;i++){const px=X(xs[i]),py=Y(ys[i]);i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+  ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineJoin="round";ctx.lineCap="round";ctx.stroke();
+}
+function eqMarker(ctx,box,xMax){
+  if(!eqEvents.length)return;const{x0,y0,x1,y1}=box;
+  ctx.save();ctx.font='9px "IBM Plex Mono",monospace';
+  eqEvents.forEach((ev,i)=>{
+    const px=x0+(x1-x0)*(xMax>0?ev.t/xMax:0);if(px>x1+1||px<x0-1)return;
+    ctx.setLineDash([4,4]);ctx.strokeStyle="#3f6b52";ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(px,y1);ctx.lineTo(px,y0);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle="#9be6b4";const right=px>(x0+x1)/2;ctx.textAlign=right?"right":"left";
+    const label=eqEvents.length>1?"eq "+(i+1):"eqm";
+    ctx.fillText(label,px+(right?-4:4),y1+7);
+  });
+  ctx.restore();
+}
+
+function draw(){
+  const hostW=cConc.parentElement.clientWidth;const xMax=curXMax();
+  // concentration
+  const dC=sizeCanvas(cConc,ctxC,GH);let cMax=0;
+  for(const k in hist.conc)for(const v of hist.conc[k])if(v>cMax)cMax=v;cMax=niceMax((cMax*1.1)||1);
+  const bC=drawAxes(ctxC,dC,xMax,cMax,"conc / mol dm⁻³");
+  const lastEq=eqEvents.length?eqEvents[eqEvents.length-1].conc:null;
+  if(lastEq)for(const s of rx.species){const col=speciesColor(rx,s.sym);
+    const y=bC.y0-(bC.y0-bC.y1)*(lastEq[s.sym]/cMax);ctxC.save();ctxC.setLineDash([2,5]);ctxC.globalAlpha=.5;
+    ctxC.strokeStyle=col;ctxC.lineWidth=1;ctxC.beginPath();ctxC.moveTo(bC.x0,y);ctxC.lineTo(bC.x1,y);ctxC.stroke();ctxC.restore();}
+  eqMarker(ctxC,bC,xMax);
+  for(const s of rx.species)plot(ctxC,bC,hist.t,hist.conc[s.sym],xMax,cMax,speciesColor(rx,s.sym),2.2,false);
+
+  // rate
+  const dR=sizeCanvas(cRate,ctxR,GH);let rMax=0;
+  for(const v of hist.rf)if(v>rMax)rMax=v;for(const v of hist.rr)if(v>rMax)rMax=v;rMax=niceMax((rMax*1.12)||1);
+  const bR=drawAxes(ctxR,dR,xMax,rMax,"rate / mol dm⁻³ s⁻¹");eqMarker(ctxR,bR,xMax);
+  plot(ctxR,bR,hist.t,hist.rf,xMax,rMax,getCSS("--fwd"),2.4,false);
+  plot(ctxR,bR,hist.t,hist.rr,xMax,rMax,getCSS("--rev"),2.4,false);
+
+  // Kc expression
+  const dK=sizeCanvas(cKc,ctxK,KH);const kLine=kf/kr;let qMax=kLine;
+  for(const q of hist.q){const qq=Math.min(q,kLine*3);if(qq>qMax)qMax=qq;}qMax=niceMax(qMax*1.25);
+  const bK=drawAxes(ctxK,dK,xMax,qMax,"reaction quotient, Q");eqMarker(ctxK,bK,xMax);
+  // Kc horizontal reference line
+  const yK=bK.y0-(bK.y0-bK.y1)*(kLine/qMax);
+  ctxK.save();ctxK.setLineDash([6,5]);ctxK.strokeStyle=getCSS("--accent");ctxK.lineWidth=1.5;
+  ctxK.beginPath();ctxK.moveTo(bK.x0,yK);ctxK.lineTo(bK.x1,yK);ctxK.stroke();ctxK.setLineDash([]);
+  ctxK.fillStyle=getCSS("--accent");ctxK.font='10px "IBM Plex Mono",monospace';ctxK.textBaseline="bottom";
+  fillSubscript(ctxK,"K","c"," = "+kLine.toFixed(2),bK.x1,yK-3);ctxK.restore();
+  plot(ctxK,bK,hist.t,hist.q,xMax,qMax,getCSS("--q"),2.4,true);
+
+  draw._C={box:bC,xMax,yMax:cMax};draw._R={box:bR,xMax,yMax:rMax};draw._K={box:bK,xMax,yMax:qMax,kLine};
+}
+
+/* ---- scrubbing: shared time cursor across all three ---- */
+function nearestIndex(t){let lo=0,hi=hist.t.length-1;if(t<=hist.t[0])return 0;if(t>=hist.t[hi])return hi;
+  while(hi-lo>1){const m=(lo+hi)>>1;if(hist.t[m]<t)lo=m;else hi=m;}return(t-hist.t[lo]<hist.t[hi]-t)?lo:hi;}
+function metaFor(target){return target===cConc?draw._C:target===cRate?draw._R:draw._K;}
+function handleScrub(evt){const meta=metaFor(evt.currentTarget);if(!meta)return;
+  const rect=evt.currentTarget.getBoundingClientRect();
+  const px=(evt.touches?evt.touches[0].clientX:evt.clientX)-rect.left;
+  const{x0,x1}=meta.box;const frac=Math.max(0,Math.min(1,(px-x0)/(x1-x0)));
+  showCursor(nearestIndex(frac*meta.xMax));}
+function dot(ctx,x,y,c){ctx.beginPath();ctx.arc(x,y,3.2,0,7);ctx.fillStyle=c;ctx.fill();ctx.lineWidth=1.5;ctx.strokeStyle="#0d1422";ctx.stroke();}
+function showCursor(idx){
+  draw();const t=hist.t[idx];
+  [[draw._C,ctxC,"C"],[draw._R,ctxR,"R"],[draw._K,ctxK,"K"]].forEach(([meta,ctx,w])=>{
+    const{x0,x1,y0,y1}=meta.box;const px=x0+(x1-x0)*(meta.xMax>0?t/meta.xMax:0);
+    ctx.save();ctx.strokeStyle="#7d8fb3";ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(px,y1);ctx.lineTo(px,y0);ctx.stroke();ctx.restore();
+    if(w==="C")for(const s of rx.species)dot(ctx,px,y0-(y0-y1)*(hist.conc[s.sym][idx]/meta.yMax),speciesColor(rx,s.sym));
+    else if(w==="R"){dot(ctx,px,y0-(y0-y1)*(hist.rf[idx]/meta.yMax),getCSS("--fwd"));dot(ctx,px,y0-(y0-y1)*(hist.rr[idx]/meta.yMax),getCSS("--rev"));}
+    else dot(ctx,px,y0-(y0-y1)*(Math.min(hist.q[idx],meta.yMax)/meta.yMax),getCSS("--q"));
+  });
+  posReadout("roConc",draw._C,t,concRows(idx));
+  posReadout("roRate",draw._R,t,rateRows(idx));
+  posReadout("roKc",draw._K,t,kcRows(idx));
+}
+function concRows(idx){let s=`<div class="ln"><span>t</span><span>${hist.t[idx].toFixed(2)}</span></div>`;
+  for(const sp of rx.species)s+=`<div class="ln"><span style="color:${speciesColor(rx,sp.sym)}">[${fmtFormula(sp.sym)}]</span><span>${hist.conc[sp.sym][idx].toFixed(3)}</span></div>`;return s;}
+function rateRows(idx){return `<div class="ln"><span>t</span><span>${hist.t[idx].toFixed(2)}</span></div>`+
+  `<div class="ln"><span style="color:var(--fwd)">fwd</span><span>${hist.rf[idx].toFixed(4)}</span></div>`+
+  `<div class="ln"><span style="color:var(--rev)">rev</span><span>${hist.rr[idx].toFixed(4)}</span></div>`;}
+function kcRows(idx){const q=hist.q[idx];return `<div class="ln"><span>t</span><span>${hist.t[idx].toFixed(2)}</span></div>`+
+  `<div class="ln"><span style="color:var(--q)">Q<sub>c</sub></span><span>${isFinite(q)?q.toFixed(2):"∞"}</span></div>`+
+  `<div class="ln"><span style="color:var(--accent)">K<sub>c</sub></span><span>${(kf/kr).toFixed(2)}</span></div>`;}
+function posReadout(id,meta,t,html){const el=$(id);const{x0,x1}=meta.box;
+  const px=x0+(x1-x0)*(meta.xMax>0?t/meta.xMax:0);el.innerHTML=html;
+  const hostW=el.parentElement.clientWidth,half=el.offsetWidth/2;
+  el.style.left=Math.max(half+2,Math.min(hostW-half-2,px))+"px";el.classList.add("on");}
+function hideCursor(){["roConc","roRate","roKc"].forEach(id=>$(id).classList.remove("on"));draw();}
+[cConc,cRate,cKc].forEach(cv=>{
+  cv.addEventListener("mousemove",handleScrub);cv.addEventListener("mouseleave",hideCursor);
+  cv.addEventListener("touchstart",e=>handleScrub(e),{passive:true});
+  cv.addEventListener("touchmove",e=>{handleScrub(e);e.preventDefault();},{passive:false});
+  cv.addEventListener("touchend",hideCursor);
+});
+
+/* ---- UI wiring ---- */
+function buildPresets(){const host=$("presets");REACTIONS.forEach((r,i)=>{const b=document.createElement("button");
+  b.className="chip"+(i===0?" active":"");b.innerHTML=fmtFormula(r.label).replace(/ /g,"&nbsp;");
+  b.addEventListener("click",()=>{document.querySelectorAll(".chip").forEach(c=>c.classList.remove("active"));
+    b.classList.add("active");pause();loadReaction(r);});host.appendChild(b);});}
+function setInitDisabled(d){document.querySelectorAll("#initConc input").forEach(i=>i.disabled=d);const h=$("initHint");if(h)h.style.opacity=d?.5:1;}
+function play(){running=true;$("playBtn").textContent="Pause";setInitDisabled(true);refreshEqStatus();}
+function pause(){running=false;$("playBtn").textContent="Play";setInitDisabled(false);}
+function togglePlay(){running?pause():play();}
+$("playBtn").addEventListener("click",togglePlay);
+$("resetBtn").addEventListener("click",()=>{pause();resetSim();});
+function liveK(){if(!running){const r=rates(state,rx,kf,kr);hist.rf[hist.rf.length-1]=r.rf;hist.rr[hist.rr.length-1]=r.rr;
+  hist.q[hist.q.length-1]=quotient(state,rx);draw();updateReadout(currentSnapshot());}}
+function applyKChange(){
+  // Kc just changed. If paused, refresh the on-screen snapshot and the Kc line.
+  // The equilibrium detector notices the rates diverge and will mark the next
+  // re-establishment automatically once the run continues.
+  if(!running) liveK();
+}
+$("temp").addEventListener("input",e=>{temp=parseInt(e.target.value,10);recalcRateConstants();applyKChange();});
+$("dh").addEventListener("input",e=>{dH=parseInt(e.target.value,10);recalcRateConstants();updateVHHint();applyKChange();});
+$("speed").addEventListener("input",e=>{speed=parseFloat(e.target.value);$("speedVal").textContent=speed.toFixed(1)+"×";});
+$("disturbBtn").addEventListener("click",()=>{const sym=$("disturbSpecies").value;
+  state[sym]=Math.min(state[sym]+0.5,4);record();draw();updateReadout(currentSnapshot());});
+window.addEventListener("keydown",e=>{if(e.code==="Space"&&e.target.tagName!=="INPUT"&&e.target.tagName!=="SELECT"){e.preventDefault();togglePlay();}});
+let rT;window.addEventListener("resize",()=>{clearTimeout(rT);rT=setTimeout(()=>{dpr=Math.max(1,window.devicePixelRatio||1);draw();},120);});
+
+buildPresets();loadReaction(REACTIONS[0]);frame();
+</script>
+</body>
+</html>
