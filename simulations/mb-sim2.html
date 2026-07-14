@@ -4,72 +4,96 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Maxwell–Boltzmann Emergence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg: #0f1210;
-    --surface: #1a1f1d;
-    --raised: #202624;
-    --border: #2a302d;
-    --border-soft: #232a27;
-    --text: #e8ebe9;
-    --muted: #8a9490;
-    --muted-dim: #5e6a66;
-    --accent: #3daa8a;
-    --gold: #f2e2a8;
-    --gold-dim: #b9a875;
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --void:#0c0f14;
+    --panel:#11161d;
+    --raised:#161c25;
+    --line:#232c38;
+    --line-soft:#1b222c;
+    --text:#e6edf3;
+    --muted:#7d8896;
+    --muted-dim:#586471;
+    --gold:#f2e2a8;
+    --gold-dim:#b9a875;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--bg);
+    background:var(--void);
     color:var(--text);
-    font-family:var(--font);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;
-    padding:16px;
+    min-height:100vh;
+    padding:clamp(14px,3vw,32px);
   }
   .wrap{max-width:1180px;margin:0 auto;}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    padding-bottom:16px;margin-bottom:22px;
+  }
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:11px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--muted-dim);
+    border:1px solid var(--line);border-radius:2px;
+    padding:5px 9px;
+  }
+  h1{
+    font-family:"Space Grotesk",sans-serif;
+    font-weight:600;font-size:clamp(22px,3.4vw,32px);
+    letter-spacing:-.01em;margin:0;line-height:1;
+  }
+  h1 .en{color:var(--muted);font-weight:500;}
+  .tagline{
+    color:var(--muted);font-size:13.5px;margin-left:auto;max-width:340px;
+    line-height:1.45;
+  }
+  @media(max-width:720px){.tagline{margin-left:0;flex-basis:100%;}}
 
   /* ---------- main layout ---------- */
   .stage{
     display:grid;
     grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);
-    gap:14px;
-    margin-bottom:14px;
+    gap:18px;
+    margin-bottom:18px;
   }
   @media(max-width:860px){.stage{grid-template-columns:1fr;}}
 
   .card{
-    background:var(--surface);
-    border:1px solid var(--border);
+    background:var(--panel);
+    border:1px solid var(--line);
     border-radius:6px;
-    padding:12px;
+    padding:14px;
     position:relative;
   }
   .card-label{
-    font-size:13px;font-weight:600;
-    color:var(--muted);
+    font-family:"IBM Plex Mono",monospace;
+    font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--muted-dim);
     display:flex;justify-content:space-between;align-items:center;
-    margin-bottom:10px;
+    margin-bottom:11px;
   }
-  .card-label .right{color:var(--muted-dim);font-weight:400;font-size:12px;}
-  .toggles{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .card-label .right{color:var(--muted);letter-spacing:.04em;}
+  .hist-toggles{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:flex-end;}
   .curve-toggle{
-    font-family:var(--font);font-size:12px;
+    font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+    letter-spacing:.04em;text-transform:uppercase;
     background:transparent;border:0;cursor:pointer;padding:2px 0;
     color:var(--gold-dim);display:inline-flex;align-items:center;gap:7px;
     transition:color .15s;
   }
   .curve-toggle .swatch{
     width:16px;height:2px;border-radius:1px;background:var(--gold);
-    transition:opacity .15s,background .15s;
+    box-shadow:0 0 5px rgba(242,226,168,.7);transition:opacity .15s,background .15s;
   }
-  .curve-toggle:hover{color:var(--gold);}
-  .curve-toggle[aria-pressed="false"]{color:var(--muted-dim);}
-  .curve-toggle[aria-pressed="false"] .swatch{background:var(--muted-dim);box-shadow:none;opacity:.5;}
-  .curve-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
-  /* empirical toggle: dotted-data swatch + neutral colour, reads as
-     "measured data" rather than "theoretical" (gold) */
+  /* empirical toggle: dotted-data swatch + neutral colour */
   #empToggle{color:#9fb0bf;}
   #empToggle:hover{color:#e9eff5;}
   .curve-toggle .swatch.dots{
@@ -80,10 +104,13 @@
   #empToggle[aria-pressed="false"]{color:var(--muted-dim);}
   #empToggle[aria-pressed="false"] .swatch.dots{opacity:.4;background-image:radial-gradient(circle,var(--muted-dim) 1.3px,transparent 1.6px);}
   #empToggle:focus-visible{outline:2px solid #9fb0bf;outline-offset:3px;border-radius:2px;}
+  .curve-toggle:hover{color:var(--gold);}
+  .curve-toggle[aria-pressed="false"]{color:var(--muted-dim);}
+  .curve-toggle[aria-pressed="false"] .swatch{background:var(--muted-dim);box-shadow:none;opacity:.5;}
+  .curve-toggle:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:2px;}
 
   canvas{display:block;width:100%;height:auto;border-radius:3px;}
-  #box{background:#090c0a;}
-  #hist{height:100%;}
+  #box{background:#090b0f;}
 
   /* ---------- readout column ---------- */
   .readout{display:flex;flex-direction:column;}
@@ -91,90 +118,116 @@
 
   .stats{
     display:grid;grid-template-columns:repeat(4,1fr);
-    gap:1px;background:var(--border-soft);
-    border:1px solid var(--border-soft);border-radius:4px;overflow:hidden;
-    margin-top:10px;
+    gap:1px;background:var(--line-soft);
+    border:1px solid var(--line-soft);border-radius:4px;overflow:hidden;
+    margin-top:12px;
   }
-  .stat{background:var(--raised);padding:8px 10px;}
+  .stat{background:var(--raised);padding:9px 11px;}
   .stat .k{
-    font-size:11.5px;color:var(--muted-dim);
+    font-family:"IBM Plex Mono",monospace;font-size:9.5px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--muted-dim);
     display:block;margin-bottom:4px;
   }
   .stat .v{
-    font-variant-numeric:tabular-nums;
-    font-size:17px;font-weight:600;
+    font-family:"IBM Plex Mono",monospace;font-size:17px;font-weight:500;
     color:var(--text);line-height:1;
   }
   .stat .v small{font-size:10px;color:var(--muted);font-weight:400;margin-left:2px;}
-  .stat.accent .v{color:var(--accent);}
+  .stat.accent .v{color:var(--gold);}
   @media(max-width:520px){.stats{grid-template-columns:repeat(2,1fr);}}
 
   /* ---------- controls ---------- */
   .controls{
-    background:var(--surface);border:1px solid var(--border);border-radius:6px;
-    padding:14px 16px;
+    background:var(--panel);border:1px solid var(--line);border-radius:6px;
+    padding:16px 18px;
     display:grid;
     grid-template-columns:auto auto 1fr auto;
-    gap:18px 22px;align-items:center;
+    gap:22px 26px;align-items:center;
   }
   @media(max-width:860px){
-    .controls{grid-template-columns:1fr 1fr;gap:14px;}
+    .controls{grid-template-columns:1fr 1fr;gap:18px;}
     .ctl-run{grid-column:1 / -1;}
   }
   @media(max-width:460px){.controls{grid-template-columns:1fr;}}
 
   .ctl-label{
-    font-size:12px;font-weight:600;color:var(--muted-dim);
-    margin-bottom:8px;display:block;
+    font-family:"IBM Plex Mono",monospace;font-size:10px;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--muted-dim);
+    margin-bottom:9px;display:block;
   }
 
-  /* mode buttons */
-  .mode-btns{display:flex;gap:8px;flex-wrap:wrap;}
-  .mode-btns button{
-    font-family:var(--font);font-size:13px;font-weight:500;
-    background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:4px;
-    padding:7px 13px;cursor:pointer;
-    transition:background .15s,border-color .15s,color .15s;white-space:nowrap;
+  /* segmented toggle */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;}
+  .seg button{
+    font-family:"IBM Plex Mono",monospace;font-size:12px;
+    background:transparent;color:var(--muted);border:0;
+    padding:8px 14px;cursor:pointer;letter-spacing:.02em;
+    transition:background .15s,color .15s;white-space:nowrap;
   }
-  .mode-btns button[aria-pressed="true"]{background:var(--accent);color:#0f1210;border-color:var(--accent);font-weight:500;}
-  .mode-btns button:hover:not([aria-pressed="true"]){color:var(--text);border-color:var(--muted-dim);}
+  .seg button + button{border-left:1px solid var(--line);}
+  .seg button[aria-pressed="true"]{background:var(--raised);color:var(--text);}
+  .seg button:hover:not([aria-pressed="true"]){color:var(--text);}
 
   /* sliders */
   .slider-row{display:flex;flex-direction:column;}
-  .slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px;}
   .slider-head .ctl-label{margin:0;}
-  .slider-head .val{font-variant-numeric:tabular-nums;font-size:13px;font-weight:500;color:var(--text);}
+  .slider-head .val{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--text);}
   input[type=range]{
     -webkit-appearance:none;appearance:none;width:100%;height:3px;
-    background:var(--border);border-radius:2px;outline:none;cursor:pointer;
+    background:var(--line);border-radius:2px;outline:none;cursor:pointer;
   }
   input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;
-    background:var(--text);border:2px solid var(--surface);
-    box-shadow:0 0 0 1px var(--border);cursor:pointer;
+    -webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;
+    background:var(--text);border:2px solid var(--panel);
+    box-shadow:0 0 0 1px var(--line);cursor:pointer;
   }
   input[type=range]::-moz-range-thumb{
-    width:14px;height:14px;border-radius:50%;background:var(--text);
-    border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border);cursor:pointer;
+    width:15px;height:15px;border-radius:50%;background:var(--text);
+    border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line);cursor:pointer;
   }
-  input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--accent);}
+  input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 1px var(--gold);}
 
   .ctl-run{display:flex;gap:10px;align-items:flex-end;height:100%;}
   .btn{
-    font-family:var(--font);font-size:13.5px;font-weight:600;
-    cursor:pointer;border-radius:4px;
-    padding:9px 16px;transition:background .15s,border-color .15s,color .15s;
+    font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:500;
+    letter-spacing:.04em;cursor:pointer;border-radius:4px;
+    padding:10px 18px;transition:background .15s,border-color .15s,color .15s;
   }
-  .btn-run{background:var(--accent);color:#0f1210;border:1px solid var(--accent);min-width:100px;}
-  .btn-run:hover{background:#5ec9a8;}
-  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-run{background:var(--text);color:var(--void);border:1px solid var(--text);min-width:104px;}
+  .btn-run:hover{background:#fff;}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
   .btn-ghost:hover{color:var(--text);border-color:var(--muted-dim);}
-  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
 
+  /* ---------- note ---------- */
+  .note{
+    margin-top:18px;border:1px solid var(--line-soft);border-radius:6px;
+    padding:15px 18px;background:rgba(20,26,34,.5);
+    display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;
+  }
+  .note .marker{
+    font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--gold-dim);
+    border:1px solid var(--gold-dim);border-radius:2px;padding:4px 7px;white-space:nowrap;
+  }
+  .note p{margin:0;font-size:13px;line-height:1.6;color:var(--muted);}
+  .note p b{color:var(--text);font-weight:500;}
+  .note p .mono{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--gold-dim);}
+  @media(max-width:560px){.note{grid-template-columns:1fr;}}
+
+  .kbd{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);
+       border:1px solid var(--line);border-radius:3px;padding:1px 5px;}
 </style>
 </head>
 <body>
 <div class="wrap">
+
+  <header>
+    <span class="eyebrow">Kinetic Theory</span>
+    <h1>Maxwell–Boltzmann <span class="en">emergence</span></h1>
+    <p class="tagline">Hundreds of particles, elastic collisions, no thermostat. Whatever speeds you start with, randomness finds the same equilibrium.</p>
+  </header>
 
   <div class="stage">
     <!-- particle box -->
@@ -190,7 +243,7 @@
     <div class="card readout">
       <div class="card-label">
         <span>Speed distribution</span>
-        <div class="toggles">
+        <div class="hist-toggles">
           <button class="curve-toggle" id="empToggle" aria-pressed="false">
             <span class="swatch dots"></span>empirical average
           </button>
@@ -215,7 +268,7 @@
   <div class="controls">
     <div>
       <span class="ctl-label">Start condition</span>
-      <div class="mode-btns" role="group" aria-label="Starting condition">
+      <div class="seg" role="group" aria-label="Starting condition">
         <button id="modeSingle" aria-pressed="true">Single speed</button>
         <button id="modeUniform" aria-pressed="false">Uniform spread</button>
       </div>
@@ -227,14 +280,19 @@
     </div>
 
     <div class="slider-row">
-      <div class="slider-head"><span class="ctl-label" id="spdLabel">Initial speed</span><span class="val" id="spdVal">1.40</span></div>
-      <input type="range" id="spdSlider" min="0.4" max="2.4" step="0.05" value="1.40">
+      <div class="slider-head"><span class="ctl-label" id="tempLabel">Temperature</span><span class="val" id="tempVal">300 K</span></div>
+      <input type="range" id="tempSlider" min="200" max="1000" step="25" value="300">
     </div>
 
     <div class="ctl-run">
       <button class="btn btn-run" id="runBtn">Run</button>
       <button class="btn btn-ghost" id="resetBtn">Reset</button>
     </div>
+  </div>
+
+  <div class="note">
+    <span class="marker">Why 2D</span>
+    <p>A particle box is two-dimensional, so this settles to the <b>2D</b> Maxwell–Boltzmann distribution, <span class="mono">f(v) ∝ v·e<sup>−mv²/2kT</sup></span>, rather than the 3D textbook form <span class="mono">∝ v²·e<sup>−mv²/2kT</sup></span>. The gold curve is the correct 2D target. What carries over exactly to 3D is everything that matters here: it rises from zero, peaks at a <b>most probable speed</b>, trails into a long high-speed tail, and — the real lesson — it emerges purely from <b>random elastic collisions</b> conserving energy and momentum, with no special starting speeds required. <b>Temperature</b> rescales every particle's speed live (v_rms ∝ √T), so heating slides the whole curve right and flattens it while its area stays fixed at 1 — and the box shifts from blue toward red. That growing high-speed tail is the heart of every rate-of-reaction argument. Turn on <b>empirical average</b> once the gas has equilibrated: it time-averages the noisy live histogram into measured data points (white) that settle onto the analytical curve as frames accumulate — with a live goodness-of-fit % — showing the analytical law isn't imposed but <i>emerges</i> as the long-run average of the actual particle speeds. Keys: <span class="kbd">Space</span> run · <span class="kbd">R</span> reset · <span class="kbd">C</span> curve · <span class="kbd">E</span> empirical.</p>
   </div>
 
 </div>
@@ -283,9 +341,9 @@
     modeUniform: document.getElementById('modeUniform'),
     nSlider: document.getElementById('nSlider'),
     nVal: document.getElementById('nVal'),
-    spd: document.getElementById('spdSlider'),
-    spdVal: document.getElementById('spdVal'),
-    spdLabel: document.getElementById('spdLabel'),
+    temp: document.getElementById('tempSlider'),
+    tempVal: document.getElementById('tempVal'),
+    tempLabel: document.getElementById('tempLabel'),
     sMean: document.getElementById('sMean'),
     sRms: document.getElementById('sRms'),
     sVp: document.getElementById('sVp'),
@@ -300,13 +358,23 @@
   const R = 3.4;                // particle radius
   const NBINS = 32;
 
+  // ---------- temperature model (2D: <½mv²> = kT  ->  v_rms ∝ √T) ----------
+  const T_MIN = 200, T_MAX = 1000;     // kelvin range of the slider
+  const KSPEED = 0.075;                // px-per-substep per √K  (v_rms(300K) ≈ 1.30)
+  const SQRT3 = Math.sqrt(3);
+  const vrmsT = T => KSPEED * Math.sqrt(T);
+  // Axes are FIXED across temperature so the curve visibly shifts + flattens.
+  const X_MAX = 2.5 * vrmsT(T_MAX);    // speed axis spans up to the hottest tail
+  const Y_MAX = 1.18 * Math.sqrt(2/(vrmsT(T_MIN)**2)) * Math.exp(-0.5); // density axis from coldest (tallest) peak
+
   let particles = [];
   let mode = 'single';          // 'single' | 'uniform'
   let running = false;
   let collisions = 0;
-  let vScale = 1;               // fixed: xMax of histogram = vScale, set on reset
-  let showCurve = false;         // golden equilibrium curve visibility
-  let empiricalOn = false;      // time-averaged empirical curve overlay (off by default)
+  let temp = 300;               // current temperature (K)
+  let vScale = X_MAX;           // histogram speed-axis max (fixed)
+  let showCurve = false;        // golden equilibrium curve visibility (off by default)
+  let empiricalOn = false;      // time-averaged empirical curve overlay
   let empAcc = new Array(NBINS).fill(0);  // accumulated per-bin counts over frames
   let empFrames = 0;            // number of frames accumulated
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -314,11 +382,6 @@
   function resetEmp(){ empAcc.fill(0); empFrames = 0; }
 
   // ---------- canvas sizing (crisp) ----------
-  // Locked-aspect canvases (the particle box) keep a fixed logical shape and
-  // scale uniformly to whatever width they're given. The histogram instead
-  // fills whatever box its flex container actually gives it — including the
-  // full height, not just an aspect-locked slice of it — so histW/histH
-  // (read by drawHist) are updated to match on every resize.
   function sizeCanvas(canvas, ctx, cssW, cssH){
     canvas.style.aspectRatio = (cssW/cssH).toString();
     const w = canvas.clientWidth || cssW;
@@ -327,24 +390,15 @@
     canvas.height = Math.round(h*dpr);
     ctx.setTransform(dpr*w/cssW,0,0,dpr*h/cssH,0,0); // scale logical->css->device
   }
-  let histW = 550, histH = 320;
-  function sizeHistCanvas(canvas, ctx){
-    const wrap = canvas.parentElement;
-    histW = Math.max(200, wrap.clientWidth || 550);
-    histH = Math.max(120, wrap.clientHeight || 320);
-    canvas.width  = Math.round(histW*dpr);
-    canvas.height = Math.round(histH*dpr);
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-  }
   function resizeAll(){
     sizeCanvas(boxCanvas, bctx, W, H);
-    sizeHistCanvas(histCanvas, hctx);
+    sizeCanvas(histCanvas, hctx, 550, 320);
   }
 
   // ---------- initialise particles ----------
   function init(){
     const N = +el.nSlider.value;
-    const s = +el.spd.value;
+    const vr = vrmsT(temp);            // target rms speed for this temperature
     particles = [];
     // place without heavy overlap
     for(let i=0;i<N;i++){
@@ -360,17 +414,13 @@
         tries++;
       } while(!ok && tries<30);
       const ang = Math.random()*Math.PI*2;
-      const speed = (mode==='single') ? s : Math.random()*s;
+      // single: every particle at v_rms(T).  uniform: speeds in [0,√3·v_rms] so <v²>=v_rms²
+      const speed = (mode==='single') ? vr : Math.random()*SQRT3*vr;
       particles.push({x,y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed});
     }
     collisions = 0;
-    // fix histogram x-range from the conserved mean-square speed (stable target)
-    let ms = 0;
-    for(const p of particles) ms += p.vx*p.vx+p.vy*p.vy;
-    ms /= Math.max(particles.length,1);
-    const vrms = Math.sqrt(ms);
-    vScale = Math.max(2.6*vrms, 0.5);   // xMax
-    resetEmp();   // bin-to-speed mapping just changed with vScale, so any prior average is stale
+    resetEmp();                        // distribution changed → discard old samples
+    vScale = X_MAX;                    // axis stays fixed regardless of temperature
     el.phase.textContent = running ? 'running' : (mode==='single'?'single-speed start':'uniform start');
     draw();
   }
@@ -456,10 +506,10 @@
   // ---------- rendering: particle box ----------
   function drawBox(){
     bctx.clearRect(0,0,W,H);
-    bctx.fillStyle='#090c0a';
+    bctx.fillStyle='#090b0f';
     bctx.fillRect(0,0,W,H);
     // border
-    bctx.strokeStyle='#232a27'; bctx.lineWidth=1;
+    bctx.strokeStyle='#1b222c'; bctx.lineWidth=1;
     bctx.strokeRect(.5,.5,W-1,H-1);
     for(const p of particles){
       const v=Math.hypot(p.vx,p.vy);
@@ -473,7 +523,7 @@
 
   // ---------- rendering: histogram ----------
   function drawHist(st){
-    const w=histW, h=histH;
+    const w=550, h=320;
     const padL=8, padR=8, padT=14, padB=30;
     const plotW=w-padL-padR, plotH=h-padT-padB;
     hctx.clearRect(0,0,w,h);
@@ -494,14 +544,13 @@
 
     // theoretical 2D MB peak to fix the y-axis
     const ms=st.ms||1e-6;
-    const peak=Math.sqrt(2/ms)*Math.exp(-0.5);  // f(v_p)
-    const yMax=peak*1.55;
+    const yMax=Y_MAX;                  // fixed: cold curves are tall, hot curves flatten
 
     const X = v => padL + (v/vScale)*plotW;
     const Y = d => padT + plotH - (d/yMax)*plotH;
 
     // baseline + faint grid
-    hctx.strokeStyle='#232a27'; hctx.lineWidth=1;
+    hctx.strokeStyle='#1b222c'; hctx.lineWidth=1;
     hctx.beginPath(); hctx.moveTo(padL,padT+plotH+.5); hctx.lineTo(padL+plotW,padT+plotH+.5); hctx.stroke();
 
     // bars (same spectral ramp per bin)
@@ -536,7 +585,7 @@
       {v:st.mean,label:'v̄'},
       {v:st.rms, label:'v_rms'},
     ];
-    hctx.font='10px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    hctx.font='10px "IBM Plex Mono", monospace';
     hctx.textAlign='center';
     for(const m of marks){
       if(m.v>vScale) continue;
@@ -572,10 +621,11 @@
         tvd += Math.abs(emp[i]-ana)*binW;
       }
       const agree=Math.max(0,Math.min(100,(1-0.5*tvd)*100));
-      hctx.font='10px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+      hctx.font='10px "IBM Plex Mono", monospace';
       hctx.textAlign='right'; hctx.fillStyle='#9fb0bf';
       hctx.fillText(`empirical · ${empFrames} frames · fit ${agree.toFixed(1)}%`, padL+plotW, padT+11);
     }
+
     // x-axis caption
     hctx.fillStyle='#586471'; hctx.textAlign='right';
     hctx.fillText('speed →', padL+plotW, padT-2);
@@ -613,7 +663,6 @@
     const single = m==='single';
     el.modeSingle.setAttribute('aria-pressed', single);
     el.modeUniform.setAttribute('aria-pressed', !single);
-    el.spdLabel.textContent = single ? 'Initial speed' : 'Max speed';
     setRunning(false);
     init();
   }
@@ -635,7 +684,16 @@
   });
 
   el.nSlider.addEventListener('input', ()=>{ el.nVal.textContent=el.nSlider.value; setRunning(false); init(); });
-  el.spd.addEventListener('input', ()=>{ el.spdVal.textContent=(+el.spd.value).toFixed(2); setRunning(false); init(); });
+  el.temp.addEventListener('input', ()=>{
+    const newT = +el.temp.value;
+    el.tempVal.textContent = newT + ' K';
+    // heat/cool live: rescale every velocity by √(T_new/T_old) — energy added/removed by you
+    const f = Math.sqrt(newT/temp);
+    for(const p of particles){ p.vx*=f; p.vy*=f; }
+    temp = newT;
+    resetEmp();                       // speeds rescaled → old samples no longer valid
+    if(!running) draw();
+  });
 
   window.addEventListener('keydown', e=>{
     if(e.code==='Space'){ e.preventDefault(); setRunning(!running); }
@@ -645,18 +703,13 @@
   });
 
   let rt;
-  window.addEventListener('resize', ()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resizeAll(); draw(); reportHeight(); },120); });
-
-  function reportHeight() {
-    const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-    window.parent.postMessage({ type: 'simHeight', height: h }, '*');
-  }
+  window.addEventListener('resize', ()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resizeAll(); draw(); },120); });
 
   // ---------- boot ----------
+  temp = +el.temp.value;
+  el.tempVal.textContent = temp + ' K';
   resizeAll();
   init();
-  // Report height after canvases have been sized and painted
-  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
 })();
 </script>
 </body>
