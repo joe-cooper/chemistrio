@@ -267,13 +267,24 @@ window.addEventListener("hashchange", applyRoute);
 
 /* ---------- Iframe height via postMessage ---------- */
 window.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'simHeight') {
-    const iframe = document.querySelector('#viewerFrame iframe');
-    if (iframe) iframe.style.height = e.data.height + 'px';
-  }
+  if (!(e.data && e.data.type === 'simHeight')) return;
+  const iframe = document.querySelector('#viewerFrame iframe');
+  if (!iframe) return;
+  if (isViewerFullscreen()) applyFullscreenZoom(iframe, e.data.height);
+  else iframe.style.height = e.data.height + 'px';
 });
 
-/* ---------- Full screen ---------- */
+/* ---------- Full screen ----------
+   A simulation caps its own content at an intrinsic width (see the
+   `.wrap` rule in each simulation file) and just centres itself
+   within whatever container it's given, so stretching the iframe to
+   fill the screen still leaves it floating in blank space if the
+   screen is wider than that cap. Instead, while fullscreen we size
+   the iframe to the simulation's own natural width and scale the
+   whole thing up with a CSS transform, so it zooms in to fill the
+   screen instead of stretching into empty margins. Simulations
+   without a recognisable `.wrap` max-width just fall back to a
+   plain 100% stretch, same as before. */
 const EXPAND_PATH = "M1 5V1h4M9 1h4v4M13 9v4h-4M5 13H1V9";
 const COMPRESS_PATH = "M5 1v4H1M13 5H9V1M9 13v-4h4M1 9h4v4";
 
@@ -286,8 +297,70 @@ function toggleFullscreen() {
   }
 }
 
-document.addEventListener('fullscreenchange', updateFsButton);
-document.addEventListener('webkitfullscreenchange', updateFsButton);
+function isViewerFullscreen() {
+  const frame = document.getElementById('viewerFrame');
+  return document.fullscreenElement === frame || document.webkitFullscreenElement === frame;
+}
+
+function getNaturalContentWidth(iframe) {
+  try {
+    const doc = iframe.contentDocument;
+    const wrap = doc && doc.querySelector('.wrap');
+    const mw = wrap && parseFloat(getComputedStyle(wrap).maxWidth);
+    return mw && isFinite(mw) ? mw : null;
+  } catch (err) {
+    return null; // cross-origin iframe — can't inspect it, so don't zoom
+  }
+}
+
+// The iframe is `position: absolute; top: 50%; left: 50%` (see
+// site.css) so its own top-left sits at the container's centre;
+// translate(-50%,-50%) pulls it back by half its own size to
+// actually centre it, and the scale is appended to the same
+// transform so it grows from that already-centred point.
+const CENTER_TRANSFORM = 'translate(-50%, -50%)';
+
+function applyFullscreenZoom(iframe, height) {
+  const naturalW = getNaturalContentWidth(iframe);
+  if (!naturalW) {
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.transform = CENTER_TRANSFORM;
+    return;
+  }
+  iframe.style.width = naturalW + 'px';
+  iframe.style.height = height + 'px';
+  // Measure the actual fullscreen container rather than trusting
+  // window.innerWidth/innerHeight: some browsers briefly disagree
+  // between the two during the fullscreen transition, which would
+  // scale the iframe relative to a different box than the one it's
+  // actually centred in, throwing the zoom off-centre.
+  const box = document.getElementById('viewerFrame').getBoundingClientRect();
+  const scale = Math.min(box.width / naturalW, box.height / height);
+  iframe.style.transform = CENTER_TRANSFORM + ' scale(' + scale + ')';
+}
+
+document.addEventListener('fullscreenchange', onFullscreenChange);
+document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
+function onFullscreenChange() {
+  updateFsButton();
+  const iframe = document.querySelector('#viewerFrame iframe');
+  if (!iframe) return;
+  if (isViewerFullscreen()) {
+    // Force the simulation to remeasure at its natural width; the
+    // resize this triggers makes it report a fresh height, which is
+    // what applyFullscreenZoom() above then scales to fit the screen.
+    const naturalW = getNaturalContentWidth(iframe);
+    if (naturalW) {
+      iframe.style.width = naturalW + 'px';
+      iframe.style.transform = CENTER_TRANSFORM; // correctly scaled once the height report lands
+    }
+  } else {
+    iframe.style.width = '100%';
+    iframe.style.transform = 'none';
+  }
+}
 
 function updateFsButton() {
   const active = !!document.fullscreenElement;
