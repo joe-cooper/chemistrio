@@ -4,116 +4,115 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dynamic Equilibrium — rates, concentrations and Kc</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0d1422; --panel:#141f36; --panel-2:#1a2742; --line:#28385c;
-    --text:#e9eff8; --muted:#90a2c0; --faint:#5e6f8e; --accent:#6ea8fe;
+    --bg:#0f1210; --panel:#1a1f1d; --panel-2:#202624; --line:#2a302d; --border-soft:#232a27;
+    --text:#e8ebe9; --muted:#8a9490; --faint:#5e6a66; --accent:#3daa8a;
     --sp0:#4d9fff; --sp1:#2dd4bf; --sp2:#ff8a3d; --sp3:#f472b6;
     --fwd:#ffd23f; --rev:#8b80f9; --q:#7ee787;
     --temp:#ff7a59; --dh:#36c2cf;
-    --radius:12px;
-    --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-    --display:"Space Grotesk",ui-sans-serif,system-ui,sans-serif;
-    --ui:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --radius:6px;
+    --mono: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
-    background:radial-gradient(1000px 560px at 82% -12%, #15233f 0, transparent 60%), var(--bg);
-    color:var(--text); font-family:var(--ui); line-height:1.45;
-    -webkit-font-smoothing:antialiased; padding:13px; min-height:100vh; font-size:14px;
+    background:var(--bg);
+    color:var(--text); font-family:var(--font); line-height:1.45;
+    -webkit-font-smoothing:antialiased; padding:16px; font-size:14px;
   }
-  .wrap{max-width:1280px;margin:0 auto}
+  .wrap{max-width:1180px;margin:0 auto}
 
   header{
-    display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;justify-content:space-between;
-    padding-bottom:11px;margin-bottom:13px;border-bottom:1px solid var(--line);
+    display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;justify-content:flex-start;
+    padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid var(--line);
   }
-  .title h1{font-family:var(--display);font-weight:700;font-size:clamp(1.3rem,2.8vw,1.8rem);
-    letter-spacing:-.02em;margin:0;line-height:1.05}
-  .title p{margin:4px 0 0;color:var(--muted);font-size:.82rem;max-width:54ch}
-  .eqn-wrap{text-align:right}
-  .eqn-label{font-size:.64rem;letter-spacing:.16em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+  .eqn-wrap{text-align:left}
+  .eqn-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
   .eqn{font-family:var(--mono);font-size:clamp(.95rem,2.1vw,1.3rem);font-weight:500;white-space:nowrap}
   .eqn sub{font-size:.62em}
   .eqn .arrow{color:var(--muted);margin:0 .3em}
   .eqn .plus{color:var(--faint);margin:0 .28em}
+  .eqn.qc{color:var(--q)}
+  .eqn.qc sub,.eqn.qc sup{font-size:.65em}
 
-  .layout{display:flex;flex-direction:column;gap:13px}
+  .layout{display:flex;flex-direction:column;gap:12px}
 
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
-  /* controls: a responsive band of cards across the top */
-  .controls{display:grid;grid-template-columns:repeat(6,1fr);gap:11px;align-items:stretch}
+  /* controls: a responsive band of cards across the top — kept compact
+     so the graphs below get most of the vertical space. */
+  .controls{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;align-items:stretch}
   @media(max-width:1180px){.controls{grid-template-columns:repeat(3,1fr)}}
   @media(max-width:760px){.controls{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:480px){.controls{grid-template-columns:1fr}}
-  .block{padding:10px 13px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
-  .block h2{font-family:var(--display);font-weight:600;font-size:.66rem;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--muted);margin:0 0 9px;display:flex;align-items:center;gap:8px}
+  .block{padding:9px 10px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
+  .block h2{font-family:var(--mono);font-weight:500;font-size:9.5px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--faint);margin:0 0 7px;display:flex;align-items:center;gap:8px}
   .block h2 .tag{margin-left:auto;font-size:.58rem;letter-spacing:.1em;color:var(--accent);
-    border:1px solid #2c4677;background:#15233f;padding:1px 6px;border-radius:999px;text-transform:none}
+    border:1px solid var(--border-soft);background:var(--panel-2);padding:1px 6px;border-radius:999px;text-transform:none}
 
-  .chips{display:flex;flex-wrap:wrap;gap:5px}
-  .chip{font-family:var(--mono);font-size:.76rem;color:var(--muted);background:var(--panel-2);
-    border:1px solid var(--line);padding:5px 8px;border-radius:8px;cursor:pointer;transition:.12s}
+  .chips{display:flex;flex-wrap:wrap;gap:4px}
+  .chip{font-family:var(--mono);font-size:.72rem;color:var(--muted);background:var(--panel-2);
+    border:1px solid var(--line);padding:4px 7px;border-radius:6px;cursor:pointer;transition:.12s}
   .chip sub{font-size:.62em}
-  .chip:hover{color:var(--text);border-color:#3a5587}
-  .chip.active{color:#07101f;background:var(--accent);border-color:var(--accent);font-weight:600}
+  .chip:hover{color:var(--text);border-color:var(--faint)}
+  .chip.active{color:var(--bg);background:var(--accent);border-color:var(--accent);font-weight:600}
 
-  .ctrl{margin-bottom:9px}
+  .ctrl{margin-bottom:6px}
   .ctrl:last-child{margin-bottom:0}
-  .ctrl .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;gap:8px}
-  .ctrl label{font-size:.8rem;color:var(--text);display:flex;align-items:center;gap:6px}
-  .ctrl label .dot{width:8px;height:8px;border-radius:3px;flex:none}
+  .ctrl .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;gap:8px}
+  .ctrl label{font-size:.76rem;color:var(--text);display:flex;align-items:center;gap:6px}
+  .ctrl label .dot{width:7px;height:7px;border-radius:3px;flex:none}
   .ctrl label sub{font-size:.66em}
-  .ctrl .val{font-family:var(--mono);font-size:.76rem;color:var(--muted)}
-  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;
+  .ctrl .val{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;
     background:var(--line);border-radius:99px;outline:none;cursor:pointer}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:15px;height:15px;
-    border-radius:50%;background:var(--thumb,var(--accent));border:3px solid #0d1422;
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;
+    border-radius:50%;background:var(--thumb,var(--accent));border:2px solid var(--bg);
     box-shadow:0 0 0 1px var(--thumb,var(--accent));cursor:pointer}
   input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--thumb,var(--accent));
-    border:3px solid #0d1422;box-shadow:0 0 0 1px var(--thumb,var(--accent));cursor:pointer}
+    border:2px solid var(--bg);box-shadow:0 0 0 1px var(--thumb,var(--accent));cursor:pointer}
   input[type=range]:disabled{opacity:.4;cursor:not-allowed}
-  .hint{font-size:.7rem;color:var(--faint);margin-top:7px;line-height:1.35}
+  .hint{font-size:.68rem;color:var(--faint);margin-top:5px;line-height:1.35}
 
-  .kbox{display:flex;align-items:baseline;gap:9px;margin-top:2px}
-  .kbox .keq{font-family:var(--mono);color:var(--muted);font-size:.82rem}
-  .kbox .kval{font-family:var(--mono);font-weight:600;font-size:1.35rem;color:var(--accent);margin-left:auto}
+  .kbox{display:flex;align-items:baseline;gap:9px;margin-top:1px}
+  .kbox .keq{font-family:var(--mono);color:var(--muted);font-size:.8rem}
+  .kbox .kval{font-family:var(--mono);font-weight:600;font-size:1.15rem;color:var(--accent);margin-left:auto}
 
-  .transport{display:flex;gap:7px}
-  .btn{flex:1;font-family:var(--ui);font-size:.82rem;font-weight:600;padding:8px;border-radius:9px;
-    cursor:pointer;transition:.12s;background:var(--panel-2);color:var(--text);border:1px solid var(--line)}
-  .btn:hover{border-color:#3a5587}
-  .btn.primary{background:var(--accent);color:#07101f;border-color:var(--accent)}
-  .btn.primary:hover{filter:brightness(1.07)}
+  .transport{display:flex;gap:6px}
+  .btn{flex:1;font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.04em;padding:7px 8px;border-radius:4px;
+    cursor:pointer;transition:background .15s,border-color .15s,color .15s;background:var(--panel-2);color:var(--text);border:1px solid var(--line)}
+  .btn:hover{border-color:var(--faint)}
+  .btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .btn.primary:hover{background:#5ec9a8}
+  .btn.icon{flex:none;width:32px;padding:7px 0;font-size:14px;line-height:1}
   .btn:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-  .speed{display:flex;align-items:center;gap:9px;margin-top:9px}
-  .speed span{font-size:.75rem;color:var(--muted);white-space:nowrap}
+  .speed{display:flex;align-items:center;gap:9px;margin-top:7px}
+  .speed span{font-size:.72rem;color:var(--muted);white-space:nowrap}
 
-  .disturb{display:flex;gap:7px;align-items:stretch}
-  select{flex:1;font-family:var(--mono);font-size:.8rem;color:var(--text);background:var(--panel-2);
-    border:1px solid var(--line);border-radius:8px;padding:7px 9px;cursor:pointer}
+  .disturb{display:flex;gap:6px;align-items:stretch}
+  select{flex:1;font-family:var(--mono);font-size:.78rem;color:var(--text);background:var(--panel-2);
+    border:1px solid var(--line);border-radius:6px;padding:6px 8px;cursor:pointer}
   select:disabled{opacity:.45}
 
-  .readout{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-  .stat{padding:2px 0}
-  .stat .k{font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:5px}
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .stat{padding:1px 0}
+  .stat .k{font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);display:flex;align-items:center;gap:5px}
   .stat .k .dot{width:7px;height:7px;border-radius:2px;flex:none}
-  .stat .v{font-family:var(--mono);font-size:.95rem;font-weight:500;margin-top:2px}
-  .status{grid-column:1/-1;text-align:center;font-size:.76rem;font-family:var(--mono);padding:7px;
-    border-radius:9px;border:1px dashed var(--line);color:var(--muted);transition:.2s}
+  .stat .v{font-family:var(--mono);font-size:.9rem;font-weight:500;margin-top:1px}
+  .status{grid-column:1/-1;text-align:center;font-size:.72rem;font-family:var(--mono);padding:6px;
+    border-radius:6px;border:1px dashed var(--line);color:var(--muted);transition:.2s}
   .status.eq{color:#9be6b4;border-color:#2f6b48;border-style:solid;background:#10261b}
 
   .graphs{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
   @media(max-width:1000px){.graphs{grid-template-columns:1fr}}
   .gcard{padding:9px 12px 6px}
   .ghead{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:3px}
-  .gtitle{font-family:var(--display);font-weight:600;font-size:.86rem;line-height:1.15}
-  .gtitle .sub{display:block;font-family:var(--ui);font-weight:400;font-size:.7rem;color:var(--muted);margin-top:1px}
+  .gtitle{font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.14em;
+    text-transform:uppercase;color:var(--faint);line-height:1.3}
+  .gtitle .sub{display:block;font-family:var(--font);font-weight:400;font-size:.7rem;
+    letter-spacing:normal;text-transform:none;color:var(--muted);margin-top:3px}
   .gtitle .sub .expr{font-family:var(--mono);color:var(--q)}
   .gtitle .sub .expr sub{font-size:.7em} .gtitle .sub .expr sup{font-size:.7em}
   .legend{display:flex;flex-wrap:wrap;gap:9px;padding-top:1px}
@@ -122,9 +121,9 @@
   .legend .swatch.dash{background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px)!important;height:0;border-top:2px dashed}
   .legend .item sub{font-size:.7em}
   .canvas-host{position:relative;width:100%}
-  canvas{display:block;width:100%;height:auto;touch-action:none}
+  canvas{display:block;width:100%;height:auto;touch-action:none;border-radius:3px}
   .cursor-readout{position:absolute;top:6px;pointer-events:none;transform:translateX(-50%);
-    font-family:var(--mono);font-size:.68rem;background:#0b1322f2;border:1px solid var(--line);
+    font-family:var(--mono);font-size:.68rem;background:rgba(15,18,16,.95);border:1px solid var(--line);
     border-radius:7px;padding:5px 8px;white-space:nowrap;opacity:0;transition:opacity .1s;z-index:3}
   .cursor-readout.on{opacity:1}
   .cursor-readout .ln{display:flex;justify-content:space-between;gap:12px}
@@ -139,13 +138,13 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="title">
-      <h1>Dynamic Equilibrium</h1>
-      <p>How the forward and reverse rates, the concentrations, and the equilibrium constant all lock together as a reversible reaction settles.</p>
-    </div>
     <div class="eqn-wrap">
       <div class="eqn-label">Reaction</div>
       <div class="eqn" id="equation"></div>
+    </div>
+    <div class="eqn-wrap">
+      <div class="eqn-label">Q<sub>c</sub> expression</div>
+      <div class="eqn qc" id="headerQcExpr"></div>
     </div>
   </header>
 
@@ -153,7 +152,7 @@
     <!-- ============ CONTROLS (top band) ============ -->
     <div class="controls">
       <div class="block">
-        <h2>Reaction</h2>
+        <h2>Preset</h2>
         <div class="chips" id="presets"></div>
       </div>
 
@@ -182,11 +181,26 @@
           <button class="btn" id="resetBtn">Reset</button>
         </div>
         <div class="speed"><span>Speed</span><input type="range" id="speed" min="0.25" max="4" step="0.25" value="1"><span class="val" id="speedVal" style="font-family:var(--mono)">1.0×</span></div>
+        <div class="hint">Space to play/pause · R to reset</div>
       </div>
 
       <div class="block">
         <h2>Disturb</h2>
-        <div class="disturb"><select id="disturbSpecies"></select><button class="btn" id="disturbBtn">+ Add</button></div>
+        <div class="ctrl">
+          <div class="row"><label>Amount</label></div>
+          <div class="disturb">
+            <select id="disturbSpecies"></select>
+            <button class="btn icon" id="disturbSubBtn" title="Remove 0.5 mol dm⁻³">&minus;</button>
+            <button class="btn icon" id="disturbAddBtn" title="Add 0.5 mol dm⁻³">+</button>
+          </div>
+        </div>
+        <div class="ctrl">
+          <div class="row"><label>Pressure</label><span class="val" id="pressureVal">1.00×</span></div>
+          <div class="disturb">
+            <button class="btn" id="expandBtn" title="Increase volume, lowering pressure">Expand</button>
+            <button class="btn" id="compressBtn" title="Decrease volume, raising pressure">Compress</button>
+          </div>
+        </div>
       </div>
 
       <div class="block">
@@ -218,7 +232,7 @@
 
       <div class="panel gcard">
         <div class="ghead">
-          <div class="gtitle">The K<sub>c</sub> expression vs time<span class="sub">Q<sub>c</sub> = <span class="expr" id="kcExpr"></span> &nbsp;→&nbsp; rises or falls onto the K<sub>c</sub> line</span></div>
+          <div class="gtitle">The K<sub>c</sub> expression vs time<span class="sub">Rises or falls onto the K<sub>c</sub> line as the system reaches equilibrium</span></div>
           <div class="legend">
             <div class="item" style="color:var(--q)"><span class="swatch" style="background:var(--q)"></span><span>Q<sub>c</sub> (current)</span></div>
             <div class="item" style="color:var(--accent)"><span class="swatch dash"></span><span>K<sub>c</sub> = k<sub>f</sub>/k<sub>r</sub></span></div>
@@ -281,11 +295,12 @@ function quotient(state,rx){let num=1,den=1;for(const s of rx.species){const c=M
   if(s.role==="product")num*=Math.pow(c,s.coeff);else den*=Math.pow(c,s.coeff);}return num/den;}
 
 /* ---- state ---- */
-const HSTEP=0.0025,SIM_PER_FRAME=0.05,MAX_SAMPLES=6000;
-const GH=215,KH=215;
+const HSTEP=0.0025,SIM_PER_FRAME=0.0125,MAX_SAMPLES=6000; // rescaled so the old 0.25x pace is now the 1x default
+const GH=280,KH=280;
 const R_GAS=8.314, T_REF=350, EA_APP=25000;   // J/mol; T_REF anchors van't Hoff & Arrhenius
 let rx,kf,kr,speed=1,state={},init={},hist,running=false,simTime=0,eqEvents=[],atEq=false,raf=null;
 let temp=350,dH=-45,KcRef=2.8,mRef=0.836;      // temperature(K), enthalpy(kJ/mol), reference Kc & pace
+let pressureFactor=1;                          // relative pressure since last reset (1.00 = unperturbed)
 const $=id=>document.getElementById(id);
 const cConc=$("cConc"),cRate=$("cRate"),cKc=$("cKc");
 const ctxC=cConc.getContext("2d"),ctxR=cRate.getContext("2d"),ctxK=cKc.getContext("2d");
@@ -320,8 +335,15 @@ function loadReaction(def){
   $("temp").value=temp; $("dh").value=dH;
   recalcRateConstants(); updateVHHint();
   buildEquation();buildInitControls();buildLegendConc();buildDisturbOptions();buildReadout();
-  $("kcExpr").innerHTML=qExprHTML(rx);
+  $("headerQcExpr").innerHTML="Q<sub>c</sub> = "+qExprHTML(rx);
   resetSim();updateKLabels();
+  // The number of species (hence the "Starting amounts" block height) varies
+  // by reaction, so the page height can change without a window resize.
+  requestAnimationFrame(()=>requestAnimationFrame(reportHeight));
+}
+function reportHeight(){
+  const h=Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+  window.parent.postMessage({type:'simHeight',height:h},'*');
 }
 function buildEquation(){
   const part=s=>`<span style="color:${speciesColor(rx,s.sym)}">${s.coeff>1?s.coeff:""}${fmtFormula(s.sym)}</span>`;
@@ -368,8 +390,11 @@ function resetSim(){
   hist={t:[0],conc:{},rf:[r0.rf],rr:[r0.rr],q:[quotient(state,rx)]};
   rx.species.forEach(s=>hist.conc[s.sym]=[s.init]);
   simTime=0;eqEvents=[];atEq=false;setStatus("Idle — press Play",false);
+  pressureFactor=1;updatePressureLabel();
+  xMaxAnim=XMAX_FLOOR; // snap straight back on reset — easing is only for the natural growth mid-run
   draw();updateReadout(currentSnapshot());setInitDisabled(false);
 }
+function updatePressureLabel(){$("pressureVal").textContent=pressureFactor.toFixed(2)+"×";}
 function record(){
   hist.t.push(simTime);
   rx.species.forEach(s=>hist.conc[s.sym].push(state[s.sym]));
@@ -421,7 +446,14 @@ function fillSubscript(ctx,base,sub,tail,xRight,y){
   ctx.font=subF;ctx.fillText(sub,x,y+px*0.18); x+=wS;
   ctx.font=f;   ctx.fillText(tail,x,y);
 }
-function curXMax(){return niceMax(Math.max(hist.t[hist.t.length-1]*1.05,1));}
+const XMAX_FLOOR=5; // initial/minimum time window, so the axis doesn't clip almost immediately after pressing Play
+let xMaxAnim=XMAX_FLOOR; // eased toward the target each frame, so growing the window doesn't visibly jump
+function curXMax(){
+  const target=niceMax(Math.max(hist.t[hist.t.length-1]*1.05,XMAX_FLOOR));
+  xMaxAnim+=(target-xMaxAnim)*0.15;
+  if(Math.abs(target-xMaxAnim)<target*0.001)xMaxAnim=target;
+  return xMaxAnim;
+}
 
 function drawAxes(ctx,dims,xMax,yMax,yLabel){
   const{w,h}=dims;const x0=PAD.l,y0=h-PAD.b,x1=w-PAD.r,y1=PAD.t;
@@ -435,11 +467,14 @@ function drawAxes(ctx,dims,xMax,yMax,yLabel){
   ctx.save();ctx.translate(12,(y0+y1)/2);ctx.rotate(-Math.PI/2);ctx.fillText(yLabel,0,0);ctx.restore();
   return{x0,y0,x1,y1};
 }
-function plot(ctx,box,xs,ys,xMax,yMax,color,w,clampTop){
+function plot(ctx,box,xs,ys,xMax,yMax,color,w,clampTop,alpha){
   const{x0,y0,x1,y1}=box;const X=t=>x0+(x1-x0)*(xMax>0?t/xMax:0);
   const Y=v=>{let vv=clampTop?Math.min(v,yMax):v;return y0-(y0-y1)*(yMax>0?vv/yMax:0);};
+  ctx.save();
+  if(alpha!=null)ctx.globalAlpha=alpha;
   ctx.beginPath();for(let i=0;i<xs.length;i++){const px=X(xs[i]),py=Y(ys[i]);i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
   ctx.strokeStyle=color;ctx.lineWidth=w;ctx.lineJoin="round";ctx.lineCap="round";ctx.stroke();
+  ctx.restore();
 }
 function eqMarker(ctx,box,xMax){
   if(!eqEvents.length)return;const{x0,y0,x1,y1}=box;
@@ -472,8 +507,12 @@ function draw(){
   const dR=sizeCanvas(cRate,ctxR,GH);let rMax=0;
   for(const v of hist.rf)if(v>rMax)rMax=v;for(const v of hist.rr)if(v>rMax)rMax=v;rMax=niceMax((rMax*1.12)||1);
   const bR=drawAxes(ctxR,dR,xMax,rMax,"rate / mol dm⁻³ s⁻¹");eqMarker(ctxR,bR,xMax);
-  plot(ctxR,bR,hist.t,hist.rf,xMax,rMax,getCSS("--fwd"),2.4,false);
-  plot(ctxR,bR,hist.t,hist.rr,xMax,rMax,getCSS("--rev"),2.4,false);
+  // Slightly transparent so overlapping/close-together stretches of the
+  // two curves still show as a blend of both colours, not just whichever
+  // was drawn on top — makes it easier to see they're shifting by
+  // different amounts (e.g. after a temperature change) even when close.
+  plot(ctxR,bR,hist.t,hist.rf,xMax,rMax,getCSS("--fwd"),2.4,false,0.82);
+  plot(ctxR,bR,hist.t,hist.rr,xMax,rMax,getCSS("--rev"),2.4,false,0.82);
 
   // Kc expression
   const dK=sizeCanvas(cKc,ctxK,KH);const kLine=kf/kr;let qMax=kLine;
@@ -556,10 +595,34 @@ function applyKChange(){
 $("temp").addEventListener("input",e=>{temp=parseInt(e.target.value,10);recalcRateConstants();applyKChange();});
 $("dh").addEventListener("input",e=>{dH=parseInt(e.target.value,10);recalcRateConstants();updateVHHint();applyKChange();});
 $("speed").addEventListener("input",e=>{speed=parseFloat(e.target.value);$("speedVal").textContent=speed.toFixed(1)+"×";});
-$("disturbBtn").addEventListener("click",()=>{const sym=$("disturbSpecies").value;
+$("disturbAddBtn").addEventListener("click",()=>{const sym=$("disturbSpecies").value;
   state[sym]=Math.min(state[sym]+0.5,4);record();draw();updateReadout(currentSnapshot());});
-window.addEventListener("keydown",e=>{if(e.code==="Space"&&e.target.tagName!=="INPUT"&&e.target.tagName!=="SELECT"){e.preventDefault();togglePlay();}});
-let rT;window.addEventListener("resize",()=>{clearTimeout(rT);rT=setTimeout(()=>{dpr=Math.max(1,window.devicePixelRatio||1);draw();},120);});
+$("disturbSubBtn").addEventListener("click",()=>{const sym=$("disturbSpecies").value;
+  state[sym]=Math.max(state[sym]-0.5,0);record();draw();updateReadout(currentSnapshot());});
+
+/* Pressure: compressing/expanding the container scales every species'
+   concentration by the same factor (moles unchanged, volume changes).
+   Kc itself only depends on temperature, so this just perturbs Q away
+   from Kc — the same kf/kr then pull the system back, shifting toward
+   whichever side has fewer gas moles, exactly as Le Chatelier predicts.
+   Reactions with equal moles each side (e.g. A ⇌ B) correctly show no
+   shift at all, since Q is scale-invariant for them. */
+function applyPressureChange(factor){
+  const before=pressureFactor;
+  pressureFactor=clamp(pressureFactor*factor,0.2,5);
+  const applied=pressureFactor/before;
+  if(Math.abs(applied-1)<1e-9)return; // already at the clamp limit
+  rx.species.forEach(s=>{state[s.sym]=state[s.sym]*applied;});
+  updatePressureLabel();record();draw();updateReadout(currentSnapshot());
+}
+$("compressBtn").addEventListener("click",()=>applyPressureChange(1.5));
+$("expandBtn").addEventListener("click",()=>applyPressureChange(1/1.5));
+window.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+  if(e.code==="Space"){e.preventDefault();togglePlay();}
+  else if(e.key==="r"||e.key==="R"){pause();resetSim();}
+});
+let rT;window.addEventListener("resize",()=>{clearTimeout(rT);rT=setTimeout(()=>{dpr=Math.max(1,window.devicePixelRatio||1);draw();reportHeight();},120);});
 
 buildPresets();loadReaction(REACTIONS[0]);frame();
 </script>

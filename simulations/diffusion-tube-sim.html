@@ -1,61 +1,102 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diffusion Tube — NH&#8323; + HCl</title>
 <style>
-  .sim-wrap { padding: 1rem 0; font-family: var(--font-sans); }
-  canvas { display: block; width: 100%; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); background: var(--color-background-secondary); }
-  .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
-  .ctrl-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text-secondary); }
-  .ctrl-row label { min-width: 90px; }
-  .ctrl-row input[type=range] { flex: 1; }
-  .ctrl-row span { min-width: 40px; text-align: right; font-weight: 500; color: var(--color-text-primary); }
-  .btn-row { display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap; }
-  .btn { background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 6px 14px; font-size: 13px; cursor: pointer; color: var(--color-text-primary); }
-  .btn:hover { background: var(--color-background-secondary); }
-  .btn.primary { background: var(--color-background-info); border-color: var(--color-border-info); color: var(--color-text-info); }
-  .btn.toggle.on { background: var(--color-background-success); border-color: var(--color-border-success); color: var(--color-text-success); }
-  .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px; }
-  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 10px 12px; }
-  .stat-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 3px; }
-  .stat-val { font-size: 15px; font-weight: 500; color: var(--color-text-primary); }
-  .legend { display: flex; gap: 16px; margin-top: 10px; font-size: 13px; color: var(--color-text-secondary); align-items: center; flex-wrap: wrap; }
-  .ldot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: middle; }
-  .status-txt { font-size: 13px; color: var(--color-text-secondary); flex: 1; text-align: right; }
+  :root{
+    --bg:#0f1210; --panel:#1a1f1d; --panel-2:#202624; --line:#2a302d; --border-soft:#232a27;
+    --text:#e8ebe9; --muted:#8a9490; --faint:#5e6a66; --accent:#3daa8a;
+    --radius:6px;
+    --mono: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--font);
+    -webkit-font-smoothing:antialiased; padding:16px; line-height:1.45;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px;margin-bottom:12px}
+  canvas{display:block;width:100%;height:auto;border-radius:3px;background:var(--panel-2)}
+
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:12.5px;color:var(--muted);align-items:center;flex-wrap:wrap}
+  .ldot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+
+  .controls{
+    background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    padding:12px 14px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px 20px;margin-bottom:12px;
+  }
+  @media(max-width:720px){.controls{grid-template-columns:1fr 1fr}}
+  @media(max-width:420px){.controls{grid-template-columns:1fr}}
+  .ctrl-row{display:flex;flex-direction:column;justify-content:center;gap:7px}
+  .ctrl-row .head{display:flex;justify-content:space-between;align-items:baseline}
+  .ctrl-row label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .ctrl-row .val{font-family:var(--mono);font-size:12px;color:var(--text)}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--line);border-radius:99px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--accent);cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--accent);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--accent);cursor:pointer}
+
+  .btn{
+    font-family:var(--mono);font-size:12.5px;font-weight:500;letter-spacing:.03em;
+    padding:8px 14px;border-radius:4px;cursor:pointer;
+    background:var(--panel-2);color:var(--text);border:1px solid var(--line);
+    transition:background .15s,border-color .15s,color .15s;
+  }
+  .btn:hover{border-color:var(--faint)}
+  .btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .btn.primary:hover{background:#5ec9a8}
+  .btn.toggle.on{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .btn-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+  .status-txt{font-family:var(--mono);font-size:12px;color:var(--muted);flex:1;text-align:right}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border-soft);border:1px solid var(--border-soft);border-radius:4px;overflow:hidden}
+  @media(max-width:520px){.stats{grid-template-columns:1fr}}
+  .stat{background:var(--panel-2);padding:9px 12px}
+  .stat-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-bottom:4px}
+  .stat-val{font-family:var(--mono);font-size:14.5px;font-weight:500;color:var(--text)}
 </style>
+</head>
+<body>
+<div class="wrap">
 
-<div class="sim-wrap">
-  <canvas id="c"></canvas>
-
-  <div class="legend">
-    <span><span class="ldot" style="background:#378ADD"></span>NH₃</span>
-    <span><span class="ldot" style="background:#E24B4A"></span>HCl</span>
-    <span><span class="ldot" style="background:white;border:1.5px solid #888;"></span>NH₄Cl</span>
-    <span><span class="ldot" style="background:rgba(136,135,128,0.5)"></span>Air (N₂/O₂)</span>
-    <span><span style="display:inline-block;width:11px;height:2px;background:#0F6E56;vertical-align:middle;margin-right:4px"></span>Mean position</span>
-    <span><span style="display:inline-block;width:11px;height:2px;background:#8B5CF6;border-top:2px dashed #8B5CF6;vertical-align:middle;margin-right:4px"></span>Expected position</span>
+  <div class="card">
+    <canvas id="c"></canvas>
+    <div class="legend">
+      <span><span class="ldot" style="background:#378ADD"></span>NH&#8323;</span>
+      <span><span class="ldot" style="background:#E24B4A"></span>HCl</span>
+      <span><span class="ldot" style="background:white;border:1.5px solid #888;"></span>NH&#8324;Cl</span>
+      <span><span class="ldot" style="background:rgba(136,135,128,0.5)"></span>Air (N&#8322;/O&#8322;)</span>
+      <span><span style="display:inline-block;width:11px;height:2px;background:#0F6E56;vertical-align:middle;margin-right:4px"></span>Mean position</span>
+      <span><span style="display:inline-block;width:11px;height:2px;background:#8B5CF6;border-top:2px dashed #8B5CF6;vertical-align:middle;margin-right:4px"></span>Expected position</span>
+    </div>
   </div>
 
   <div class="controls">
     <div class="ctrl-row">
-      <label>NH₃ / HCl</label>
+      <div class="head"><label>NH&#8323; / HCl</label><span class="val" id="nVal">120</span></div>
       <input type="range" id="nSlider" min="20" max="250" step="10" value="120" oninput="onNChange(this.value)">
-      <span id="nVal">120</span>
     </div>
     <div class="ctrl-row">
-      <label>Temperature</label>
+      <div class="head"><label>Temperature</label><span class="val" id="tVal">300 K</span></div>
       <input type="range" id="tSlider" min="200" max="600" step="10" value="300" oninput="onTChange(this.value)">
-      <span id="tVal">300 K</span>
     </div>
     <div class="ctrl-row">
-      <label>Air density</label>
+      <div class="head"><label>Air density</label><span class="val" id="aVal">80</span></div>
       <input type="range" id="aSlider" min="0" max="2000" step="50" value="80" oninput="onAChange(this.value)">
-      <span id="aVal">80</span>
     </div>
     <div class="ctrl-row">
-      <label>Show air</label>
-      <button class="btn toggle" id="airToggle" onclick="toggleAir()" style="flex:1">Hidden</button>
+      <div class="head"><label>Show air</label></div>
+      <button class="btn toggle" id="airToggle" onclick="toggleAir()">Hidden</button>
     </div>
     <div class="ctrl-row">
-      <label>Expected pos.</label>
-      <button class="btn toggle" id="expectedToggle" onclick="toggleExpected()" style="flex:1">Hidden</button>
+      <div class="head"><label>Expected pos.</label></div>
+      <button class="btn toggle" id="expectedToggle" onclick="toggleExpected()">Hidden</button>
     </div>
   </div>
 
@@ -66,28 +107,41 @@
   </div>
 
   <div class="stats">
-    <div class="stat"><div class="stat-label">NH₃ remaining</div><div class="stat-val" id="sNH3" style="color:#185FA5">—</div></div>
-    <div class="stat"><div class="stat-label">HCl remaining</div><div class="stat-val" id="sHCl" style="color:#A32D2D">—</div></div>
-    <div class="stat"><div class="stat-label">NH₄Cl mean position</div><div class="stat-val" id="sRingPos" style="color:#0F6E56">—</div></div>
+    <div class="stat"><div class="stat-label">NH&#8323; remaining</div><div class="stat-val" id="sNH3" style="color:#5ba3e6">—</div></div>
+    <div class="stat"><div class="stat-label">HCl remaining</div><div class="stat-val" id="sHCl" style="color:#e0716f">—</div></div>
+    <div class="stat"><div class="stat-label">NH&#8324;Cl mean position</div><div class="stat-val" id="sRingPos" style="color:#3daa8a">—</div></div>
   </div>
+
 </div>
 
 <script>
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
-const W = 660;
 const TUBE_TOP = 92, TUBE_BOT = 122;
 const TUBE_H = TUBE_BOT - TUBE_TOP;
 const H = TUBE_BOT + 30;
-canvas.width = W; canvas.height = H;
-canvas.style.height = H + 'px';
-
-const WALL_L = 20, WALL_R = W - 20;
 const PLUG_W = 18;
+let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+// The tube is drawn at whatever width the card actually renders at (not a
+// fixed logical width), so the canvas's pixel buffer always matches its
+// on-screen size 1:1 (times dpr) — otherwise the browser has to stretch a
+// fixed-resolution bitmap to fill the container, which blurs it and
+// distorts circles/text horizontally.
+let W = 660, WALL_L = 20, WALL_R = W - 20;
+function sizeCanvas() {
+  W = Math.max(300, Math.round(canvas.clientWidth || 660));
+  WALL_L = 20; WALL_R = W - 20;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+sizeCanvas();
 const R = 1.8, AIR_R = 1.1;
 const NH3_M = 17, HCL_M = 36.5, AIR_M = 29;
 const T_REF = 300;
+const FONT = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 // Theoretical ring position: NH3 fraction = v_NH3 / (v_NH3 + v_HCl)
 // = sqrt(HCL_M) / (sqrt(NH3_M) + sqrt(HCL_M))
@@ -165,19 +219,19 @@ function drawTube() {
   const r = Math.round(200 + warm*55), g = Math.round(220 - warm*80), b = Math.round(255 - warm*120);
   ctx.fillStyle = `rgba(${r},${g},${b},0.07)`;
   ctx.fillRect(WALL_L, TUBE_TOP, WALL_R - WALL_L, TUBE_H);
-  ctx.strokeStyle = 'rgba(128,128,128,0.3)';
+  ctx.strokeStyle = 'rgba(138,148,144,0.35)';
   ctx.lineWidth = 1.2;
   ctx.strokeRect(WALL_L, TUBE_TOP, WALL_R - WALL_L, TUBE_H);
   ctx.fillStyle = 'rgba(55,138,221,0.15)';
   ctx.fillRect(WALL_L, TUBE_TOP, PLUG_W, TUBE_H);
   ctx.fillStyle = 'rgba(226,75,74,0.15)';
   ctx.fillRect(WALL_R - PLUG_W, TUBE_TOP, PLUG_W, TUBE_H);
-  ctx.font = '500 10px var(--font-sans)';
+  ctx.font = `500 10px ${FONT}`;
   ctx.textAlign = 'center';
-  ctx.fillStyle = '#185FA5'; ctx.fillText('NH₃', WALL_L + PLUG_W/2, TUBE_TOP - 8);
-  ctx.fillStyle = '#A32D2D'; ctx.fillText('HCl', WALL_R - PLUG_W/2, TUBE_TOP - 8);
-  ctx.font = '10px var(--font-sans)';
-  ctx.fillStyle = 'rgba(128,128,128,0.5)';
+  ctx.fillStyle = '#5ba3e6'; ctx.fillText('NH₃', WALL_L + PLUG_W/2, TUBE_TOP - 8);
+  ctx.fillStyle = '#e0716f'; ctx.fillText('HCl', WALL_R - PLUG_W/2, TUBE_TOP - 8);
+  ctx.font = `10px ${FONT}`;
+  ctx.fillStyle = 'rgba(138,148,144,0.7)';
   ctx.textAlign = 'left';   ctx.fillText('0', WALL_L + PLUG_W + 4, TUBE_BOT + 16);
   ctx.textAlign = 'center'; ctx.fillText('50 cm', (WALL_L+WALL_R)/2, TUBE_BOT + 16);
   ctx.textAlign = 'right';  ctx.fillText('100 cm', WALL_R - PLUG_W - 4, TUBE_BOT + 16);
@@ -193,7 +247,7 @@ function drawExpectedMarker() {
   ctx.beginPath(); ctx.moveTo(tx, TUBE_TOP - 4); ctx.lineTo(tx, TUBE_BOT + 4); ctx.stroke();
   ctx.setLineDash([]);
   // label
-  ctx.font = '9px var(--font-sans)';
+  ctx.font = `9px ${FONT}`;
   ctx.fillStyle = '#8B5CF6';
   ctx.textAlign = 'center';
   ctx.fillText('expected', tx, TUBE_TOP - 14);
@@ -410,7 +464,40 @@ function toggleExpected() {
   if (!running) { drawTube(); drawParticles(); }
 }
 
+// Particle x-positions and speeds are stored in tube pixel-space, so when
+// the tube's pixel width changes (container resize) both need remapping
+// onto the new width to keep each particle's relative position and speed
+// the same, rather than bunching up or clipping through the new walls.
+function rescaleToWidth(oldInnerL, oldInnerR, newInnerL, newInnerR) {
+  const oldSpan = oldInnerR - oldInnerL, newSpan = newInnerR - newInnerL;
+  const k = oldSpan > 0 ? newSpan / oldSpan : 1;
+  for (const p of particles) { p.x = newInnerL + (p.x - oldInnerL) * k; p.vx *= k; }
+  for (const a of airParticles) { a.x = newInnerL + (a.x - oldInnerL) * k; a.vx *= k; }
+  for (const pr of products) { pr.x = newInnerL + (pr.x - oldInnerL) * k; }
+}
+
+function reportHeight() {
+  const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+  window.parent.postMessage({ type: 'simHeight', height: h }, '*');
+}
+let rT;
+window.addEventListener('resize', () => {
+  clearTimeout(rT);
+  rT = setTimeout(() => {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const oldInnerL = WALL_L + PLUG_W, oldInnerR = WALL_R - PLUG_W;
+    sizeCanvas();
+    const newInnerL = WALL_L + PLUG_W, newInnerR = WALL_R - PLUG_W;
+    rescaleToWidth(oldInnerL, oldInnerR, newInnerL, newInnerR);
+    if (!running) { drawTube(); drawParticles(); }
+    reportHeight();
+  }, 120);
+});
+
 makeParticles();
 drawTube();
 drawParticles();
+requestAnimationFrame(() => requestAnimationFrame(reportHeight));
 </script>
+</body>
+</html>

@@ -98,6 +98,7 @@ function renderFeatured() {
 function renderSim(id) {
   const s = simulations.find(x => x.id === id);
   if (!s) { renderPage("home"); return; }
+  document.title = `${s.title} - chemistr.io`;
   document.getElementById("viewerTitle").textContent = s.title;
   const frame = document.getElementById("viewerFrame");
   if (s.file) {
@@ -193,14 +194,14 @@ function parseHash() {
   if (!hash) return { page: "home" };
   const [first, second] = hash.split("/");
   if (first === "sim" && second) return { page: "viewer", simId: second };
-  if (PAGES.some(p => p.id === first)) return { page: first };
+  if (PAGES.some(p => p.id === first)) return { page: first, section: second };
   return { page: "home" };
 }
 
 function applyRoute() {
   const route = parseHash();
   if (route.page === "viewer") renderSim(route.simId);
-  else renderPage(route.page);
+  else renderPage(route.page, route.section);
 }
 
 // Public entry points used by onclick handlers: they just change the
@@ -225,7 +226,7 @@ function openSim(id) {
 // navigation has already started, which would otherwise clobber it.
 let navToken = 0;
 
-async function renderPage(id) {
+async function renderPage(id, section) {
   const page = PAGES.find(p => p.id === id) || PAGES.find(p => p.id === "home");
   const token = ++navToken;
 
@@ -237,10 +238,22 @@ async function renderPage(id) {
   mount.innerHTML = html;
   mount.classList.add("active");
   if (page.init) page.init();
+  document.title = page.id === "home" ? "chemistr.io" : `${page.label} - chemistr.io`;
 
   document.querySelectorAll(".nav-links button").forEach(b =>
     b.classList.toggle("active", b.dataset.nav === page.id));
   document.getElementById("navLinks").classList.remove("open");
+
+  // Deep link to a specific collapsible section (e.g. #about/contact):
+  // open it if it's a <details> and scroll it into view, offset for the
+  // sticky header, instead of resetting to the top of the page.
+  const target = section && document.getElementById(section);
+  if (target) {
+    if (target.tagName === "DETAILS") target.open = true;
+    const y = target.getBoundingClientRect().top + window.scrollY - 76;
+    window.scrollTo({ top: Math.max(y, 0) });
+    return;
+  }
   window.scrollTo({ top: 0 });
 }
 

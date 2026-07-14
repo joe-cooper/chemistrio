@@ -2,12 +2,61 @@
 <h1>About this site</h1>
 <div class="prose">
   <p>Chemistr.io is a collection of chemistry simulations and teaching resources for teachers and students to use freely.</p>
-  <h2>Simulations</h2>
-  <p>Simulations are organised by topic and teaching level, and come with teaching notes for additional guidance.</p>
-  <h2>Contact</h2>
-  <p>Suggestions, corrections or requests for resources are welcome. Add your contact details here.</p>
-  <h2>Support</h2>
-  <p>If you have found these resources useful and wish to show support, please consider buying me a ko-fi!</p>
-  <h2>About the author</h2>
-  <p>My name is Joe, and I am a chemistry teacher in the UK. I have found interactive simulations incredibly useful for complementing my teaching but have been frustrated by the gaps in topics covered by them. I decided to have a punt at making my own and host them here for others to use.</p>
+  <!-- <h2>Simulations</h2>
+  <p>Simulations are organised by topic and teaching level, and come with teaching notes for additional guidance.</p> -->
+  <details class="category">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>About the author</span>
+    </summary>
+    <div class="category-body">
+      <p>I am a chemistry teacher in the UK. I have found interactive simulations incredibly useful for complementing my teaching but wished for more to cover the gaps in other topics. I decided to have a punt at making my own and host them here for others to use. If you have suggestions or feedback, or just want to show support, please feel free to use the links below.</p>
+    </div>
+  </details>
+  <details class="category" id="contact">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>Get in touch</span>
+    </summary>
+    <div class="category-body">
+      <form class="contact-form" action="https://formspree.io/f/mgogvzaz" method="POST">
+        <label>
+          Your email
+          <input type="email" name="email" placeholder="you@example.com" required>
+        </label>
+        <label>
+          Your message
+          <textarea name="message" placeholder="What's your question, feedback or suggestion?" required></textarea>
+        </label>
+        <button type="submit" class="btn">Send</button>
+      </form>
+    </div>
+  </details>
+  <details class="category" id="support">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>Support</span>
+    </summary>
+    <div class="category-body">
+      <p>If you have found these resources useful and wish to show support, please consider <a href="https://ko-fi.com/chemistrio" target="_blank">buying me a ko-fi!</a></p>
+    </div>
+  </details>
+  <details class="category" id="privacy">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>Privacy</span>
+    </summary>
+    <div class="category-body">
+      <p>This site does not use cookies or collect any personal data. The only exception is the contact form, which is handled by Formspree and is subject to their privacy policy.</p>
+    </div>
+  </details>
+  <details class="category" id="license">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>License</span>
+    </summary>
+    <div class="category-body">
+      <p>All content on this site is licensed under a <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.</p>
+    </div>
+  </details>
 </div>

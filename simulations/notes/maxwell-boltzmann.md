@@ -24,6 +24,29 @@ where:
 
 ### Suggested questions
 
-1. Sketch how the curve changes if you double the absolute temperature.
-2. Why does a small increase in temperature cause a large increase in reaction rate?
-3. How would the curve differ for a heavier gas at the same temperature?
+**Q1.** Sketch how the curve changes if you double the absolute temperature.
+
+<details class="qa">
+<summary>Show answer</summary>
+
+The peak shifts to a **higher speed** and becomes lower and broader. The area under the curve stays the same, since it always represents the total number of molecules (100%).
+
+</details>
+
+**Q2.** Why does a small increase in temperature cause a large increase in reaction rate?
+
+<details class="qa">
+<summary>Show answer</summary>
+
+Reaction rate depends exponentially on temperature (the Arrhenius equation, $k = Ae^{-E_a/RT}$), because only molecules in the high-energy tail beyond $E_a$ can react. A small rise in $T$ shifts the whole distribution only slightly, but it disproportionately increases the fraction of molecules out in that tail — so the rate jumps by a much larger factor than the temperature change itself.
+
+</details>
+
+**Q3.** How would the curve differ for a heavier gas at the same temperature?
+
+<details class="qa">
+<summary>Show answer</summary>
+
+At the same temperature, all gases have the same *average kinetic energy*. Since $KE = \frac{1}{2}mv^2$, a heavier molecule needs a lower speed for the same energy — so a heavier gas has a curve shifted to **lower speeds**, and it's taller and narrower (less spread out) than a lighter gas's curve.
+
+</details>

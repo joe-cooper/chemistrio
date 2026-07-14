@@ -121,6 +121,8 @@ h1 { font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.01em; margin-bottom
 }
 
 .cat-list { list-style: none; padding: 0 18px 6px; }
+.category-body { padding: 14px 18px; }
+.category-body > *:last-child { margin-bottom: 0; }
 .cat-list li { border-top: 1px solid var(--border); }
 .item-row {
   display: flex; align-items: center; gap: 12px; width: 100%;
@@ -228,6 +230,27 @@ h1 { font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.01em; margin-bottom
 .prose ul, .prose ol { margin: 0 0 16px 22px; }
 .prose li { margin-bottom: 6px; }
 
+/* ---------- Contact form ---------- */
+.contact-form {
+  display: flex; flex-direction: column; gap: 16px;
+  max-width: 480px; margin: 4px 0 0;
+}
+.contact-form label {
+  display: flex; flex-direction: column; gap: 6px;
+  font-size: 0.88rem; font-weight: 600; color: var(--text-soft);
+}
+.contact-form input, .contact-form textarea {
+  font: inherit; font-size: 0.96rem; color: var(--text);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 10px 12px;
+}
+.contact-form input:focus, .contact-form textarea:focus {
+  outline: none; border-color: var(--accent);
+}
+.contact-form input:invalid:not(:placeholder-shown) { border-color: #c0524a; }
+.contact-form textarea { min-height: 120px; resize: vertical; }
+.contact-form button { align-self: flex-start; }
+
 /* ---------- Teaching notes ---------- */
 .notes-sidebar {
   display: flex;
@@ -265,12 +288,45 @@ h1 { font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.01em; margin-bottom
 .notes-content code { background: var(--border); padding: 1px 6px; border-radius: 4px; font-size: 0.88em; }
 .notes-content .katex-display { margin: 12px 0; overflow-x: auto; overflow-y: hidden; }
 
+/* Collapsible question/answer boxes: <details class="qa"> written directly
+   in a notes .md file (see the comment in data.js for the exact syntax). */
+.notes-content details.qa {
+  margin: 4px 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  overflow: hidden;
+}
+.notes-content details.qa summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 9px 14px;
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: var(--accent-dark);
+  user-select: none;
+}
+.notes-content details.qa summary::-webkit-details-marker { display: none; }
+.notes-content details.qa summary::before {
+  content: "\25B6"; display: inline-block; margin-right: 8px;
+  font-size: 0.7em; color: var(--accent); transition: transform .15s;
+}
+.notes-content details.qa:hover summary { background: var(--accent-soft); }
+.notes-content details.qa[open] summary::before { transform: rotate(90deg); }
+.notes-content details.qa[open] summary { border-bottom: 1px solid var(--border); }
+.notes-content details.qa > :not(summary) { padding: 0 14px; }
+.notes-content details.qa > :not(summary):first-of-type { padding-top: 12px; }
+.notes-content details.qa > :not(summary):last-child { padding-bottom: 12px; margin-bottom: 0; }
+
 /* ---------- Footer ---------- */
 footer.site {
   border-top: 1px solid var(--border); padding: 26px 0; margin-top: 32px;
   font-size: 0.85rem; color: var(--text-soft);
 }
 footer.site .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.footer-links { display: flex; gap: 18px; flex-wrap: wrap; }
+.footer-links a { color: var(--text-soft); }
+.footer-links a:hover { color: var(--accent-dark); }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 640px) {

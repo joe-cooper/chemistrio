@@ -7,6 +7,18 @@
        viewer's "Teaching notes" panel (leave "" to hide the panel).
        LaTeX is supported inside notes files: use $...$ for inline
        maths and $$...$$ for display maths.
+       For a question with its answer hidden behind a "show answer"
+       toggle, write plain HTML directly in the .md file:
+         <details class="qa">
+         <summary>Show answer</summary>
+
+         The answer, in **Markdown** with $LaTeX$ if needed.
+
+         </details>
+       The blank lines around the answer are required — they're what
+       makes the Markdown parser treat that line as its own paragraph
+       (and so still render bold/italic/maths) instead of swallowing
+       it as part of the raw <details> HTML.
    Add a resource: add an object to `resources`.
      - file: path to the PDF (leave "" to disable the download link)
    ========================================================= */
@@ -24,8 +36,8 @@ const simulations = [
     desc:"Concentration, rate and reaction quotient over time.", featured:true, file:"simulations/eqm-sim.html", notes:"" },
   { id:"le-chatelier", title:"Le Chatelier's Principle", topic:"Equilibrium", level:"A-level",
     desc:"Shift a reversible reaction by changing pressure, concentration and temperature.", featured:false, file:"", notes:"" },
-  { id:"grahams-law", title:"Graham's Law Diffusion", topic:"Gases", level:"IGCSE",
-    desc:"Animated diffusion tube with particle physics and a mean product position marker.", featured:true, file:"", notes:"" },
+  { id:"diffusion-tube-sim", title:"HCl and NH3 Diffusion Tube", topic:"Gases", level:"IGCSE",
+    desc:"Animated diffusion tube with particle physics and a mean product position marker.", featured:true, file:"simulations/diffusion-tube-sim.html", notes:"" },
   { id:"titration", title:"Acid–Base Titration", topic:"Acids & Bases", level:"A-level",
     desc:"Run a virtual titration and plot the pH curve.", featured:false, file:"", notes:"" }
 ];
