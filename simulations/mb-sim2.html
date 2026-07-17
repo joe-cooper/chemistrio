@@ -7,23 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<script src="../assets/js/theme.js"></script>
 <style>
-  :root{
-    --void:#0c0f14;
-    --panel:#11161d;
-    --raised:#161c25;
-    --line:#232c38;
-    --line-soft:#1b222c;
-    --text:#e6edf3;
-    --muted:#7d8896;
-    --muted-dim:#586471;
-    --gold:#f2e2a8;
-    --gold-dim:#b9a875;
-  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
-    background:var(--void);
+    background:var(--bg);
     color:var(--text);
     font-family:"IBM Plex Sans",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased;
@@ -35,14 +25,14 @@
   /* ---------- header ---------- */
   header{
     display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;
-    border-bottom:1px solid var(--line);
+    border-bottom:1px solid var(--border);
     padding-bottom:16px;margin-bottom:22px;
   }
   .eyebrow{
     font-family:"IBM Plex Mono",monospace;
     font-size:11px;letter-spacing:.32em;text-transform:uppercase;
     color:var(--muted-dim);
-    border:1px solid var(--line);border-radius:2px;
+    border:1px solid var(--border);border-radius:2px;
     padding:5px 9px;
   }
   h1{
@@ -67,8 +57,8 @@
   @media(max-width:860px){.stage{grid-template-columns:1fr;}}
 
   .card{
-    background:var(--panel);
-    border:1px solid var(--line);
+    background:var(--surface);
+    border:1px solid var(--border);
     border-radius:6px;
     padding:14px;
     position:relative;
@@ -91,7 +81,7 @@
   }
   .curve-toggle .swatch{
     width:16px;height:2px;border-radius:1px;background:var(--gold);
-    box-shadow:0 0 5px rgba(242,226,168,.7);transition:opacity .15s,background .15s;
+    box-shadow:0 0 5px rgba(232,184,114,.7);transition:opacity .15s,background .15s;
   }
   /* empirical toggle: dotted-data swatch + neutral colour */
   #empToggle{color:#9fb0bf;}
@@ -110,7 +100,7 @@
   .curve-toggle:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:2px;}
 
   canvas{display:block;width:100%;height:auto;border-radius:3px;}
-  #box{background:#090b0f;}
+  #box{background:#05070c;}
 
   /* ---------- readout column ---------- */
   .readout{display:flex;flex-direction:column;}
@@ -118,8 +108,8 @@
 
   .stats{
     display:grid;grid-template-columns:repeat(4,1fr);
-    gap:1px;background:var(--line-soft);
-    border:1px solid var(--line-soft);border-radius:4px;overflow:hidden;
+    gap:1px;background:var(--border-soft);
+    border:1px solid var(--border-soft);border-radius:4px;overflow:hidden;
     margin-top:12px;
   }
   .stat{background:var(--raised);padding:9px 11px;}
@@ -138,7 +128,7 @@
 
   /* ---------- controls ---------- */
   .controls{
-    background:var(--panel);border:1px solid var(--line);border-radius:6px;
+    background:var(--surface);border:1px solid var(--border);border-radius:6px;
     padding:16px 18px;
     display:grid;
     grid-template-columns:auto auto 1fr auto;
@@ -157,14 +147,14 @@
   }
 
   /* segmented toggle */
-  .seg{display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
   .seg button{
     font-family:"IBM Plex Mono",monospace;font-size:12px;
     background:transparent;color:var(--muted);border:0;
     padding:8px 14px;cursor:pointer;letter-spacing:.02em;
     transition:background .15s,color .15s;white-space:nowrap;
   }
-  .seg button + button{border-left:1px solid var(--line);}
+  .seg button + button{border-left:1px solid var(--border);}
   .seg button[aria-pressed="true"]{background:var(--raised);color:var(--text);}
   .seg button:hover:not([aria-pressed="true"]){color:var(--text);}
 
@@ -175,16 +165,16 @@
   .slider-head .val{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--text);}
   input[type=range]{
     -webkit-appearance:none;appearance:none;width:100%;height:3px;
-    background:var(--line);border-radius:2px;outline:none;cursor:pointer;
+    background:var(--border);border-radius:2px;outline:none;cursor:pointer;
   }
   input[type=range]::-webkit-slider-thumb{
     -webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;
-    background:var(--text);border:2px solid var(--panel);
-    box-shadow:0 0 0 1px var(--line);cursor:pointer;
+    background:var(--text);border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--border);cursor:pointer;
   }
   input[type=range]::-moz-range-thumb{
     width:15px;height:15px;border-radius:50%;background:var(--text);
-    border:2px solid var(--panel);box-shadow:0 0 0 1px var(--line);cursor:pointer;
+    border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border);cursor:pointer;
   }
   input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 1px var(--gold);}
 
@@ -194,15 +184,15 @@
     letter-spacing:.04em;cursor:pointer;border-radius:4px;
     padding:10px 18px;transition:background .15s,border-color .15s,color .15s;
   }
-  .btn-run{background:var(--text);color:var(--void);border:1px solid var(--text);min-width:104px;}
+  .btn-run{background:var(--text);color:var(--bg);border:1px solid var(--text);min-width:104px;}
   .btn-run:hover{background:#fff;}
-  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--line);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
   .btn-ghost:hover{color:var(--text);border-color:var(--muted-dim);}
   .btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px;}
 
   /* ---------- note ---------- */
   .note{
-    margin-top:18px;border:1px solid var(--line-soft);border-radius:6px;
+    margin-top:18px;border:1px solid var(--border-soft);border-radius:6px;
     padding:15px 18px;background:rgba(20,26,34,.5);
     display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;
   }
@@ -217,7 +207,7 @@
   @media(max-width:560px){.note{grid-template-columns:1fr;}}
 
   .kbd{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);
-       border:1px solid var(--line);border-radius:3px;padding:1px 5px;}
+       border:1px solid var(--border);border-radius:3px;padding:1px 5px;}
 </style>
 </head>
 <body>
@@ -506,10 +496,10 @@
   // ---------- rendering: particle box ----------
   function drawBox(){
     bctx.clearRect(0,0,W,H);
-    bctx.fillStyle='#090b0f';
+    bctx.fillStyle='#05070c';
     bctx.fillRect(0,0,W,H);
     // border
-    bctx.strokeStyle='#1b222c'; bctx.lineWidth=1;
+    bctx.strokeStyle='#212a35'; bctx.lineWidth=1;
     bctx.strokeRect(.5,.5,W-1,H-1);
     for(const p of particles){
       const v=Math.hypot(p.vx,p.vy);
@@ -550,7 +540,7 @@
     const Y = d => padT + plotH - (d/yMax)*plotH;
 
     // baseline + faint grid
-    hctx.strokeStyle='#1b222c'; hctx.lineWidth=1;
+    hctx.strokeStyle='#212a35'; hctx.lineWidth=1;
     hctx.beginPath(); hctx.moveTo(padL,padT+plotH+.5); hctx.lineTo(padL+plotW,padT+plotH+.5); hctx.stroke();
 
     // bars (same spectral ramp per bin)
@@ -572,9 +562,9 @@
       const x=padL+px, y=Y(f);
       if(px===0)hctx.moveTo(x,y); else hctx.lineTo(x,y);
     }
-    hctx.strokeStyle='rgba(242,226,168,0.95)';
+    hctx.strokeStyle='rgba(232,184,114,0.95)';
     hctx.lineWidth=2;
-    hctx.shadowColor='rgba(242,226,168,0.5)'; hctx.shadowBlur=6;
+    hctx.shadowColor='rgba(232,184,114,0.5)'; hctx.shadowBlur=6;
     hctx.stroke();
     hctx.shadowBlur=0;
     }
@@ -590,7 +580,7 @@
     for(const m of marks){
       if(m.v>vScale) continue;
       const x=X(m.v);
-      hctx.strokeStyle='rgba(125,136,150,0.45)';
+      hctx.strokeStyle='rgba(139,150,165,0.45)';
       hctx.setLineDash([3,3]); hctx.lineWidth=1;
       hctx.beginPath(); hctx.moveTo(x,padT+4); hctx.lineTo(x,padT+plotH); hctx.stroke();
       hctx.setLineDash([]);
@@ -611,7 +601,7 @@
       for(let i=0;i<NBINS;i++){
         hctx.beginPath(); hctx.arc(px(i),py(i),2.3,0,Math.PI*2);
         hctx.fillStyle='#eef2f6'; hctx.fill();
-        hctx.strokeStyle='#0c0f14'; hctx.lineWidth=0.8; hctx.stroke();
+        hctx.strokeStyle='#0d1117'; hctx.lineWidth=0.8; hctx.stroke();
       }
       // goodness of fit vs analytical: overlap = 1 − ½∫|empirical − analytical| dv
       let tvd=0;
@@ -627,7 +617,7 @@
     }
 
     // x-axis caption
-    hctx.fillStyle='#586471'; hctx.textAlign='right';
+    hctx.fillStyle='#5f6b7a'; hctx.textAlign='right';
     hctx.fillText('speed →', padL+plotW, padT-2);
     hctx.textAlign='left';
     hctx.fillText('0', padL, padT+plotH+20);

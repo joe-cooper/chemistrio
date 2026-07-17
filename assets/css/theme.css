@@ -1,0 +1,39 @@
+/* Shared design tokens — colour scheme, radius, and font stack.
+   site.css imports this; every simulation links it directly so a
+   palette change here propagates everywhere without hunting through
+   each simulation's embedded <style>. Simulation-specific tokens
+   (data-series colours, monospace stacks, per-sim radius overrides)
+   stay local to that simulation's own :root. */
+:root {
+  --bg: #0d1117;
+  --surface: #161c26;
+  --raised: #1c2430;
+  --border: #2a3441;
+  --border-soft: #212a35;
+  --text: #e6ebf2;
+  --muted: #8b96a5;
+  --muted-dim: #5f6b7a;
+  --accent: #d9735f;
+  --gold: #e0a68a;
+  --gold-dim: #b3826c;
+  --radius: 8px;
+  --maxw: 860px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Light mode — opted into via [data-theme="light"] on <html>, set by
+   assets/js/theme.js. Only the colour tokens change; --radius, --maxw
+   and --font stay constant across themes. */
+:root[data-theme="light"] {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --raised: #eef1f5;
+  --border: #d8dee6;
+  --border-soft: #e3e8ee;
+  --text: #161c26;
+  --muted: #5f6b7a;
+  --muted-dim: #8b96a5;
+  --accent: #c85a44;
+  --gold: #b97a55;
+  --gold-dim: #a3714f;
+}

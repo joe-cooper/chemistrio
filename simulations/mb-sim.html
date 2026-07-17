@@ -4,21 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Maxwell–Boltzmann Emergence</title>
+<link rel="stylesheet" href="../assets/css/theme.css">
+<script src="../assets/js/theme.js"></script>
 <style>
-  :root{
-    --bg: #0f1210;
-    --surface: #1a1f1d;
-    --raised: #202624;
-    --border: #2a302d;
-    --border-soft: #232a27;
-    --text: #e8ebe9;
-    --muted: #8a9490;
-    --muted-dim: #5e6a66;
-    --accent: #3daa8a;
-    --gold: #f2e2a8;
-    --gold-dim: #b9a875;
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
@@ -82,7 +70,7 @@
   #empToggle:focus-visible{outline:2px solid #9fb0bf;outline-offset:3px;border-radius:2px;}
 
   canvas{display:block;width:100%;height:auto;border-radius:3px;}
-  #box{background:#090c0a;}
+  #box{background:#05070c;}
   #hist{height:100%;}
 
   /* ---------- readout column ---------- */
@@ -136,7 +124,7 @@
     padding:7px 13px;cursor:pointer;
     transition:background .15s,border-color .15s,color .15s;white-space:nowrap;
   }
-  .mode-btns button[aria-pressed="true"]{background:var(--accent);color:#0f1210;border-color:var(--accent);font-weight:500;}
+  .mode-btns button[aria-pressed="true"]{background:var(--accent);color:#0d1117;border-color:var(--accent);font-weight:500;}
   .mode-btns button:hover:not([aria-pressed="true"]){color:var(--text);border-color:var(--muted-dim);}
 
   /* sliders */
@@ -165,8 +153,8 @@
     cursor:pointer;border-radius:4px;
     padding:9px 16px;transition:background .15s,border-color .15s,color .15s;
   }
-  .btn-run{background:var(--accent);color:#0f1210;border:1px solid var(--accent);min-width:100px;}
-  .btn-run:hover{background:#5ec9a8;}
+  .btn-run{background:var(--accent);color:#0d1117;border:1px solid var(--accent);min-width:100px;}
+  .btn-run:hover{background:var(--gold);}
   .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
   .btn-ghost:hover{color:var(--text);border-color:var(--muted-dim);}
   .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
@@ -456,10 +444,10 @@
   // ---------- rendering: particle box ----------
   function drawBox(){
     bctx.clearRect(0,0,W,H);
-    bctx.fillStyle='#090c0a';
+    bctx.fillStyle='#05070c';
     bctx.fillRect(0,0,W,H);
     // border
-    bctx.strokeStyle='#232a27'; bctx.lineWidth=1;
+    bctx.strokeStyle='#212a35'; bctx.lineWidth=1;
     bctx.strokeRect(.5,.5,W-1,H-1);
     for(const p of particles){
       const v=Math.hypot(p.vx,p.vy);
@@ -501,7 +489,7 @@
     const Y = d => padT + plotH - (d/yMax)*plotH;
 
     // baseline + faint grid
-    hctx.strokeStyle='#232a27'; hctx.lineWidth=1;
+    hctx.strokeStyle='#212a35'; hctx.lineWidth=1;
     hctx.beginPath(); hctx.moveTo(padL,padT+plotH+.5); hctx.lineTo(padL+plotW,padT+plotH+.5); hctx.stroke();
 
     // bars (same spectral ramp per bin)
@@ -523,9 +511,9 @@
       const x=padL+px, y=Y(f);
       if(px===0)hctx.moveTo(x,y); else hctx.lineTo(x,y);
     }
-    hctx.strokeStyle='rgba(242,226,168,0.95)';
+    hctx.strokeStyle='rgba(232,184,114,0.95)';
     hctx.lineWidth=2;
-    hctx.shadowColor='rgba(242,226,168,0.5)'; hctx.shadowBlur=6;
+    hctx.shadowColor='rgba(232,184,114,0.5)'; hctx.shadowBlur=6;
     hctx.stroke();
     hctx.shadowBlur=0;
     }
@@ -541,7 +529,7 @@
     for(const m of marks){
       if(m.v>vScale) continue;
       const x=X(m.v);
-      hctx.strokeStyle='rgba(125,136,150,0.45)';
+      hctx.strokeStyle='rgba(139,150,165,0.45)';
       hctx.setLineDash([3,3]); hctx.lineWidth=1;
       hctx.beginPath(); hctx.moveTo(x,padT+4); hctx.lineTo(x,padT+plotH); hctx.stroke();
       hctx.setLineDash([]);

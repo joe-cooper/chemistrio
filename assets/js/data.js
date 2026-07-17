@@ -29,17 +29,17 @@ const simulations = [
     notes:"simulations/notes/maxwell-boltzmann.md" },
   { id:"ao-density-sim", title:"Atomic Orbitals Density", topic:"Quantum", level:"Pre-University",
     desc:"Density plots of atomic orbitals", featured:true, file:"simulations/ao-density-sim.html",
-    notes:"simulations/notes/so-density-sim.md" },
-  { id:"rates-collision", title:"Collision Theory & Rates", topic:"Kinetics", level:"IGCSE",
-    desc:"How concentration, temperature and catalysts affect the rate of reaction.", featured:false, file:"", notes:"" },
+    notes:"simulations/notes/ao-density-sim.md" },
+  // { id:"rates-collision", title:"Collision Theory & Rates", topic:"Kinetics", level:"IGCSE",
+  //   desc:"How concentration, temperature and catalysts affect the rate of reaction.", featured:false, file:"", notes:"" },
   { id:"eqm-sim", title:"Chemical Equilibrium", topic:"Equilibrium", level:"A-level",
     desc:"Concentration, rate and reaction quotient over time.", featured:true, file:"simulations/eqm-sim.html", notes:"" },
-  { id:"le-chatelier", title:"Le Chatelier's Principle", topic:"Equilibrium", level:"A-level",
-    desc:"Shift a reversible reaction by changing pressure, concentration and temperature.", featured:false, file:"", notes:"" },
+  // { id:"le-chatelier", title:"Le Chatelier's Principle", topic:"Equilibrium", level:"A-level",
+  //   desc:"Shift a reversible reaction by changing pressure, concentration and temperature.", featured:false, file:"", notes:"" },
   { id:"diffusion-tube-sim", title:"HCl and NH3 Diffusion Tube", topic:"Gases", level:"IGCSE",
     desc:"Animated diffusion tube with particle physics and a mean product position marker.", featured:true, file:"simulations/diffusion-tube-sim.html", notes:"" },
-  { id:"titration", title:"Acid–Base Titration", topic:"Acids & Bases", level:"A-level",
-    desc:"Run a virtual titration and plot the pH curve.", featured:false, file:"", notes:"" }
+  // { id:"titration", title:"Acid–Base Titration", topic:"Acids & Bases", level:"A-level",
+  //   desc:"Run a virtual titration and plot the pH curve.", featured:false, file:"", notes:"" }
 ];
 
 const resources = [

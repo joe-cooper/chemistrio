@@ -4,13 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Curly Arrow Mechanisms</title>
+<link rel="stylesheet" href="../assets/css/theme.css">
+<script src="../assets/js/theme.js"></script>
 <style>
   :root{
-    --bg:#0f1210; --surface:#1a1f1d; --raised:#202624; --border:#2a302d;
-    --text:#e8ebe9; --muted:#8a9490; --muted-dim:#5e6a66;
-    --accent:#3daa8a; --accent-dark:#5ec9a8; --accent-soft:#1a2f28;
-    --gold:#f2c85a; --bad:#e2685f; --good:#5ec9a8;
-    --font:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --accent-dark:#e8927f; --accent-soft:#2a1f1c;
+    --bad:#e2574f; --good:#7fb88a;
     --mono: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
   }
   *{box-sizing:border-box;}
@@ -27,7 +26,7 @@
     padding:10px 14px;margin-bottom:14px;font-size:0.85rem;color:var(--muted);line-height:1.55;
   }
   .instructions b{color:var(--text);font-weight:600;}
-  .instructions .step{color:var(--accent-dark);font-weight:600;}
+  .instructions .step{color:var(--gold);font-weight:600;}
 
   .stage{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   @media(max-width:820px){.stage{grid-template-columns:1fr;}}
@@ -38,11 +37,11 @@
     padding:9px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;
   }
   .panel-label .hint{text-transform:none;letter-spacing:0;color:var(--muted);font-size:0.75rem;}
-  svg{display:block;width:100%;height:auto;background:#0c0f0e;}
+  svg{display:block;width:100%;height:auto;background:#05070c;}
 
   .atom-label{font-family:var(--font);font-weight:600;user-select:none;}
   .charge-label{font-family:var(--font);font-weight:700;user-select:none;}
-  .bond-line{stroke:var(--text);stroke-width:1.6;stroke-linecap:round;}
+  .bond-line{stroke:#e6ebf2;stroke-width:1.6;stroke-linecap:round;} /* fixed: bonds sit on the always-dark svg backdrop above, independent of page theme */
   .bond-hit{stroke:transparent;stroke-width:14;cursor:pointer;}
   .bond-hit:hover ~ .bond-line, .bond-hit.selected ~ .bond-line{stroke:var(--gold);}
   .lp-dot{fill:var(--accent-dark);}
@@ -51,7 +50,7 @@
   .lp-group:hover .lp-dot{fill:var(--gold);}
   .atom-hit{fill:transparent;cursor:pointer;}
   .atom-hit:hover ~ .atom-circle{stroke:var(--gold);}
-  .atom-circle{fill:#0c0f0e;stroke:var(--border);stroke-width:1.4;}
+  .atom-circle{fill:#05070c;stroke:var(--border);stroke-width:1.4;}
 
   .arrow-path{fill:none;stroke:var(--gold);stroke-width:2.2;}
   .arrow-head{fill:var(--gold);}
@@ -61,9 +60,9 @@
     font:inherit;font-size:0.84rem;font-weight:500;padding:8px 15px;border-radius:7px;cursor:pointer;
     border:1px solid var(--border);background:var(--raised);color:var(--text);
   }
-  .btn:hover{border-color:var(--accent-dark);color:var(--accent-dark);}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#0f1210;font-weight:600;}
-  .btn.primary:hover{background:var(--accent-dark);color:#0f1210;}
+  .btn:hover{border-color:var(--gold);color:var(--gold);}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#0d1117;font-weight:600;}
+  .btn.primary:hover{background:var(--gold);color:#0d1117;}
   .btn:disabled{opacity:.4;cursor:not-allowed;}
   .btn:disabled:hover{border-color:var(--border);color:var(--text);}
 
@@ -312,8 +311,8 @@ function elColor(elName){
   switch(elName){
     case 'O': return '#ff8a7a';
     case 'Br': return '#f2c07a';
-    case 'H': return '#8a9490';
-    default: return '#e8ebe9'; // C and others
+    case 'H': return '#8b96a5';
+    default: return '#e6ebf2'; // C and others
   }
 }
 
