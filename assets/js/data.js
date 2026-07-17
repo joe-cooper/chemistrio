@@ -40,22 +40,24 @@ const simulations = [
     desc:"Animated diffusion tube with particle physics and a mean product position marker.", featured:true, file:"simulations/diffusion-tube-sim.html", notes:"" },
   // { id:"titration", title:"Acid–Base Titration", topic:"Acids & Bases", level:"A-level",
   //   desc:"Run a virtual titration and plot the pH curve.", featured:false, file:"", notes:"" }
+    { id:"curly-arrows-sim", title:"Organic Mechanisms", topic:"Organic", level:"A-Level",
+    desc:"Interactive diagrams of organic reaction mechanisms.", featured:true, file:"simulations/curly-arrows-sim.html", notes:"" },
 ];
 
 const resources = [
-  { topic:"Formulae & Equations (Edexcel IGCSE)", items:[
-    { title:"Structured Workbook", type:"PDF", desc:"Worked examples and graded practice.", file:"" },
-    { title:"Extension Booklet", type:"PDF", desc:"Harder content for stretch and challenge.", file:"" },
-    { title:"Single-sheet Handout", type:"PDF", desc:"Minimal one-page classroom reference.", file:"" }
-  ]},
-  { topic:"Kinetics", items:[
-    { title:"Rates of Reaction — Practice Set", type:"PDF", desc:"Exam-style questions on factors affecting rate.", file:"" },
-    { title:"Maxwell–Boltzmann Worksheet", type:"PDF", desc:"Accompanies the distribution simulation.", file:"" }
-  ]},
-  { topic:"Equilibrium", items:[
-    { title:"Equilibrium Problem Booklet", type:"PDF", desc:"Kc and Le Chatelier problems with answers.", file:"" }
-  ]},
-  { topic:"Competition Preparation", items:[
-    { title:"C3L6 Extension Notes", type:"PDF", desc:"Beyond-A-level topics for the Cambridge Chemistry Challenge.", file:"" }
-  ]}
+  // { topic:"Formulae & Equations (Edexcel IGCSE)", items:[
+  //   { title:"Structured Workbook", type:"PDF", desc:"Worked examples and graded practice.", file:"" },
+  //   { title:"Extension Booklet", type:"PDF", desc:"Harder content for stretch and challenge.", file:"" },
+  //   { title:"Single-sheet Handout", type:"PDF", desc:"Minimal one-page classroom reference.", file:"" }
+  // ]},
+  // { topic:"Kinetics", items:[
+  //   { title:"Rates of Reaction — Practice Set", type:"PDF", desc:"Exam-style questions on factors affecting rate.", file:"" },
+  //   { title:"Maxwell–Boltzmann Worksheet", type:"PDF", desc:"Accompanies the distribution simulation.", file:"" }
+  // ]},
+  // { topic:"Equilibrium", items:[
+  //   { title:"Equilibrium Problem Booklet", type:"PDF", desc:"Kc and Le Chatelier problems with answers.", file:"" }
+  // ]},
+  // { topic:"Competition Preparation", items:[
+  //   { title:"C3L6 Extension Notes", type:"PDF", desc:"Beyond-A-level topics for the Cambridge Chemistry Challenge.", file:"" }
+  // ]}
 ];

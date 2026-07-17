@@ -17,7 +17,8 @@
 const PAGES = [
   { id: "home", label: "Home", fragment: "pages/home.html", init: renderFeatured },
   { id: "sims", label: "Simulations", fragment: "pages/sims.html", init: renderSimCategories },
-  { id: "resources", label: "Resources", fragment: "pages/resources.html", init: renderResourceCategories },
+  // { id: "resources", label: "Resources", fragment: "pages/resources.html", init: renderResourceCategories },
+  // { id: "quizzes", label: "Quizzes", fragment: "pages/quizzes.html", init: renderQuizCategories },
   { id: "about", label: "About", fragment: "pages/about.html" }
 
 ];

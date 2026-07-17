@@ -68,6 +68,17 @@
   #empToggle[aria-pressed="false"]{color:var(--muted-dim);}
   #empToggle[aria-pressed="false"] .swatch.dots{opacity:.4;background-image:radial-gradient(circle,var(--muted-dim) 1.3px,transparent 1.6px);}
   #empToggle:focus-visible{outline:2px solid #9fb0bf;outline-offset:3px;border-radius:2px;}
+  /* activation-energy toggle: solid vertical-bar swatch in the accent
+     colour, reads as "adjustable threshold" rather than a passive stat */
+  #actToggle{color:var(--accent);}
+  #actToggle:hover{color:var(--gold);}
+  .curve-toggle .swatch.bar{
+    width:2px;height:14px;border-radius:1px;background:var(--accent);
+  }
+  #actToggle[aria-pressed="false"]{color:var(--muted-dim);}
+  #actToggle[aria-pressed="false"] .swatch.bar{background:var(--muted-dim);opacity:.5;}
+  #actToggle:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
+  #actToggle .pct{font-variant-numeric:tabular-nums;}
 
   canvas{display:block;width:100%;height:auto;border-radius:3px;}
   #box{background:#05070c;}
@@ -78,7 +89,7 @@
   .hist-wrap{flex:1;min-height:0;}
 
   .stats{
-    display:grid;grid-template-columns:repeat(4,1fr);
+    display:grid;grid-template-columns:repeat(5,1fr);
     gap:1px;background:var(--border-soft);
     border:1px solid var(--border-soft);border-radius:4px;overflow:hidden;
     margin-top:10px;
@@ -102,7 +113,7 @@
     background:var(--surface);border:1px solid var(--border);border-radius:6px;
     padding:14px 16px;
     display:grid;
-    grid-template-columns:auto auto 1fr auto;
+    grid-template-columns:auto auto 1fr 1fr auto;
     gap:18px 22px;align-items:center;
   }
   @media(max-width:860px){
@@ -146,6 +157,7 @@
     border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border);cursor:pointer;
   }
   input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--accent);}
+  input[type=range]:disabled{opacity:.4;cursor:not-allowed;}
 
   .ctl-run{display:flex;gap:10px;align-items:flex-end;height:100%;}
   .btn{
@@ -185,6 +197,9 @@
           <button class="curve-toggle" id="curveToggle" aria-pressed="false">
             <span class="swatch"></span>equilibrium curve (2D)
           </button>
+          <button class="curve-toggle" id="actToggle" aria-pressed="false">
+            <span class="swatch bar"></span>activation energy<span class="pct" id="actPctLabel"></span>
+          </button>
         </div>
       </div>
       <div class="hist-wrap">
@@ -195,6 +210,7 @@
         <div class="stat"><span class="k">RMS speed</span><span class="v" id="sRms">—</span></div>
         <div class="stat accent"><span class="k">Most probable</span><span class="v" id="sVp">—</span></div>
         <div class="stat"><span class="k">Collisions</span><span class="v" id="sColl">0</span></div>
+        <div class="stat accent"><span class="k">Above Eₐ</span><span class="v" id="sAct">—</span></div>
       </div>
     </div>
   </div>
@@ -215,8 +231,13 @@
     </div>
 
     <div class="slider-row">
-      <div class="slider-head"><span class="ctl-label" id="spdLabel">Initial speed</span><span class="val" id="spdVal">1.40</span></div>
-      <input type="range" id="spdSlider" min="0.4" max="2.4" step="0.05" value="1.40">
+      <div class="slider-head"><span class="ctl-label">Average energy</span><span class="val" id="ebarVal">0.98</span></div>
+      <input type="range" id="ebarSlider" min="0.08" max="2.88" step="0.02" value="0.98">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-head"><span class="ctl-label">Activation energy</span><span class="val" id="actVal">8.00</span></div>
+      <input type="range" id="actSlider" min="0" max="19.5" step="0.05" value="8.00" disabled>
     </div>
 
     <div class="ctl-run">
@@ -257,6 +278,9 @@
     return STOPS[STOPS.length-1][1];
   }
   const rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+  // theme-aware token lookup, re-read each call so light/dark toggling
+  // (assets/js/theme.js flips [data-theme] on <html>) is picked up live
+  const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
   // ---------- DOM ----------
   const boxCanvas  = document.getElementById('box');
@@ -271,16 +295,20 @@
     modeUniform: document.getElementById('modeUniform'),
     nSlider: document.getElementById('nSlider'),
     nVal: document.getElementById('nVal'),
-    spd: document.getElementById('spdSlider'),
-    spdVal: document.getElementById('spdVal'),
-    spdLabel: document.getElementById('spdLabel'),
+    ebar: document.getElementById('ebarSlider'),
+    ebarVal: document.getElementById('ebarVal'),
     sMean: document.getElementById('sMean'),
     sRms: document.getElementById('sRms'),
     sVp: document.getElementById('sVp'),
     sColl: document.getElementById('sColl'),
+    sAct: document.getElementById('sAct'),
     phase: document.getElementById('phaseLabel'),
     curveToggle: document.getElementById('curveToggle'),
     empToggle: document.getElementById('empToggle'),
+    actToggle: document.getElementById('actToggle'),
+    actSlider: document.getElementById('actSlider'),
+    actVal: document.getElementById('actVal'),
+    actPctLabel: document.getElementById('actPctLabel'),
   };
 
   // ---------- world ----------
@@ -292,12 +320,54 @@
   let mode = 'single';          // 'single' | 'uniform'
   let running = false;
   let collisions = 0;
-  let vScale = 1;               // fixed: xMax of histogram = vScale, set on reset
   let showCurve = false;         // golden equilibrium curve visibility
   let empiricalOn = false;      // time-averaged empirical curve overlay (off by default)
   let empAcc = new Array(NBINS).fill(0);  // accumulated per-bin counts over frames
   let empFrames = 0;            // number of frames accumulated
   let dpr = Math.min(window.devicePixelRatio || 1, 2);
+  let activationOn = false;     // activation-energy threshold visibility
+  let Ea = +el.actSlider.value; // activation energy, in the same energy units as ½v²
+
+  // ---------- fixed, absolute histogram axes ----------
+  // Both axes are calibrated once from the slider ranges (not from whatever
+  // the current run happens to look like), so the plot is a stable frame:
+  // changing the average-energy slider shifts the curve along it, and
+  // changing the particle count stretches its height, instead of either
+  // control just re-normalising the axes to hide the change.
+  const EBAR_MAX = +el.ebar.max;            // average-energy slider range
+  const SPD_MAX  = Math.sqrt(2*EBAR_MAX);   // equivalent single-mode speed at the top of that range, used to size the axes
+  const N_MAX    = +el.nSlider.max;         // particle-count slider range
+
+  // x-axis: wide enough for the broadest MB tail reachable — single-speed
+  // start at the highest average energy has mean-square speed 2·Ē, the
+  // largest of either mode, so its tail sets the required width.
+  const vScale = 2.6 * SPD_MAX;
+  const binW0  = vScale / NBINS;
+
+  // Activation energy is set in energy units (E=½v², unit mass) to match
+  // chemistry convention, but plotted as its equivalent speed v_a=√(2Eₐ)
+  // since this histogram's x-axis is speed. Cap the slider at the energy
+  // corresponding to the edge of the visible axis (vScale).
+  const EaMax = 0.5*vScale*vScale;
+  el.actSlider.max = EaMax.toFixed(2);
+
+  // y-axis: recomputed only on a true reset (init — boot, Reset, mode
+  // switch), from the target average energy at that moment, scaled to the
+  // largest particle count. That makes the curve fill the available height
+  // for whatever setting a run started at, without leaving headroom sized
+  // for the single worst case across the whole energy range — but it must
+  // NOT be recomputed by live changes (rescaleToEnergy, setParticleCount):
+  // holding it fixed between resets is what makes raising the temperature
+  // visibly shrink the curve (same particle count, wider spread) and
+  // adding particles visibly grow it, rather than the axis chasing either
+  // change and hiding it. Mode-invariant: Ē is the true mean of ½v²
+  // regardless of the starting spread, so mean-square speed is always 2Ē.
+  let yMax = 1;
+  function computeYMax(){
+    const ms = 2*(+el.ebar.value);
+    const peakPdf = Math.sqrt(2/Math.max(ms,1e-6)) * Math.exp(-0.5);
+    yMax = N_MAX * binW0 * peakPdf * 1.3;
+  }
 
   function resetEmp(){ empAcc.fill(0); empFrames = 0; }
 
@@ -332,7 +402,11 @@
   // ---------- initialise particles ----------
   function init(){
     const N = +el.nSlider.value;
-    const s = +el.spd.value;
+    const Ebar = +el.ebar.value;
+    // both starting shapes are calibrated to land on the same mean energy Ē:
+    // single-speed has ½s²=Ē so s=√(2Ē); uniform spread has ½·(s²/3)=Ē so
+    // s=√(6Ē) — different starting shapes, same starting temperature.
+    const s = (mode==='single') ? Math.sqrt(2*Ebar) : Math.sqrt(6*Ebar);
     particles = [];
     // place without heavy overlap
     for(let i=0;i<N;i++){
@@ -352,15 +426,74 @@
       particles.push({x,y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed});
     }
     collisions = 0;
-    // fix histogram x-range from the conserved mean-square speed (stable target)
-    let ms = 0;
-    for(const p of particles) ms += p.vx*p.vx+p.vy*p.vy;
-    ms /= Math.max(particles.length,1);
-    const vrms = Math.sqrt(ms);
-    vScale = Math.max(2.6*vrms, 0.5);   // xMax
-    resetEmp();   // bin-to-speed mapping just changed with vScale, so any prior average is stale
+    computeYMax();
+    resetEmp();   // new run: previous run's time-average no longer applies
     el.phase.textContent = running ? 'running' : (mode==='single'?'single-speed start':'uniform start');
     draw();
+  }
+
+  // Live re-temperature: rescale every existing particle's velocity by the
+  // same factor so the ensemble's mean energy hits the new target, without
+  // resetting positions or pausing the run. This is the same "velocity
+  // rescaling thermostat" trick used in molecular-dynamics simulations —
+  // it preserves the current distribution's shape (whatever it is at that
+  // moment) while uniformly stretching or compressing its scale, so the
+  // particle count — and therefore the area under the histogram — never
+  // changes.
+  function rescaleToEnergy(targetE){
+    const n=particles.length;
+    if(n===0) return;
+    let sumE=0;
+    for(const p of particles) sumE += 0.5*(p.vx*p.vx+p.vy*p.vy);
+    const currentE = sumE/n;
+    if(currentE>1e-9){
+      const k=Math.sqrt(targetE/currentE);
+      for(const p of particles){ p.vx*=k; p.vy*=k; }
+    } else {
+      // degenerate case (everyone at rest): no shape to preserve, so just
+      // launch particles fresh at the target speed in random directions
+      const s=Math.sqrt(2*targetE);
+      for(const p of particles){
+        const ang=Math.random()*Math.PI*2;
+        p.vx=Math.cos(ang)*s; p.vy=Math.sin(ang)*s;
+      }
+    }
+    // yMax is deliberately left alone here: it's calibrated once per reset
+    // (see init) and held fixed across live changes, so raising the target
+    // energy with N unchanged visibly shortens the curve (same area spread
+    // over a wider base) instead of the axis rescaling to hide it.
+    resetEmp();   // the equilibrium shape just shifted, so any prior average is stale
+  }
+
+  // Live particle count: add or remove particles without resetting the
+  // run, so the histogram's height visibly stretches in real time. New
+  // particles sample their speed from a random existing particle — joining
+  // the *current* distribution rather than the initial condition — with a
+  // fresh random direction and position.
+  function setParticleCount(N){
+    const cur=particles.length;
+    if(N>cur){
+      for(let i=cur;i<N;i++){
+        let x,y,ok,tries=0;
+        do{
+          x = R + Math.random()*(W-2*R);
+          y = R + Math.random()*(H-2*R);
+          ok = true;
+          for(let j=0;j<particles.length;j++){
+            const dx=x-particles[j].x, dy=y-particles[j].y;
+            if(dx*dx+dy*dy < (2*R+0.5)*(2*R+0.5)){ ok=false; break; }
+          }
+          tries++;
+        } while(!ok && tries<30);
+        const src=particles[(Math.random()*particles.length)|0];
+        const speed=Math.hypot(src.vx,src.vy);
+        const ang=Math.random()*Math.PI*2;
+        particles.push({x,y,vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed});
+      }
+    } else if(N<cur){
+      particles.length=N;
+    }
+    resetEmp();   // per-bin counts scale with N, so a stale average would no longer be comparable
   }
 
   // ---------- physics ----------
@@ -441,6 +574,17 @@
     return {mean,rms,vp,ms};
   }
 
+  // fraction of particles with kinetic energy (½v²) above the activation
+  // energy threshold — compared as v² > 2·Eₐ to avoid a sqrt per particle
+  function fracAboveEa(){
+    const n=particles.length;
+    if(n===0) return 0;
+    const thresh=2*Ea;
+    let c=0;
+    for(const p of particles){ if(p.vx*p.vx+p.vy*p.vy > thresh) c++; }
+    return c/n;
+  }
+
   // ---------- rendering: particle box ----------
   function drawBox(){
     bctx.clearRect(0,0,W,H);
@@ -460,9 +604,9 @@
   }
 
   // ---------- rendering: histogram ----------
-  function drawHist(st){
+  function drawHist(st, fracAbove){
     const w=histW, h=histH;
-    const padL=8, padR=8, padT=14, padB=30;
+    const padL=26, padR=8, padT=14, padB=44;
     const plotW=w-padL-padR, plotH=h-padT-padB;
     hctx.clearRect(0,0,w,h);
 
@@ -477,20 +621,21 @@
     // accumulate the time-average while the simulation advances
     if(running && empiricalOn){ for(let i=0;i<NBINS;i++) empAcc[i]+=bins[i]; empFrames++; }
     const n=Math.max(particles.length,1);
-    // density per bin (integrates to 1)
-    const dens=bins.map(c => c/(n*binW));
-
-    // theoretical 2D MB peak to fix the y-axis
+    // raw per-bin counts (not normalised by n) so bar height scales with
+    // the particle count instead of always integrating to 1
+    const dens=bins;
     const ms=st.ms||1e-6;
-    const peak=Math.sqrt(2/ms)*Math.exp(-0.5);  // f(v_p)
-    const yMax=peak*1.55;
 
     const X = v => padL + (v/vScale)*plotW;
     const Y = d => padT + plotH - (d/yMax)*plotH;
 
-    // baseline + faint grid
+    // axes: x baseline + a visible y spine, drawn as one L-shaped stroke
     hctx.strokeStyle='#212a35'; hctx.lineWidth=1;
-    hctx.beginPath(); hctx.moveTo(padL,padT+plotH+.5); hctx.lineTo(padL+plotW,padT+plotH+.5); hctx.stroke();
+    hctx.beginPath();
+    hctx.moveTo(padL+.5,padT);
+    hctx.lineTo(padL+.5,padT+plotH+.5);
+    hctx.lineTo(padL+plotW,padT+plotH+.5);
+    hctx.stroke();
 
     // bars (same spectral ramp per bin)
     for(let i=0;i<NBINS;i++){
@@ -502,13 +647,15 @@
       hctx.fillRect(x0+0.5, y, Math.max(x1-x0-1,1), padT+plotH-y);
     }
 
-    // theoretical 2D Maxwell-Boltzmann curve
+    // theoretical 2D Maxwell-Boltzmann curve, scaled from a probability
+    // density to an expected count per bin (N * binW * pdf) to sit on the
+    // same absolute count axis as the bars
     if(showCurve){
     hctx.beginPath();
     for(let px=0;px<=plotW;px++){
       const v=(px/plotW)*vScale;
       const f=(2*v/ms)*Math.exp(-v*v/ms);
-      const x=padL+px, y=Y(f);
+      const x=padL+px, y=Y(n*binW*f);
       if(px===0)hctx.moveTo(x,y); else hctx.lineTo(x,y);
     }
     hctx.strokeStyle='rgba(232,184,114,0.95)';
@@ -518,11 +665,13 @@
     hctx.shadowBlur=0;
     }
 
-    // characteristic-speed markers: vp, mean, rms
+    // characteristic-energy markers: most probable, mean, rms (labelled to
+    // match the "particle energy" axis caption, though the underlying
+    // quantity plotted is still speed — see drawHist's x-axis mapping)
     const marks=[
-      {v:st.vp,  label:'vₚ'},
-      {v:st.mean,label:'v̄'},
-      {v:st.rms, label:'v_rms'},
+      {v:st.vp,  label:'Eₚ'},
+      {v:st.mean,label:'Ē'},
+      {v:st.rms, label:'E_rms'},
     ];
     hctx.font='10px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
     hctx.textAlign='center';
@@ -536,16 +685,37 @@
       hctx.fillStyle='#9aa6b3';
       hctx.fillText(m.label, x, padT+plotH+20);
     }
+    // activation-energy threshold: user-movable line + shaded "beyond
+    // threshold" region, converted from energy (what the slider sets) to
+    // its equivalent speed v_a=√(2Eₐ) since this histogram's x-axis is speed
+    if(activationOn){
+      const vA=Math.sqrt(2*Ea);
+      if(vA<=vScale){
+        const x=X(vA);
+        const accent=cssVar('--accent');
+        hctx.fillStyle=accent; hctx.globalAlpha=0.10;
+        hctx.fillRect(x, padT, padL+plotW-x, plotH);
+        hctx.globalAlpha=1;
+        hctx.strokeStyle=accent; hctx.lineWidth=2;
+        hctx.beginPath(); hctx.moveTo(x,padT); hctx.lineTo(x,padT+plotH); hctx.stroke();
+        const label=`Eₐ · ${(fracAbove*100).toFixed(1)}% above`;
+        hctx.font='10px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+        hctx.fillStyle=accent;
+        if(x > padL+plotW*0.6){ hctx.textAlign='right'; hctx.fillText(label, x-5, padT+10); }
+        else { hctx.textAlign='left'; hctx.fillText(label, x+5, padT+10); }
+      }
+    }
     // empirical (time-averaged) distribution — measured data vs the analytical curve
     if(empiricalOn && empFrames>0){
-      const totalAcc = empAcc.reduce((a,c)=>a+c,0) || 1;
-      const emp = empAcc.map(c => c/(totalAcc*binW));   // normalised density (∫=1)
+      // average absolute count per bin across accumulated frames — same
+      // units as the live bars, so it sits on the same fixed count axis
+      const emp = empAcc.map(c => c/empFrames);
       const px = i => X((i+0.5)*binW);
       const py = i => { let y=Y(emp[i]); return y<padT-2?padT-2:y; };
       // faint connecting line
       hctx.beginPath();
       for(let i=0;i<NBINS;i++){ i===0?hctx.moveTo(px(i),py(i)):hctx.lineTo(px(i),py(i)); }
-      hctx.strokeStyle='rgba(233,239,245,0.5)'; hctx.lineWidth=1; hctx.stroke();
+      hctx.strokeStyle=cssVar('--muted'); hctx.globalAlpha=0.5; hctx.lineWidth=1; hctx.stroke(); hctx.globalAlpha=1;
       // data points
       for(let i=0;i<NBINS;i++){
         hctx.beginPath(); hctx.arc(px(i),py(i),2.3,0,Math.PI*2);
@@ -553,33 +723,46 @@
         hctx.strokeStyle='#0c0f14'; hctx.lineWidth=0.8; hctx.stroke();
       }
       // goodness of fit vs analytical: overlap = 1 − ½∫|empirical − analytical| dv
+      // (compare in pdf-space: convert the absolute-count average back down)
       let tvd=0;
       for(let i=0;i<NBINS;i++){
         const vc=(i+0.5)*binW;
         const ana=(2*vc/ms)*Math.exp(-vc*vc/ms);
-        tvd += Math.abs(emp[i]-ana)*binW;
+        const empPdf=emp[i]/(n*binW);
+        tvd += Math.abs(empPdf-ana)*binW;
       }
       const agree=Math.max(0,Math.min(100,(1-0.5*tvd)*100));
       hctx.font='10px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
       hctx.textAlign='right'; hctx.fillStyle='#9fb0bf';
       hctx.fillText(`empirical · ${empFrames} frames · fit ${agree.toFixed(1)}%`, padL+plotW, padT+11);
     }
-    // x-axis caption
-    hctx.fillStyle='#586471'; hctx.textAlign='right';
-    hctx.fillText('speed →', padL+plotW, padT-2);
-    hctx.textAlign='left';
-    hctx.fillText('0', padL, padT+plotH+20);
+    // axis titles — deliberately unitless (no tick numbers): this histogram
+    // is about shape and relative scale, not literal values
+    hctx.fillStyle='#9aa6b3';
+    hctx.font='600 12px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    hctx.textAlign='center';
+    hctx.fillText('particle energy →', padL+plotW/2, h-8);
+
+    hctx.save();
+    hctx.translate(13, padT+plotH/2);
+    hctx.rotate(-Math.PI/2);
+    hctx.textAlign='center';
+    hctx.fillText('number of particles', 0, 0);
+    hctx.restore();
   }
 
   // ---------- draw + update ----------
   function draw(){
     const st=stats();
     drawBox();
-    drawHist(st);
+    const fracAbove = activationOn ? fracAboveEa() : 0;
+    drawHist(st, fracAbove);
     el.sMean.innerHTML = st.mean.toFixed(2);
     el.sRms.innerHTML  = st.rms.toFixed(2);
     el.sVp.innerHTML   = st.vp.toFixed(2);
     el.sColl.textContent = collisions.toLocaleString();
+    el.actPctLabel.textContent = activationOn ? ` · ${(fracAbove*100).toFixed(1)}% above` : '';
+    el.sAct.innerHTML = activationOn ? `${(fracAbove*100).toFixed(1)}<small>%</small>` : '—';
   }
 
   function loop(){
@@ -601,7 +784,6 @@
     const single = m==='single';
     el.modeSingle.setAttribute('aria-pressed', single);
     el.modeUniform.setAttribute('aria-pressed', !single);
-    el.spdLabel.textContent = single ? 'Initial speed' : 'Max speed';
     setRunning(false);
     init();
   }
@@ -621,15 +803,40 @@
     resetEmp();                       // start (or clear) the running average fresh
     if(!running) draw();
   });
+  el.actToggle.addEventListener('click', ()=>{
+    activationOn=!activationOn;
+    el.actToggle.setAttribute('aria-pressed', activationOn);
+    el.actSlider.disabled = !activationOn;
+    if(!running) draw();
+  });
 
-  el.nSlider.addEventListener('input', ()=>{ el.nVal.textContent=el.nSlider.value; setRunning(false); init(); });
-  el.spd.addEventListener('input', ()=>{ el.spdVal.textContent=(+el.spd.value).toFixed(2); setRunning(false); init(); });
+  // Both of these act live on the running simulation instead of resetting
+  // it: the particle-count slider adds/removes particles in place, and the
+  // energy slider rescales existing velocities — see setParticleCount and
+  // rescaleToEnergy above.
+  el.nSlider.addEventListener('input', ()=>{
+    el.nVal.textContent=el.nSlider.value;
+    setParticleCount(+el.nSlider.value);
+    draw();
+  });
+  el.ebar.addEventListener('input', ()=>{
+    const Ebar = +el.ebar.value;
+    el.ebarVal.textContent = Ebar.toFixed(2);
+    rescaleToEnergy(Ebar);
+    draw();
+  });
+  el.actSlider.addEventListener('input', ()=>{
+    Ea = +el.actSlider.value;
+    el.actVal.textContent = Ea.toFixed(2);
+    if(!running) draw();
+  });
 
   window.addEventListener('keydown', e=>{
     if(e.code==='Space'){ e.preventDefault(); setRunning(!running); }
     else if(e.key==='r'||e.key==='R'){ setRunning(false); init(); }
     else if(e.key==='c'||e.key==='C'){ el.curveToggle.click(); }
     else if(e.key==='e'||e.key==='E'){ el.empToggle.click(); }
+    else if(e.key==='a'||e.key==='A'){ el.actToggle.click(); }
   });
 
   let rt;
