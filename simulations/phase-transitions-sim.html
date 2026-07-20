@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<script src="../assets/js/theme.js"></script>
+<!-- <title>Phase Transitions — A Molecular Dynamics Simulation</title> -->
+<style>
+  :root {
+    --solid-c: #4a5a8a;
+    --liquid-c: #3d8a82;
+    --gas-c: #c2622f;
+    font-family: var(--font);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    padding: 28px 20px 60px;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
+  h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 500;
+    font-size: 1.65rem;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin: 0 0 24px;
+    line-height: 1.5;
+    max-width: 700px;
+  }
+  .main-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .canvas-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    position: relative;
+    min-width: 0;
+  }
+  #simCanvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 45 / 32;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .state-badge {
+    position: absolute;
+    top: 26px;
+    left: 26px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--solid-c);
+    transition: background 0.4s ease;
+  }
+  .legend-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+  .legend-bar {
+    height: 8px;
+    width: 140px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, #3a6fd8, #5fb7c9, #e8c84a, #e0683a);
+  }
+  .controls-panel {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .panel-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+  }
+  .panel-box h2 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+  label.slider-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.92rem;
+    margin-bottom: 6px;
+  }
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .temp-readout {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 0.82rem;
+    color: var(--muted);
+  }
+  .button-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  button {
+    flex: 1;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    color: var(--accent);
+    border-radius: 6px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { background: color-mix(in srgb, var(--accent) 24%, var(--surface)); }
+  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  button.primary:hover { background: var(--gold); }
+  details.explainer summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  details.explainer p {
+    font-size: 0.86rem;
+    line-height: 1.55;
+    color: var(--text);
+  }
+  details.explainer ul { font-size: 0.86rem; line-height: 1.55; padding-left: 20px; }
+  .hc-box { padding-bottom: 18px; }
+  .hc-subtitle { font-size: 0.78rem; font-weight: 400; color: var(--muted); text-transform: none; letter-spacing: 0; }
+  #hcCanvas { display: block; width: 100%; height: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- <h1>Phase Transitions</h1> -->
+  <!-- <p class="subtitle"> -->
+    <!-- A 2D molecular dynamics simulation of a Lennard-Jones cluster. Particles interact through a
+    realistic interatomic potential — short-range repulsion, longer-range attraction — and the
+    only thing changing as you move the slider is how much kinetic energy each particle carries.
+    Watch the same attractive forces that hold a solid together get overwhelmed by thermal motion.
+  </p> -->
+
+  <div class="main-layout">
+    <div class="canvas-panel">
+      <canvas id="simCanvas" width="630" height="448"></canvas>
+      <div id="stateBadge" class="state-badge">Solid</div>
+      <div class="legend-row">
+        <span>Slow</span>
+        <span class="legend-bar"></span>
+        <span>Fast</span>
+        <span style="margin-left:auto;">particle speed →</span>
+      </div>
+    </div>
+
+    <div class="controls-panel">
+      <div class="panel-box">
+        <h2>Temperature</h2>
+        <label class="slider-label">
+          <span>Target temperature</span>
+        </label>
+        <input type="range" id="tempSlider" min="0.02" max="3.0" step="0.01" value="0.05">
+        <div class="temp-readout">
+          <span id="tempStarReadout">T* = 0.05</span>
+          <span id="tempKReadout">≈ 6 K (argon-like)</span>
+        </div>
+        <div class="button-row">
+          <button id="playPause" class="primary">Pause</button>
+          <button id="resetBtn">Reset to Solid</button>
+        </div>
+        <div class="button-row">
+          <button id="sweepBtn">Start Temperature Sweep</button>
+        </div>
+      </div>
+
+      <div class="panel-box">
+        <h2>Particles &amp; interactions</h2>
+        <label class="slider-label"><span>Particle count</span></label>
+        <input type="range" id="countSlider" min="4" max="14" step="1" value="10">
+        <div class="temp-readout">
+          <span id="countReadout">100 particles</span>
+          <span>applies on release</span>
+        </div>
+
+        <label class="slider-label" style="margin-top:14px;"><span>Interaction strength (ε)</span></label>
+        <input type="range" id="epsSlider" min="0.3" max="2.5" step="0.05" value="1.0">
+        <div class="temp-readout">
+          <span id="epsReadout">ε = 1.00</span>
+          <span id="epsHint">argon-like</span>
+        </div>
+
+        <label class="slider-label" style="margin-top:14px;"><span>Gravity</span></label>
+        <input type="range" id="gravitySlider" min="0" max="0.15" step="0.005" value="0.045">
+        <div class="temp-readout">
+          <span id="gravityReadout">g = 0.045</span>
+          <span id="gravityHint">Earth-like</span>
+        </div>
+
+        <label class="slider-label" style="margin-top:14px;"><span>Cohesion</span></label>
+        <input type="range" id="cohesionSlider" min="0" max="0.05" step="0.002" value="0.02">
+        <div class="temp-readout">
+          <span id="cohesionReadout">κ = 0.020</span>
+          <span id="cohesionHint">helps re-solidify</span>
+        </div>
+      </div>
+
+      <!-- <details class="explainer panel-box">
+        <summary>How this simulation works</summary>
+        <p>
+          Every pair of particles interacts through the Lennard-Jones potential
+          <em>U(r) = 4ε[(σ/r)<sup>12</sup> − (σ/r)<sup>6</sup>]</em>, which repels particles
+          strongly at short range and attracts them weakly out to a few particle diameters. This
+          is the standard model for how neutral atoms (like argon) actually interact, and it's the
+          only force in the simulation — there is no separate "solid" or "gas" rule built in.
+        </p>
+        <p>
+          The temperature slider doesn't move particles directly. It sets a target average kinetic
+          energy, and a thermostat gently nudges the real kinetic energy toward that target each
+          step — the same idea as a heat bath exchanging energy with the system. Positions then
+          evolve under Newton's second law (velocity-Verlet integration), so everything you see —
+          melting, flowing, evaporating — emerges from the competition between that thermal energy
+          and the attractive forces between particles.
+        </p>
+        <p>
+          <strong>State is classified using two physical order parameters</strong>, the same ones
+          used in real molecular simulations: the <em>Lindemann parameter</em> δ, the root-mean-square
+          displacement of particles from their original lattice sites (divided by the lattice
+          spacing) — small in a solid, large once particles diffuse away from fixed sites — and the
+          <em>mean coordination number</em>, how many neighbours each particle has within 1.5σ —
+          around 6 in a close-packed solid or liquid, near zero once a particle is alone in the gas
+          phase. Textbook references quote δ ≈ 0.1–0.15 as the bulk-solid melting threshold, but a
+          cluster this small genuinely vibrates with much larger amplitude than a bulk crystal does
+          even while its coordination stays fully intact (small clusters are floppier than bulk
+          solids — a real finite-size effect, not an error), so that threshold was recalibrated
+          against this simulation's own coordination data rather than borrowed directly from the
+          literature.
+        </p>
+        <ul>
+          <li>Mean coordination &lt; 2 → <strong>gas</strong> (particles are mostly isolated)</li>
+          <li>Coordination high and δ &lt; 1.0 → <strong>solid</strong> (particles vibrate about fixed sites)</li>
+          <li>Coordination high and δ ≥ 1.0 → <strong>liquid</strong> (particles flow past each other but stay cohesive)</li>
+        </ul>
+        <p>
+          The temperature is also shown in Kelvin using argon's real Lennard-Jones parameters
+          (ε/k<sub>B</sub> ≈ 120 K) to give a physical sense of scale. Because this is a small
+          cluster of ~100 particles in a vacuum, not a bulk liquid at atmospheric pressure, the
+          temperature at which it visibly melts or evaporates won't exactly match argon's textbook
+          melting/boiling points — but the underlying physics (attraction vs. thermal energy) is
+          exactly the same competition that sets those real transition temperatures.
+        </p>
+        <p>
+          <strong>Particle count</strong> rebuilds the lattice at a new size (applied when you
+          release the slider). <strong>Interaction strength (ε)</strong> scales how deep the
+          attractive well is — turn it down to model a weakly-bound substance (like a noble gas)
+          that melts and evaporates at low temperature, or up to model something more
+          strongly bound (like a metal), which stays solid at much higher T. The temperature axis
+          itself doesn't move when you change ε — that's the point: the same thermal energy now
+          competes against a different bond strength. <strong>Gravity</strong> adds a constant
+          downward force on top of the interparticle forces — turn it up and the solid/liquid
+          packs down harder against the floor, turn it to zero and the cluster floats freely,
+          held together by nothing but its own attraction. <strong>Start Temperature Sweep</strong>
+          resets to a cold solid and then adds kinetic energy at a constant rate, mimicking
+          a constant-power heater. Because the energy input is constant, any energy that goes
+          into breaking intermolecular bonds during a phase transition isn't available to raise
+          the kinetic temperature — so T* genuinely plateaus on the heating curve. The width of
+          each plateau is proportional to the latent heat for that transition: in this Lennard-Jones
+          system, evaporation absorbs roughly 20–25× more energy than melting, so the boiling
+          plateau is much wider than the melting plateau, exactly as in real substances.
+        </p>
+      </details> -->
+    </div>
+  </div>
+</div>
+
+<div class="container" style="margin-top:22px;">
+  <div class="panel-box hc-box">
+    <h2 style="display:flex;align-items:baseline;gap:8px;">
+      Heating curve
+      <span id="hcSubtitle" class="hc-subtitle">— press Start Temperature Sweep to record</span>
+    </h2>
+    <canvas id="hcCanvas" width="940" height="200"></canvas>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- Theme (dark/light) colours, read from theme.css custom properties ----------
+  // Cached rather than read every frame (getComputedStyle forces a style recalc), and
+  // refreshed only when the site's theme toggle actually changes data-theme.
+  function readThemeColors() {
+    const cs = getComputedStyle(document.documentElement);
+    const v = (name) => cs.getPropertyValue(name).trim();
+    return {
+      surface: v("--surface"), border: v("--border"), borderSoft: v("--border-soft"),
+      text: v("--text"), muted: v("--muted"), mutedDim: v("--muted-dim")
+    };
+  }
+  let THEME = readThemeColors();
+  new MutationObserver(() => { THEME = readThemeColors(); drawHeatingCurve(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  // ---------- Physics constants (reduced Lennard-Jones units: sigma = mass = 1) ----------
+  const SIGMA = 1, MASS = 1;
+  let EPS = 1.0; // interaction strength, adjustable via slider
+  const RC = 3.0, RC2 = RC * RC;
+  const COORD_CUTOFF2 = 1.5 * 1.5;
+  const EPS_OVER_KB = 120; // Kelvin, argon-like (at EPS = 1.0), for display only
+
+  let N_SIDE = 10;
+  let N = N_SIDE * N_SIDE;
+  const LATTICE_SPACING = Math.pow(2, 1 / 6) * SIGMA; // LJ minimum separation
+
+  const BOX_W = 45, BOX_H = 32; // in units of sigma
+  const PXP = 14; // pixels per sigma
+
+  const DT = 0.005;
+  const SUBSTEPS = 8;
+  const TAU = 1.0; // Berendsen thermostat relaxation time
+  let GRAVITY = 0.045; // downward acceleration (reduced units), y increases downward; adjustable via slider
+  let COHESION_K = 0.02; // spring constant toward collective centre of mass; adjustable via slider
+
+  // ---------- State ----------
+  let px = new Float64Array(N), py = new Float64Array(N);
+  let vx = new Float64Array(N), vy = new Float64Array(N);
+  let fx = new Float64Array(N), fy = new Float64Array(N);
+  let r0x = new Float64Array(N), r0y = new Float64Array(N); // reference lattice sites for Lindemann
+  let lastU = 0;
+  let lastCoordSum = 0;
+  let lastReportedState = "Solid";
+  let r0ComX = 0, r0ComY = 0;
+  // Counts consecutive frames where coordination looks solid but lindemann is still high
+  // from stale reference positions — used to detect and correct re-solidification.
+  let resolidifyCounter = 0;
+
+  let targetTstar = parseFloat(document.getElementById("tempSlider").value);
+  let running = true;
+
+  function setParticleCount(newSide) {
+    N_SIDE = newSide;
+    N = N_SIDE * N_SIDE;
+    px = new Float64Array(N); py = new Float64Array(N);
+    vx = new Float64Array(N); vy = new Float64Array(N);
+    fx = new Float64Array(N); fy = new Float64Array(N);
+    r0x = new Float64Array(N); r0y = new Float64Array(N);
+    initLattice();
+  }
+
+  // seedT (optional): temperature at which to seed velocities after the quench. If omitted, the
+  // global targetTstar is used but capped at ~0.25*EPS — a level that stays solidly in the solid
+  // phase regardless of what the thermostat is currently targeting. This prevents the lattice from
+  // immediately scattering if, say, initLattice is called while the slider is at T*=2.0 (gas).
+  function initLattice(seedT = null) {
+    const w = (N_SIDE - 1) * LATTICE_SPACING;
+    const h = (N_SIDE - 1) * LATTICE_SPACING * Math.sqrt(3) / 2;
+    const cx = BOX_W / 2;
+    // rest the block directly on the floor (zero gap — gravity settling is handled by the
+    // relaxation below, not by letting the block actually fall; starting with any gap means
+    // the whole block just translates rigidly downward without any internal compression
+    // developing, since nothing breaks the symmetry until something actually touches the wall)
+    const marginBottom = 0;
+    const cy = BOX_H - marginBottom - h / 2;
+    let idx = 0;
+    for (let iy = 0; iy < N_SIDE; iy++) {
+      for (let ix = 0; ix < N_SIDE; ix++) {
+        const x = cx - w / 2 + ix * LATTICE_SPACING + (iy % 2 === 1 ? LATTICE_SPACING / 2 : 0);
+        const y = cy - h / 2 + iy * LATTICE_SPACING * Math.sqrt(3) / 2;
+        px[idx] = x; py[idx] = y;
+        idx++;
+      }
+    }
+
+    // Zero any leftover velocities from the previous run — old momentum has no place in a fresh
+    // solid. The SD loop below only moves positions (by forces, not velocities), so this can't
+    // affect the minimisation itself; it just prevents stale gas-phase speeds from lingering.
+    vx.fill(0); vy.fill(0);
+
+    // Relax to the true rest configuration before recording reference positions. The
+    // many-body equilibrium spacing isn't quite the same as the pairwise minimum used to
+    // build the lattice, and the block also needs to settle onto the floor under gravity —
+    // both produce a real, but purely elastic, settling motion that must finish *before* the
+    // Lindemann "has this drifted from its site" reference is captured, or the settling itself
+    // gets misread as melting. Plain gradient descent on the potential energy (move each
+    // particle a small step along its force each iteration) converges far more reliably to the
+    // actual local minimum than a damped dynamics simulation does.
+    const SD_STEPS = 2000;
+    // The stability limit for steepest-descent (gradient descent) is step < 2/k_eff where
+    // k_eff is the effective stiffness of the lattice.  For a 2D triangular lattice with 6
+    // nearest neighbours each contributing d²U/dr²|_rmin = 72ε, the worst-case effective
+    // stiffness (displacement along a bond) is 72ε × Σcos²(θ_j) = 72ε × 3 = 216ε.
+    // Max stable step = 2/(216ε) ≈ 0.0093/ε.
+    //
+    // With a fixed step of 0.004:
+    //   ε = 1.0 → step/max = 43 % — safe (2.3× margin)
+    //   ε = 2.31 → step/max = 100 % — exactly at the stability boundary
+    //   ε = 2.5 → step/max = 108 % — DIVERGENT: SD overshoots, particles collide,
+    //              first physics step gives ~million-σ/τ velocities, sweep terminates
+    //              on frame 1 from the Tinst spike.
+    //
+    // Fix: scale the step by 1/max(1,ε) to keep the safety margin constant.
+    const SD_STEP_SIZE = 0.004 / Math.max(1, EPS);
+    computeForces();
+    for (let s = 0; s < SD_STEPS; s++) {
+      for (let i = 0; i < N; i++) {
+        px[i] += SD_STEP_SIZE * fx[i];
+        py[i] += SD_STEP_SIZE * fy[i];
+        applyWalls(i);
+      }
+      computeForces();
+    }
+    for (let i = 0; i < N; i++) { r0x[i] = px[i]; r0y[i] = py[i]; }
+    r0ComX = 0; r0ComY = 0;
+    for (let i = 0; i < N; i++) { r0ComX += r0x[i]; r0ComY += r0y[i]; }
+    r0ComX /= N; r0ComY /= N;
+    lastReportedState = "Solid";
+    resolidifyCounter = 0;
+
+    // Resolve seed temperature. Caller may pass an explicit value (e.g. the reset button always
+    // passes 0.02 for a guaranteed cold solid). Otherwise use targetTstar but cap it at
+    // 0.25 × EPS — the melting temperature scales with EPS and is roughly 0.4 × EPS, so
+    // 0.25 × EPS sits comfortably inside the solid phase for any EPS setting and avoids the
+    // lattice immediately scattering into a liquid or gas on the first physics step.
+    const T = seedT !== null ? seedT : Math.min(targetTstar, 0.25 * EPS);
+    const speedScale = Math.sqrt(Math.max(T, 0));
+    let sumvx = 0, sumvy = 0;
+    for (let i = 0; i < N; i++) {
+      vx[i] = (Math.random() - 0.5) * 2 * speedScale;
+      vy[i] = (Math.random() - 0.5) * 2 * speedScale;
+      sumvx += vx[i]; sumvy += vy[i];
+    }
+    sumvx /= N; sumvy /= N;
+    for (let i = 0; i < N; i++) { vx[i] -= sumvx; vy[i] -= sumvy; }
+    computeForces();
+  }
+
+  function computeForces() {
+    fx.fill(0); fy.fill(0);
+    const uAtRc = 4 * EPS * (Math.pow(SIGMA / RC, 12) - Math.pow(SIGMA / RC, 6));
+    let U = 0, coordSum = 0;
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const dx = px[i] - px[j];
+        const dy = py[i] - py[j];
+        const r2 = dx * dx + dy * dy;
+        if (r2 < COORD_CUTOFF2 && r2 > 1e-8) coordSum += 2; // count both i and j
+        if (r2 < RC2 && r2 > 1e-8) {
+          const r2i = 1 / r2;
+          const r6i = r2i * r2i * r2i;
+          const r12i = r6i * r6i;
+          const fOverR = 24 * EPS * (2 * r12i - r6i) * r2i;
+          fx[i] += fOverR * dx; fy[i] += fOverR * dy;
+          fx[j] -= fOverR * dx; fy[j] -= fOverR * dy;
+          U += 4 * EPS * (r12i - r6i) - uAtRc;
+        }
+      }
+    }
+    for (let i = 0; i < N; i++) fy[i] += GRAVITY * MASS;
+
+    // Cohesion: a gentle harmonic spring toward the collective centre of mass.
+    // Inside a single coherent solid the displacement of every particle from the
+    // COM is small, so this force is tiny and doesn't distort the lattice or the
+    // phase diagram. For scattered gas particles or separate fragments the force is
+    // larger and pulls them back toward the main cluster when the system is cooled,
+    // preventing the simulation from permanently breaking into disconnected pieces.
+    if (COHESION_K > 0) {
+      let cohComX = 0, cohComY = 0;
+      for (let i = 0; i < N; i++) { cohComX += px[i]; cohComY += py[i]; }
+      cohComX /= N; cohComY /= N;
+      for (let i = 0; i < N; i++) {
+        fx[i] += COHESION_K * (cohComX - px[i]);
+        fy[i] += COHESION_K * (cohComY - py[i]);
+      }
+    }
+    lastU = U;
+    lastCoordSum = coordSum;
+  }
+
+  function applyWalls(i) {
+    // Use modular reflection so any displacement magnitude is handled correctly.
+    // The original single-pass check fails when |Δx| > BOX_W in one DT step, which can
+    // happen after a large LJ force kick: the particle ends up at a huge coordinate, the
+    // cohesion COM chases it, forces on all other particles grow, positions diverge to
+    // ±Infinity, cohesion then computes ∞ − ∞ = NaN, speedColor(NaN) throws, the rAF
+    // loop dies, and reset appears to do nothing.
+    //
+    // Modular approach: fold pos into [0, 2·limit) then reflect the second half.
+    // This is mathematically equivalent to bouncing off both walls any number of times.
+    // For positions already escaped very far (> 1e10 σ ≈ 2×10⁸ box widths), floating-point
+    // modulo loses precision, so we rescue those particles directly.
+    const reflect = (pos, vel, limit) => {
+      if (!isFinite(pos) || !isFinite(vel) || Math.abs(pos) > 1e10) {
+        return [limit * 0.5, 0]; // emergency rescue: put back at centre with zero velocity
+      }
+      const period = 2 * limit;
+      pos = ((pos % period) + period) % period; // fold into [0, period)
+      if (pos > limit) { pos = period - pos; vel = -vel; } // second half → reflect once
+      return [pos, vel];
+    };
+    [px[i], vx[i]] = reflect(px[i], vx[i], BOX_W);
+    [py[i], vy[i]] = reflect(py[i], vy[i], BOX_H);
+  }
+
+  function step() {
+    for (let i = 0; i < N; i++) {
+      px[i] += vx[i] * DT + 0.5 * fx[i] / MASS * DT * DT;
+      py[i] += vy[i] * DT + 0.5 * fy[i] / MASS * DT * DT;
+      applyWalls(i);
+    }
+    const oldFx = fx.slice(), oldFy = fy.slice();
+    computeForces();
+    for (let i = 0; i < N; i++) {
+      vx[i] += 0.5 * (oldFx[i] + fx[i]) / MASS * DT;
+      vy[i] += 0.5 * (oldFy[i] + fy[i]) / MASS * DT;
+    }
+    // Berendsen thermostat — only active when not in heating-curve sweep mode. During a sweep,
+    // a constant-energy-injection scheme in the frame loop takes over (see below), which is
+    // what produces genuine flat plateaus in T_inst during phase transitions.
+    if (!sweeping) {
+      let KE = 0;
+      for (let i = 0; i < N; i++) KE += 0.5 * MASS * (vx[i] * vx[i] + vy[i] * vy[i]);
+      let Tinst = KE / N;
+      if (Tinst < 1e-6) Tinst = 1e-6;
+      const lambdaRaw = Math.sqrt(Math.max(0, 1 + (DT / TAU) * (targetTstar / Tinst - 1)));
+      const lambda = Math.min(1.02, Math.max(0.98, lambdaRaw));
+      for (let i = 0; i < N; i++) { vx[i] *= lambda; vy[i] *= lambda; }
+    }
+  }
+
+  // ---------- Diagnostics ----------
+  function diagnostics() {
+    let KE = 0;
+    for (let i = 0; i < N; i++) KE += 0.5 * MASS * (vx[i] * vx[i] + vy[i] * vy[i]);
+    const Tinst = KE / N;
+    const PEperParticle = lastU / N;
+    const meanCoord = lastCoordSum / N;
+
+    // Mean-squared displacement from the reference lattice sites, with the cluster's own rigid
+    // translation *and rotation* factored out first (a best-fit alignment, the same idea used
+    // for computing vibrational amplitude in any free-floating cluster in real cluster physics).
+    // A weightless or near-weightless cluster has nothing pinning its position or orientation,
+    // so it can drift and slowly rotate as a rigid body — neither is melting, and the detector
+    // needs to see past both to measure only genuine internal deformation.
+    let comX = 0, comY = 0;
+    for (let i = 0; i < N; i++) { comX += px[i]; comY += py[i]; }
+    comX /= N; comY /= N;
+
+    let A = 0, B = 0; // for the optimal alignment rotation angle theta = atan2(B, A)
+    for (let i = 0; i < N; i++) {
+      const p0x = r0x[i] - r0ComX, p0y = r0y[i] - r0ComY;
+      const qx = px[i] - comX, qy = py[i] - comY;
+      A += p0x * qx + p0y * qy;
+      B += p0x * qy - p0y * qx;
+    }
+    const theta = Math.atan2(B, A);
+    const cosT = Math.cos(theta), sinT = Math.sin(theta);
+
+    let msd = 0;
+    for (let i = 0; i < N; i++) {
+      const p0x = r0x[i] - r0ComX, p0y = r0y[i] - r0ComY;
+      const rx = cosT * p0x - sinT * p0y, ry = sinT * p0x + cosT * p0y; // rotated reference
+      const dx = (px[i] - comX) - rx, dy = (py[i] - comY) - ry;
+      msd += dx * dx + dy * dy;
+    }
+    msd /= N;
+    const lindemann = Math.sqrt(msd) / LATTICE_SPACING;
+
+    // Hysteresis on the gas/liquid coordination boundary: right at the threshold, coordination
+    // can flicker back and forth between frames as individual neighbour bonds form and break,
+    // which would make the state badge flicker too. Require crossing past the threshold by a
+    // small margin before actually switching, in whichever direction it's heading.
+    let state;
+    if (lastReportedState === "Gas") {
+      state = meanCoord > 2.3 ? (lindemann < 1.0 ? "Solid" : "Liquid") : "Gas";
+    } else {
+      state = meanCoord < 1.7 ? "Gas" : (lindemann < 1.0 ? "Solid" : "Liquid");
+    }
+    lastReportedState = state;
+
+    return { Tinst, PEperParticle, lindemann, meanCoord, state, maxSpeed2: maxSpeedSq() };
+  }
+
+  function maxSpeedSq() {
+    let m = 0;
+    for (let i = 0; i < N; i++) {
+      const s2 = vx[i] * vx[i] + vy[i] * vy[i];
+      if (s2 > m) m = s2;
+    }
+    return m;
+  }
+
+  // ---------- Rendering ----------
+  const canvas = document.getElementById("simCanvas");
+  const ctx = canvas.getContext("2d");
+  const PARTICLE_RADIUS_PX = 5;
+
+  // ---------- Responsive canvas sizing ----------
+  // All drawing below (render(), the box border, particle positions) is expressed in a
+  // fixed "logical" pixel space of BOX_W*PXP by BOX_H*PXP (630x448) — the canvas's original
+  // design size. Rather than touch that drawing code, we keep the logical space fixed and
+  // scale it onto whatever CSS size the canvas is actually laid out at (which now varies
+  // with the controls-panel column via the equal-width grid above), the same locked-aspect
+  // technique used by this site's other particle-box simulations (e.g. mb-sim.html).
+  const LOGICAL_W = BOX_W * PXP, LOGICAL_H = BOX_H * PXP;
+  const simDpr = Math.min(window.devicePixelRatio || 1, 2);
+  function sizeSimCanvas() {
+    const w = canvas.clientWidth || LOGICAL_W;
+    const h = w * LOGICAL_H / LOGICAL_W;
+    canvas.width = Math.round(w * simDpr);
+    canvas.height = Math.round(h * simDpr);
+    ctx.setTransform(simDpr * w / LOGICAL_W, 0, 0, simDpr * h / LOGICAL_H, 0, 0);
+  }
+  sizeSimCanvas();
+  if (window.ResizeObserver) {
+    new ResizeObserver(sizeSimCanvas).observe(canvas);
+  } else {
+    window.addEventListener("resize", sizeSimCanvas);
+  }
+  // Fixed colour scale ceiling based on the hottest setting on the slider, so colour always
+  // means the same thing regardless of current temperature (consistent with a fixed axis).
+  const SLIDER_MAX_TSTAR = 3.0;
+  const SPEED_COLOR_MAX = Math.sqrt(3 * SLIDER_MAX_TSTAR); // generous ceiling
+
+  function speedColor(speed) {
+    // Guard against NaN/Infinity: Math.min/max propagate NaN, so stops[NaN] = undefined,
+    // and undefined[0] would throw TypeError and kill the rAF loop.
+    if (!isFinite(speed)) return 'rgb(224,104,58)'; // red fallback for any non-finite speed
+    let t = speed / SPEED_COLOR_MAX;
+    t = Math.max(0, Math.min(1, t));
+    // blue -> teal -> amber -> red
+    const stops = [
+      [58, 111, 216],
+      [95, 183, 201],
+      [232, 200, 74],
+      [224, 104, 58]
+    ];
+    const seg = t * (stops.length - 1);
+    const i0 = Math.min(stops.length - 2, Math.floor(seg));
+    const f = seg - i0;
+    const c0 = stops[i0], c1 = stops[i0 + 1];
+    const r = Math.round(c0[0] + (c1[0] - c0[0]) * f);
+    const g = Math.round(c0[1] + (c1[1] - c0[1]) * f);
+    const b = Math.round(c0[2] + (c1[2] - c0[2]) * f);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, LOGICAL_W, LOGICAL_H);
+    // box border
+    ctx.strokeStyle = THEME.border;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 0.5, BOX_W * PXP, BOX_H * PXP);
+
+    for (let i = 0; i < N; i++) {
+      const speed = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
+      ctx.fillStyle = speedColor(speed);
+      ctx.beginPath();
+      ctx.arc(px[i] * PXP, py[i] * PXP, PARTICLE_RADIUS_PX, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // ---------- Heating curve constants ----------
+  // Energy injection rate per particle per real second (ε · particle⁻¹ · s⁻¹).
+  // Scales with N so the time scale of the curve is roughly independent of particle count.
+  // At N=100 this injects ~12 ε/s total:
+  //   • melting latent heat ≈ 11 ε  → plateau ≈ 0.9 s  (genuine flat section)
+  //   • evaporation latent heat ≈ 260 ε → plateau ≈ 21 s (much wider, as in real systems)
+  // The ratio of widths reflects the actual ratio of latent heats — a real physical result.
+  const HC_HEAT_RATE_PER_PARTICLE = 0.12; // ε particle⁻¹ s⁻¹
+  const HC_TMAX = 3.0; // stop sweep when T_inst reaches this value
+
+  let hcData = [];    // {t, Tinst, state} recorded during sweep
+  let hcStart = null; // performance.now() when current sweep began
+
+  // ---------- Heating curve canvas ----------
+  const hcCanvas = document.getElementById("hcCanvas");
+  const hcCtx = hcCanvas.getContext("2d");
+  const hcSubtitle = document.getElementById("hcSubtitle");
+
+  function drawHeatingCurve() {
+    const CW = hcCanvas.width, CH = hcCanvas.height;
+    const ML = 52, MR = 18, MT = 18, MB = 42;
+    const PW = CW - ML - MR, PH = CH - MT - MB;
+    const ctx = hcCtx;
+
+    // y-axis range scales with hcSweepEPS so the phase transitions always appear at the
+    // same relative positions on the plot regardless of interaction strength:
+    //   melting  ≈ 0.4ε  →  13 % of y range
+    //   boiling  ≈ 0.8ε  →  27 % of y range
+    const hcTmax = HC_TMAX * hcSweepEPS;
+
+    const tMax = hcData.length > 1 ? hcData[hcData.length - 1].t + 1 : 45;
+    const toX = (t) => ML + Math.min(Math.max(t, 0), tMax) / tMax * PW;
+    const toY = (T) => MT + PH - Math.min(Math.max(T, 0), hcTmax) / hcTmax * PH;
+
+    ctx.clearRect(0, 0, CW, CH);
+
+    // Plot background
+    ctx.fillStyle = THEME.surface;
+    ctx.fillRect(ML, MT, PW, PH);
+
+    if (hcData.length === 0) {
+      ctx.fillStyle = THEME.mutedDim;
+      ctx.font = "13px -apple-system,'Segoe UI',Arial,sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Start a temperature sweep to record the heating curve", ML + PW / 2, MT + PH / 2);
+      drawHCAxes(ctx, PW, PH, ML, MT, MB, tMax, hcTmax);
+    }
+
+    // Centred running average with W=30 to smooth thermal noise from small-N fluctuations.
+    // The raw T_inst fluctuates ±0.05 T* from the N=100 equipartition noise; with W=30 points
+    // that's reduced by sqrt(30) ≈ 5×, leaving the genuine plateau-and-rise structure visible.
+    const W_SMOOTH = 30;
+    const smoothedT = hcData.map((_, i) => {
+      const lo = Math.max(0, i - W_SMOOTH), hi = Math.min(hcData.length - 1, i + W_SMOOTH);
+      let sum = 0, n = 0;
+      for (let j = lo; j <= hi; j++) { sum += hcData[j].Tinst; n++; }
+      return sum / n;
+    });
+
+    // Collect contiguous state segments
+    const segs = [];
+    let si = 0;
+    for (let i = 1; i <= hcData.length; i++) {
+      if (i === hcData.length || hcData[i].state !== hcData[si].state) {
+        segs.push({ state: hcData[si].state, t0: hcData[si].t, t1: hcData[i > 0 ? i - 1 : 0].t });
+        si = i;
+      }
+    }
+
+    // Phase-coloured background regions
+    const bgColors = { Solid: "rgba(74,90,138,0.09)", Liquid: "rgba(61,138,130,0.09)", Gas: "rgba(194,98,47,0.09)" };
+    for (const seg of segs) {
+      ctx.fillStyle = bgColors[seg.state];
+      ctx.fillRect(toX(seg.t0), MT, toX(seg.t1) - toX(seg.t0) + 1, PH);
+    }
+
+    // Horizontal grid lines — spacing adapts so there are always ~6 lines regardless of range
+    const yStep = hcTmax <= 1.5 ? 0.25 : hcTmax <= 4 ? 0.5 : 1.0;
+    ctx.save();
+    ctx.strokeStyle = THEME.borderSoft;
+    ctx.lineWidth = 1;
+    for (let T = yStep; T < hcTmax; T += yStep) {
+      ctx.beginPath(); ctx.moveTo(ML, toY(T)); ctx.lineTo(ML + PW, toY(T)); ctx.stroke();
+    }
+    ctx.restore();
+
+    // State transition vertical markers
+    ctx.save();
+    ctx.setLineDash([3, 5]);
+    ctx.strokeStyle = THEME.border;
+    ctx.lineWidth = 1;
+    for (let k = 1; k < segs.length; k++) {
+      const x = toX(segs[k].t0);
+      ctx.beginPath(); ctx.moveTo(x, MT); ctx.lineTo(x, MT + PH); ctx.stroke();
+    }
+    ctx.restore();
+
+    // State labels at the top of each region
+    const labelColors = { Solid: "#4a5a8a", Liquid: "#3d8a82", Gas: "#c2622f" };
+    ctx.save();
+    ctx.font = "bold 11px -apple-system,'Segoe UI',Arial,sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    for (const seg of segs) {
+      const midX = (toX(seg.t0) + toX(seg.t1)) / 2;
+      if (toX(seg.t1) - toX(seg.t0) > 24) {
+        ctx.fillStyle = labelColors[seg.state];
+        ctx.fillText(seg.state, midX, MT + 5);
+      }
+    }
+    ctx.restore();
+
+    // Annotate the plateau regions with "Latent heat of fusion / vaporisation"
+    // Find the first Solid→Liquid and first Liquid→Gas transitions
+    ctx.save();
+    ctx.font = "10px -apple-system,'Segoe UI',Arial,sans-serif";
+    ctx.textAlign = "center";
+    for (let k = 1; k < segs.length; k++) {
+      const prev = segs[k - 1], curr = segs[k];
+      let label = null;
+      if (prev.state === "Solid" && curr.state === "Liquid") label = "↑ latent heat of fusion";
+      if (prev.state === "Liquid" && curr.state === "Gas") label = "↑ latent heat of vaporisation";
+      if (label) {
+        // find the plateau T_inst near this transition (average of last few solid/liquid points)
+        let sumT = 0, n = 0;
+        for (let j = Math.max(0, hcData.length - 5); j < hcData.length; j++) {
+          if (hcData[j].state === prev.state) { sumT += hcData[j].Tinst; n++; }
+        }
+        // just use transition x and a y slightly above the plateau level
+        const tx = toX(segs[k].t0);
+        const transT = n > 0 ? sumT / n : 0.5;
+        ctx.fillStyle = labelColors[prev.state] + "bb";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(label, tx, toY(transT) - 4);
+      }
+    }
+    ctx.restore();
+
+    // Faint raw T_inst line — shows the thermal noise directly
+    ctx.save();
+    ctx.strokeStyle = THEME.mutedDim;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let i = 0; i < hcData.length; i++) {
+      const x = toX(hcData[i].t), y = toY(hcData[i].Tinst);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // T_inst line (smoothed), coloured by state — reveals the plateaus
+    ctx.save();
+    ctx.lineWidth = 2.5;
+    ctx.lineJoin = "round";
+    si = 0;
+    for (let i = 1; i <= hcData.length; i++) {
+      if (i === hcData.length || hcData[i].state !== hcData[si].state) {
+        ctx.strokeStyle = labelColors[hcData[si].state];
+        ctx.beginPath();
+        for (let j = si; j < i; j++) {
+          const x = toX(hcData[j].t), y = toY(smoothedT[j]);
+          j === si ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        si = i;
+      }
+    }
+    ctx.restore();
+
+    drawHCAxes(ctx, PW, PH, ML, MT, MB, tMax, hcTmax);
+
+    // Legend — top-right of plot
+    const lx = ML + PW - 8, ly = MT + 8;
+    ctx.save();
+    ctx.font = "11px -apple-system,'Segoe UI',Arial,sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    // Smoothed line swatches (three state colours)
+    ctx.strokeStyle = "#4a5a8a"; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(lx - 126, ly); ctx.lineTo(lx - 110, ly); ctx.stroke();
+    ctx.strokeStyle = "#3d8a82";
+    ctx.beginPath(); ctx.moveTo(lx - 106, ly); ctx.lineTo(lx - 90, ly); ctx.stroke();
+    ctx.strokeStyle = "#c2622f";
+    ctx.beginPath(); ctx.moveTo(lx - 86, ly); ctx.lineTo(lx - 70, ly); ctx.stroke();
+    ctx.fillStyle = THEME.text;
+    ctx.fillText("T* (smoothed, W=30)", lx, ly);
+    // Faint raw swatch
+    ctx.strokeStyle = THEME.mutedDim; ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(lx - 126, ly + 15); ctx.lineTo(lx - 70, ly + 15); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = THEME.muted;
+    ctx.fillText("T* (instantaneous)", lx, ly + 15);
+    ctx.restore();
+  }
+
+  function drawHCAxes(ctx, PW, PH, ML, MT, MB, tMax, hcTmax) {
+    ctx.save();
+
+    // Axis lines
+    ctx.strokeStyle = THEME.border;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ML, MT); ctx.lineTo(ML, MT + PH + 1);
+    ctx.moveTo(ML - 1, MT + PH); ctx.lineTo(ML + PW, MT + PH);
+    ctx.stroke();
+
+    // Y ticks + labels — step adapts to the range so there are always ~6 tick marks
+    const yStep = hcTmax <= 1.5 ? 0.25 : hcTmax <= 4 ? 0.5 : 1.0;
+    ctx.fillStyle = THEME.muted;
+    ctx.font = "11px -apple-system,'Segoe UI',Arial,sans-serif";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    for (let T = 0; T <= hcTmax + yStep * 0.01; T += yStep) {
+      const y = MT + PH - (T / hcTmax) * PH;
+      ctx.beginPath(); ctx.moveTo(ML - 4, y); ctx.lineTo(ML, y); ctx.stroke();
+      const label = T % 1 === 0 ? T.toFixed(0) : T.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+      ctx.fillText(label, ML - 7, y);
+    }
+
+    // X ticks + labels (choose a reasonable interval)
+    const xInt = tMax <= 20 ? 5 : tMax <= 50 ? 10 : tMax <= 100 ? 20 : 30;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    for (let t = 0; t <= tMax; t += xInt) {
+      const x = ML + (t / tMax) * PW;
+      ctx.beginPath(); ctx.moveTo(x, MT + PH); ctx.lineTo(x, MT + PH + 4); ctx.stroke();
+      ctx.fillText(t + "s", x, MT + PH + 6);
+    }
+
+    // Axis titles
+    ctx.fillStyle = THEME.muted;
+    ctx.font = "12px -apple-system,'Segoe UI',Arial,sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+    ctx.fillText("Time", ML + PW / 2, MT + PH + MB - 2);
+
+    ctx.save();
+    ctx.translate(13, MT + PH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textBaseline = "top";
+    ctx.fillText("Temperature T*", 0, 0);
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  // ---------- UI wiring ----------
+  const tempSlider = document.getElementById("tempSlider");
+  const tempStarReadout = document.getElementById("tempStarReadout");
+  const tempKReadout = document.getElementById("tempKReadout");
+  const playPauseBtn = document.getElementById("playPause");
+  const resetBtn = document.getElementById("resetBtn");
+  const sweepBtn = document.getElementById("sweepBtn");
+  const countSlider = document.getElementById("countSlider");
+  const countReadout = document.getElementById("countReadout");
+  const epsSlider = document.getElementById("epsSlider");
+  const epsReadout = document.getElementById("epsReadout");
+  const epsHint = document.getElementById("epsHint");
+  const gravitySlider = document.getElementById("gravitySlider");
+  const gravityReadout = document.getElementById("gravityReadout");
+  const gravityHint = document.getElementById("gravityHint");
+  const cohesionSlider = document.getElementById("cohesionSlider");
+  const cohesionReadout = document.getElementById("cohesionReadout");
+  const cohesionHint = document.getElementById("cohesionHint");
+  const stateBadge = document.getElementById("stateBadge");
+
+  const stateColorVals = { Solid: "#4a5a8a", Liquid: "#3d8a82", Gas: "#c2622f" };
+
+  let sweeping = false;
+  let hcSweepEPS = 1.0; // ε at the moment the current sweep started — used to scale the
+                         // y-axis range and the energy injection rate so every sweep takes
+                         // roughly the same wall-clock time regardless of interaction strength
+
+  function updateTempReadout() {
+    targetTstar = parseFloat(tempSlider.value);
+    tempStarReadout.textContent = `T* = ${targetTstar.toFixed(2)}`;
+    tempKReadout.textContent = `≈ ${Math.round(targetTstar * EPS_OVER_KB)} K (argon-like)`;
+  }
+  tempSlider.addEventListener("input", () => {
+    if (sweeping) stopSweep();
+    updateTempReadout();
+  });
+  updateTempReadout();
+
+  function stopSweep(finalTinst) {
+    sweeping = false;
+    sweepBtn.textContent = "Start Temperature Sweep";
+    sweepBtn.classList.remove("primary");
+    tempSlider.disabled = false;
+    // Hand off smoothly to the Berendsen thermostat: target whatever T the system
+    // has actually reached so there's no sudden jolt on returning to interactive mode.
+    if (finalTinst !== undefined) {
+      targetTstar = Math.max(parseFloat(tempSlider.min), Math.min(parseFloat(tempSlider.max), finalTinst));
+      tempSlider.value = targetTstar.toFixed(2);
+      updateTempReadout();
+    }
+    hcSubtitle.textContent = hcData.length > 0 ? "— sweep complete" : "— press Start Temperature Sweep to record";
+    drawHeatingCurve();
+  }
+
+  sweepBtn.addEventListener("click", () => {
+    if (sweeping) {
+      // Cancel: compute current T_inst for smooth thermostat handoff
+      let KE = 0;
+      for (let i = 0; i < N; i++) KE += 0.5 * MASS * (vx[i] * vx[i] + vy[i] * vy[i]);
+      stopSweep(KE / N);
+    } else {
+      // Start: reset to a cold solid so the full solid→liquid→gas sequence is always visible,
+      // then hand physics over to constant-energy injection mode.
+      // Capture the current ε so the injection rate and y-axis scale stay consistent even if the
+      // user nudges the slider during the sweep (the slider is disabled but just to be safe).
+      hcSweepEPS = EPS;
+      targetTstar = parseFloat(tempSlider.min); // cold start for initLattice velocity seed
+      tempSlider.value = targetTstar.toFixed(2);
+      updateTempReadout();
+      initLattice();
+      prevTime = performance.now(); // reset clock so first sweep frame has dtReal ≈ 0 not ≈ SD-time
+      hcData = [];
+      hcStart = null; // will be captured on first recording frame
+      hcSubtitle.textContent = "— recording…";
+      tempSlider.disabled = true;
+      sweeping = true;
+      sweepBtn.textContent = "Stop Sweep";
+      sweepBtn.classList.add("primary");
+      if (!running) { // auto-play if paused
+        running = true;
+        playPauseBtn.textContent = "Pause";
+        playPauseBtn.classList.add("primary");
+      }
+      drawHeatingCurve();
+    }
+  });
+
+  function epsHintText(v) {
+    if (v < 0.6) return "weakly bound";
+    if (v > 1.4) return "strongly bound";
+    return "argon-like";
+  }
+  epsSlider.addEventListener("input", () => {
+    EPS = parseFloat(epsSlider.value);
+    epsReadout.textContent = `ε = ${EPS.toFixed(2)}`;
+    epsHint.textContent = epsHintText(EPS);
+    // Recompute forces with the new ε immediately. Velocity-Verlet uses the stored
+    // f(t) array for the position half-step on the very next unpause; if those forces
+    // were computed with the old ε the first step gets a spurious impulse proportional
+    // to (ε_new − ε_old) × F, which for large ε changes and close-range particles can
+    // reach millions of LJ velocity units and start the escape cascade above.
+    computeForces();
+  });
+
+  function gravityHintText(v) {
+    if (v < 0.005) return "weightless";
+    if (v < 0.07) return "Earth-like";
+    return "high-gravity";
+  }
+  gravitySlider.addEventListener("input", () => {
+    GRAVITY = parseFloat(gravitySlider.value);
+    gravityReadout.textContent = `g = ${GRAVITY.toFixed(3)}`;
+    gravityHint.textContent = gravityHintText(GRAVITY);
+  });
+
+  cohesionSlider.addEventListener("input", () => {
+    COHESION_K = parseFloat(cohesionSlider.value);
+    cohesionReadout.textContent = `κ = ${COHESION_K.toFixed(3)}`;
+    cohesionHint.textContent = COHESION_K < 0.001 ? "off" : COHESION_K < 0.015 ? "helps re-solidify" : "strong pull";
+  });
+
+  countSlider.addEventListener("input", () => {
+    const side = parseInt(countSlider.value, 10);
+    countReadout.textContent = `${side * side} particles`;
+  });
+  countSlider.addEventListener("change", () => {
+    setParticleCount(parseInt(countSlider.value, 10));
+  });
+
+  playPauseBtn.addEventListener("click", () => {
+    running = !running;
+    playPauseBtn.textContent = running ? "Pause" : "Play";
+    playPauseBtn.classList.toggle("primary", running);
+  });
+
+  resetBtn.addEventListener("click", () => {
+    stopSweep();
+    tempSlider.disabled = false;
+    // Always restart from a cold, stable solid: set both the thermostat target and the
+    // velocity seed temperature to the slider minimum so there's no way for stale high-T
+    // state to immediately re-scatter the freshly initialised lattice.
+    const RESET_T = parseFloat(tempSlider.min); // 0.02 — comfortably in the solid phase
+    targetTstar = RESET_T;
+    tempSlider.value = RESET_T.toFixed(2);
+    updateTempReadout();
+    initLattice(RESET_T); // explicit cold seed, bypasses the targetTstar cap logic entirely
+    // Reset prevTime so the first frame after the synchronous SD minimisation doesn't inherit
+    // the elapsed wall-clock time and inject a large spike of energy.
+    prevTime = performance.now();
+    // Ensure the simulation is playing so the solid is immediately visible and moving.
+    // (If the simulation was paused, the lattice positions are drawn by render() but step()
+    // would not advance them — the user would see a frozen lattice and think nothing happened.)
+    running = true;
+    playPauseBtn.textContent = "Pause";
+    playPauseBtn.classList.add("primary");
+    hcData = [];
+    hcStart = null;
+    hcSubtitle.textContent = "— press Start Temperature Sweep to record";
+    drawHeatingCurve();
+  });
+
+  function updateStateBadge(d) {
+    stateBadge.textContent = d.state;
+    stateBadge.style.background = stateColorVals[d.state];
+  }
+
+  // ---------- Main loop ----------
+  let prevTime = performance.now();
+  let hcFrameCount = 0;
+  function frame(now) {
+    // Schedule the next frame FIRST so the loop can never be killed by an exception
+    // thrown further down (e.g. a stray TypeError in render would previously orphan
+    // the rAF callback, making reset appear to do nothing).
+    requestAnimationFrame(frame);
+    const dtReal = Math.min(0.1, Math.max(0, (now - prevTime) / 1000));
+    prevTime = now;
+
+    if (running) {
+      for (let s = 0; s < SUBSTEPS; s++) step();
+    }
+
+    render();
+    const d = diagnostics();
+    updateStateBadge(d);
+
+    // Re-solidification fix: when the system cools from liquid or gas back into a solid,
+    // the Lindemann parameter stays elevated because r0 still points at the original
+    // pre-melt lattice sites — the new solid has a different arrangement. The classifier
+    // therefore remains stuck on "Liquid" even at the lowest temperature.
+    //
+    // Detection: if coordination has been ≥ 4.9 (above any liquid value — liquid peaks
+    // at ~4.7) for 60 consecutive frames while lindemann is still > 0.5, the system has
+    // plainly settled into a new solid. Recapture r0 so the next diagnostics() call finds
+    // a small lindemann and correctly returns "Solid".
+    if (d.meanCoord >= 4.9 && d.lindemann > 0.5) {
+      resolidifyCounter++;
+      if (resolidifyCounter >= 60) {
+        for (let i = 0; i < N; i++) { r0x[i] = px[i]; r0y[i] = py[i]; }
+        r0ComX = 0; r0ComY = 0;
+        for (let i = 0; i < N; i++) { r0ComX += r0x[i]; r0ComY += r0y[i]; }
+        r0ComX /= N; r0ComY /= N;
+        resolidifyCounter = 0;
+      }
+    } else {
+      resolidifyCounter = 0;
+    }
+
+    if (sweeping && running) {
+      // --- Constant energy injection ---
+      // Add a fixed amount of kinetic energy per real-time second. Unlike a thermostat that
+      // chases a rising T_target, this means energy injected during a phase transition goes
+      // into breaking bonds (PE rises) rather than increasing KE, so T_inst genuinely
+      // plateaus on the heating curve — exactly as on a textbook heating curve.
+      //
+      // Rate scales with hcSweepEPS: latent heats ∝ ε, so without scaling the boiling
+      // plateau grows 2.5× longer at ε=2.5. Scaling keeps every sweep at ~29 s regardless.
+      const dQ = HC_HEAT_RATE_PER_PARTICLE * hcSweepEPS * N * dtReal;
+      let KE = 0;
+      for (let i = 0; i < N; i++) KE += 0.5 * MASS * (vx[i] * vx[i] + vy[i] * vy[i]);
+      if (KE > 1e-6) {
+        const lambda = Math.sqrt((KE + dQ) / KE);
+        for (let i = 0; i < N; i++) { vx[i] *= lambda; vy[i] *= lambda; }
+      }
+
+      // Update temperature display with current kinetic temperature
+      const Tinst = d.Tinst;
+      const clampedT = Math.min(parseFloat(tempSlider.max), Tinst);
+      tempSlider.value = clampedT.toFixed(2);
+      tempStarReadout.textContent = `T* = ${Tinst.toFixed(2)}`;
+      tempKReadout.textContent = `≈ ${Math.round(Tinst * EPS_OVER_KB)} K (argon-like)`;
+
+      // Record HC data every 3 frames
+      hcFrameCount++;
+      if (hcFrameCount % 3 === 0) {
+        if (hcStart === null) hcStart = now;
+        hcData.push({ t: (now - hcStart) / 1000, Tinst, state: d.state });
+        drawHeatingCurve();
+      }
+
+      if (Tinst >= HC_TMAX * hcSweepEPS) stopSweep(Tinst);
+    }
+  }
+
+  initLattice();
+  drawHeatingCurve();
+  requestAnimationFrame(frame);
+
+  /* ---------- report height to the parent site (iframe auto-sizing) ---------- */
+  function reportHeight() {
+    const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    window.parent.postMessage({ type: "simHeight", height: h }, "*");
+  }
+  if (window.ResizeObserver) {
+    // Catches every height change automatically — the explainer <details> opening,
+    // the layout re-wrapping on resize — without needing an explicit call at each site.
+    new ResizeObserver(reportHeight).observe(document.body);
+  } else {
+    window.addEventListener("resize", reportHeight);
+  }
+  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>

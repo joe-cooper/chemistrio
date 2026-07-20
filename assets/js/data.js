@@ -24,24 +24,27 @@
    ========================================================= */
 
 const simulations = [
+  { id:"phase-transitions-sim", title:"State Changes", topic:"Kinetic Theory of Matter", level:"GCSE",
+    desc:"Simulations of particles and their state changes.", featured:true, file:"simulations/phase-transitions-sim.html", notes:"simulations/notes/phase-transitions-sim.md" },
   { id:"maxwell-boltzmann", title:"Maxwell–Boltzmann Distribution", topic:"Kinetics", level:"A-level",
     desc:"Distribution of molecular speeds and how it shifts with temperature.", featured:true, file:"simulations/mb-sim.html",
     notes:"simulations/notes/maxwell-boltzmann.md" },
-  { id:"ao-density-sim", title:"Atomic Orbitals Density", topic:"Quantum", level:"Pre-University",
-    desc:"Density plots of atomic orbitals", featured:true, file:"simulations/ao-density-sim.html",
-    notes:"simulations/notes/ao-density-sim.md" },
-  // { id:"rates-collision", title:"Collision Theory & Rates", topic:"Kinetics", level:"IGCSE",
+
+  // { id:"rates-collision", title:"Collision Theory & Rates", topic:"Kinetics", level:"GCSE",
   //   desc:"How concentration, temperature and catalysts affect the rate of reaction.", featured:false, file:"", notes:"" },
   { id:"eqm-sim", title:"Chemical Equilibrium", topic:"Equilibrium", level:"A-level",
     desc:"Concentration, rate and reaction quotient over time.", featured:true, file:"simulations/eqm-sim.html", notes:"" },
   // { id:"le-chatelier", title:"Le Chatelier's Principle", topic:"Equilibrium", level:"A-level",
   //   desc:"Shift a reversible reaction by changing pressure, concentration and temperature.", featured:false, file:"", notes:"" },
-  { id:"diffusion-tube-sim", title:"HCl and NH3 Diffusion Tube", topic:"Gases", level:"IGCSE",
+  { id:"diffusion-tube-sim", title:"HCl and NH3 Diffusion Tube", topic:"Kinetic Theory of Matter", level:"GCSE",
     desc:"Animated diffusion tube with particle physics and a mean product position marker.", featured:true, file:"simulations/diffusion-tube-sim.html", notes:"" },
   // { id:"titration", title:"Acid–Base Titration", topic:"Acids & Bases", level:"A-level",
   //   desc:"Run a virtual titration and plot the pH curve.", featured:false, file:"", notes:"" }
     { id:"curly-arrows-sim", title:"Organic Mechanisms", topic:"Organic", level:"A-Level",
     desc:"Interactive diagrams of organic reaction mechanisms.", featured:true, file:"simulations/curly-arrows-sim.html", notes:"" },
+    { id:"ao-density-sim", title:"Atomic Orbitals Density", topic:"Quantum", level:"Pre-University",
+    desc:"Density plots of atomic orbitals", featured:true, file:"simulations/ao-density-sim.html",
+    notes:"simulations/notes/ao-density-sim.md" },
 ];
 
 const resources = [

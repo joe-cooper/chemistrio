@@ -1,6 +1,6 @@
 ## Teaching notes
 
-At equilibrium, particles in a system have a particular distribution of speeds. This is described by the *Maxwell-Boltzmann* distribution. This arises from the elastic collisions between particles. The same distribution is reached regardless of the starting distribution of particle speeds.
+At equilibrium, particles in a system have a particular distribution of speeds. This is described by the *Maxwell-Boltzmann* distribution. This arises from the elastic collisions between particles (collisions that do not lose energy). The same distribution is reached regardless of the starting distribution of particle speeds.
 
 ### Suggested use
 
