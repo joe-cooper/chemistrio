@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Molecular Orbital Formation &amp; Bond Order</title>
+<style>
+  :root{
+    --bg: #0d1117;
+    --panel: #141a24;
+    --panel-2: #10151e;
+    --border: #262f3d;
+    --text: #e8e3da;
+    --text-dim: #8b93a3;
+    --coral: #e8735f;
+    --coral-dim: #a8574a;
+    --peach: #e3a98c;
+    --peach-dim: #a87d68;
+    --blue: #6f8fc9;
+    --blue-dim: #4f6690;
+    --grid-line: rgba(232,227,218,0.07);
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  body{ padding: 18px 20px 26px; }
+  h1{
+    font-size: 17px; font-weight: 600; letter-spacing: 0.02em;
+    margin: 0 0 2px; color: var(--text);
+  }
+  .subtitle{
+    font-size: 12.5px; color: var(--text-dim); margin: 0 0 16px;
+  }
+  .controls{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+  }
+  .slider-block{ flex: 1 1 320px; min-width: 260px; }
+  .slider-row{ display:flex; align-items:center; gap:10px; }
+  .slider-row label{ font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+  input[type=range]{
+    flex:1; -webkit-appearance:none; appearance:none;
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--coral), var(--border));
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:15px; height:15px; border-radius:50%;
+    background: var(--coral);
+    border: 2px solid #1a1008;
+    cursor:pointer;
+    box-shadow: 0 0 0 3px rgba(232,115,95,0.15);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:15px; height:15px; border-radius:50%;
+    background: var(--coral); border: 2px solid #1a1008; cursor:pointer;
+  }
+  .readout{
+    font-variant-numeric: tabular-nums;
+    font-size: 13px; color: var(--coral); font-weight:600; min-width: 72px; text-align:right;
+  }
+  .btn-group{ display:flex; gap:8px; flex-wrap:wrap; }
+  button{
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  button:hover{ border-color: var(--coral); color: var(--coral); }
+  button.active{ border-color: var(--coral); color: var(--coral); background: rgba(232,115,95,0.08); }
+  button:disabled:hover{ border-color: var(--border); color: var(--text); }
+  .stats{
+    display:flex; gap: 18px; flex-wrap: wrap;
+    font-size: 11.5px; color: var(--text-dim);
+  }
+  .stats b{ color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .panel-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  @media (max-width: 720px){ .panel-grid{ grid-template-columns: 1fr; } }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px 14px;
+  }
+  .panel-title{
+    font-size: 12px; font-weight:600; color: var(--text);
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom: 8px;
+  }
+  .panel-title span.tag{
+    font-size: 10.5px; font-weight: 500; color: var(--text-dim);
+  }
+  canvas{ display:block; width:100%; border-radius: 6px; background: var(--panel-2); }
+
+  .legend{
+    display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;
+    font-size: 10.5px; color: var(--text-dim);
+  }
+  .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+
+  .notes{
+    margin-top: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+  .notes b{ color: var(--text); }
+  .notes summary{ cursor:pointer; color: var(--text); font-weight:600; font-size:12.5px; }
+</style>
+</head>
+<body>
+
+<h1>Molecular Orbital Formation &amp; Bond Order</h1>
+<p class="subtitle">Two 1s orbitals combining by linear combination (LCAO) — choose a nucleus and electron count to explore H₂⁺, H₂, He₂⁺, He₂ and more</p>
+
+<div class="controls">
+  <div class="slider-block">
+    <div class="slider-row">
+      <label>Nucleus</label>
+      <div class="btn-group" id="nucleus-group">
+        <button id="nucleus-H" class="active">H  (Z=1)</button>
+        <button id="nucleus-He">He (Z=2)</button>
+      </div>
+    </div>
+  </div>
+  <div class="slider-block">
+    <div class="slider-row">
+      <label>Electrons</label>
+      <div class="btn-group" id="electron-group">
+        <button data-n="0">0</button>
+        <button data-n="1">1</button>
+        <button data-n="2" class="active">2</button>
+        <button data-n="3">3</button>
+        <button data-n="4">4</button>
+      </div>
+    </div>
+  </div>
+  <div class="btn-group">
+    <button id="preset-h2plus">H₂⁺</button>
+    <button id="preset-h2">H₂</button>
+    <button id="preset-he2plus">He₂⁺</button>
+    <button id="preset-he2">He₂</button>
+  </div>
+</div>
+
+<div class="controls" id="species-readout-row">
+  <div style="font-size:20px; font-weight:700;" id="species-label">H₂</div>
+  <div style="flex:1 1 auto;">
+    <div style="font-size:12px; color:var(--text-dim);">electron configuration</div>
+    <div style="font-size:13px; font-weight:600;" id="config-label">(σ1s)²</div>
+  </div>
+  <div>
+    <div style="font-size:12px; color:var(--text-dim); text-align:right;">bond order</div>
+    <div style="font-size:20px; font-weight:700; text-align:right;" id="bondorder-label">1</div>
+  </div>
+  <div style="font-size:12px; color:var(--text-dim); max-width:220px;" id="bond-verdict"></div>
+</div>
+
+<div class="controls">
+  <div class="slider-block">
+    <div class="slider-row">
+      <label for="separation">Separation R</label>
+      <input type="range" id="separation" min="0.4" max="5.0" step="0.01" value="4.0">
+      <span class="readout" id="r-readout">4.00 Å</span>
+    </div>
+  </div>
+  <div class="btn-group">
+    <button id="preset-far">Far apart</button>
+    <button id="preset-eq">Bonding minimum</button>
+    <button id="preset-close">Close</button>
+    <button id="play-btn">▶ Animate approach</button>
+  </div>
+</div>
+
+<div class="stats" id="stats-row"></div>
+<br>
+
+<div class="panel-grid">
+  <div class="panel">
+    <div class="panel-title">Bonding orbital — σ(1s), in phase <span class="tag">ψ = 1s<sub>A</sub> + 1s<sub>B</sub></span></div>
+    <canvas id="canvas-bond" height="260"></canvas>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Antibonding orbital — σ*(1s), out of phase <span class="tag">ψ = 1s<sub>A</sub> − 1s<sub>B</sub></span></div>
+    <canvas id="canvas-anti" height="260"></canvas>
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="dot" style="background:var(--coral)"></span>positive phase</span>
+  <span><span class="dot" style="background:var(--blue)"></span>negative phase</span>
+  <span><span class="dot" style="background:transparent;border:1px dashed var(--text-dim)"></span>nodal plane (ψ = 0)</span>
+</div>
+
+<br>
+
+<div class="panel-grid">
+  <div class="panel">
+    <div class="panel-title">MO energy-level diagram <span class="tag">one-electron levels at current R</span></div>
+    <canvas id="canvas-mo" height="300"></canvas>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Potential energy curve <span class="tag" id="pe-tag">electronic energy only</span></div>
+    <div style="margin-bottom:10px;">
+      <button id="toggle-nuclear-repulsion" style="font-size:11px; padding:5px 10px;">+ include nuclear repulsion</button>
+    </div>
+    <canvas id="canvas-curve" height="300"></canvas>
+  </div>
+</div>
+
+<div class="notes">
+  <details>
+    <summary>Model notes &amp; honesty check</summary>
+    <p style="margin-top:8px;">
+      <b>Orbital shapes.</b> The contour plots use the LCAO treatment of the one-electron two-centre problem — real hydrogenic 1s functions, ψ₁ₛ ∝ e<sup><span>−</span>Zr/a₀</sup>, combined as ψ<sub>±</sub> = 1s<sub>A</sub> ± 1s<sub>B</sub>. This system (one electron, two nuclei of charge Z) is exactly solvable, but not with a simple closed-form wavefunction like this one — the true solution needs prolate spheroidal coordinates — so the shapes shown are the standard textbook approximation: right in every qualitative respect (constructive/destructive interference, the node in σ*), not exact in detail. Switching to He (Z=2) correctly contracts the clouds — real physics, not a rendering choice.
+    </p>
+    <p>
+      <b>Bond order and electron filling.</b> Electrons are filled into σ(1s) then σ*(1s) via the Aufbau principle (2 per level, matching the levels' own energy ordering), and bond order = (electrons in σ − electrons in σ*)/2.
+    </p>
+    <p>
+      <b>σ(1s) / σ*(1s) reference curves and MO levels — nuclear repulsion included.</b> These come from the LCAO integrals (J, K, S), generalized to any nuclear charge Z via the exact scaling relation for this one-electron problem: the electronic energy at charge Z and separation R equals Z² times the charge-1 electronic energy at the scaled separation Z·R. The nuclear repulsion (plus the screening correction described below) is shared out evenly across however many electrons are actually present, rather than each level carrying a full, unshared Z²/R — otherwise a lone unscreened electron in He's field would never dip below the isolated-atom reference, making multi-electron He species show their <i>bonding</i> level sitting <i>above</i> the AO line (backwards from what a bonding orbital is supposed to do). A pure-electronic version (nuclear repulsion entirely excluded, closer to strict textbook convention) was tried and reverted: without it, the antibonding level sits <i>below</i> the AO reference for roughly 84% of this slider's range — nuclear repulsion is what normally keeps antibonding above the AO line at these separations, so removing it broke that far more often than it fixed the rarer case below. With sharing, both levels correctly approach the AO reference at large R for any electron count, and always sum (weighted by occupation) to exactly the total energy curve below. For H₂⁺ specifically (N=1, no sharing needed), this predicts R<sub>e</sub> ≈ 1.32 Å and a 1.76 eV well, a known LCAO approximation of the real (exactly solvable) R<sub>e</sub> = 1.06 Å, D<sub>e</sub> = 2.79 eV.
+    </p>
+    <p>
+      <b>Total energy curve (bold) — includes a screening correction.</b> Naively summing N independent σ/σ* electron energies plus a single Z²/R nuclear term is only exact when N ≤ Z (at most enough electrons for one neutral atom) — which is why it was already exactly right for H₂⁺. For N > Z, each added electron's orbital energy carries its own residual ~1/R attraction to the far nucleus, and only one nuclear repulsion term is there to balance it — so extra electrons leave an uncancelled, spuriously attractive tail. That's what previously made this simple sum predict He₂ as strongly bound by tens of eV, which is backwards. The fix used here isn't a fudge: once N > Z, one fragment can genuinely become a neutral atom at dissociation (using Z of the N electrons), leaving the other with charge Z−(N−Z) — so the correct long-range interaction is between a neutral atom and an ion, i.e. zero, not the leftover naive sum. Subtracting exactly that difference (Z·max(0, N−Z)/R) restores the correct dissociation limit for every species without touching anything about H₂⁺, which never needed it. Checked against literature: He₂⁺ comes out at R<sub>e</sub> ≈ 1.11 Å, D<sub>e</sub> ≈ 2.07 eV, versus the experimental 1.08 Å / 2.47 eV — the same size of gap as H₂⁺'s own LCAO-vs-exact discrepancy, which is a good sign the correction is doing the right kind of thing rather than papering over the wrong one. He₂ (bond order 0) correctly shows no well at all — matching reality, where He₂ has no covalent bond (its minuscule real binding is van der Waals dispersion, a completely different, electron-correlation-driven effect this model doesn't touch).
+    </p>
+    <p>
+      <b>Why H₂ and H₂⁺ land on the same bond length here.</b> In reality H₂'s bond (0.74 Å) is noticeably shorter than H₂⁺'s (1.06 Å) — but in this model both come out at the same R<sub>e</sub> ≈ 1.32 Å. The reason is exact, not approximate: H₂'s total-energy curve here is precisely <i>double</i> H₂⁺'s at every separation (its second electron just occupies the identical σ(1s) shape the first one does, and the nuclear repulsion plus correction scale by exactly 2 alongside it) — and multiplying a curve by a constant factor moves its depth, never the position of its minimum. The model does correctly show H₂ as more strongly bound (its well is twice as deep) — what it can't show is the bond <i>contracting</i>, because that requires the orbital's own shape to relax in response to how many electrons occupy it, which this fixed-shape LCAO treatment doesn't allow. A proper account would let the effective nuclear charge felt by each electron adjust with occupation (variational reoptimization); here the same one-electron orbital is simply reused and stacked, unchanged, for every species.
+    </p>
+    <p>
+      <b>What's still not attempted.</b> This correction fixes the long-range dissociation limit, not the near-field electron-electron repulsion within the bonded region — so absolute well depths (like H₂'s 3.53 eV here vs. the real 4.52 eV) remain approximate, same spirit as H₂⁺'s own known gap. A fully quantitative multi-electron treatment needs real electron-electron interaction (Hartree-Fock or better); this stays a one-electron model with a physically-motivated correction to its worst failure mode, not a full many-body calculation.
+    </p>
+  </details>
+</div>
+
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- physical constants & LCAO integrals (atomic units, R in bohr) ----------
+  const BOHR = 0.529177;      // Å per bohr
+  const HARTREE_EV = 27.2114; // eV per hartree
+
+  function S(rho){ return Math.exp(-rho) * (1 + rho + rho*rho/3); }
+  function Jint(rho){ return 1/rho - Math.exp(-2*rho) * (1 + 1/rho); }
+  function Kint(rho){ return Math.exp(-rho) * (1 + rho); }
+
+  // ---------- generalization to arbitrary nuclear charge Z (H: Z=1, He: Z=2) ----------
+  // The one-electron two-centre Coulomb problem obeys an exact scaling law: the electronic
+  // energy for charge Z at separation R equals Z^2 times the charge-1 electronic energy
+  // evaluated at the *scaled* separation rho = Z*R. (Nuclear-nuclear repulsion is handled
+  // separately and exactly, as Z^2/R — real Coulomb's law, not part of the scaling trick.)
+  // This lets the same J/K/S machinery used for H2+ cover He-based species too.
+  function E1sEV(Z){ return -0.5 * Z*Z * HARTREE_EV; }
+
+  // Per-electron orbital energies (electronic only, no nuclear repulsion). Not directly
+  // displayed on their own — see displayedBondLevelEV/displayedAntiLevelEV below, which
+  // add the nuclear repulsion (shared across however many electrons are actually present).
+  function epsBondHartree(Z,R){ const rho = Z*R; return Z*Z*(-0.5 - (Jint(rho)+Kint(rho))/(1+S(rho))); }
+  function epsAntiHartree(Z,R){ const rho = Z*R; return Z*Z*(-0.5 - (Jint(rho)-Kint(rho))/(1-S(rho))); }
+
+  // ---------- total multi-electron system energy (Z and electron count N both matter) ----------
+  // Summing N independent one-electron orbital energies (as above) and adding the single
+  // shared Z^2/R nuclear repulsion is only exact for N <= Z: at large R that's a system
+  // where at most one atom's-worth of electrons exist, so they all localise onto ONE
+  // nucleus, forming one neutral atom + one bare nucleus. That's exactly the H2+ case
+  // (Z=1, N=1) and it's why that curve was already correct.
+  //
+  // For N > Z, this naive sum overcounts: each electron's own orbital energy carries its
+  // own residual ~ -Z/R attraction to the *far* nucleus (a real feature of the one-electron
+  // problem), but only ONE Z^2/R nuclear repulsion term is there to balance it, so N-Z
+  // "extra" electrons' worth of that attraction is left uncancelled — a spurious long-range
+  // pull that (as found earlier) wrongly predicts species like He2 as strongly bound.
+  //
+  // The fix: once N > Z, one fragment can genuinely become a neutral atom at dissociation
+  // (using up Z of the N electrons), leaving N-Z electrons on the other nucleus, giving it
+  // charge Z-(N-Z). The correct long-range interaction is then between a NEUTRAL atom and
+  // a charged ion — i.e. zero, not the spurious leftover. This correction restores exactly
+  // that: it cancels the (N-Z) extra unscreened attraction terms, using nothing but the
+  // exact Coulomb accounting of where the electrons actually end up.
+  function totalEnergyEV(Z, N, R){
+    const nb = Math.min(2, N), na = Math.max(0, N - 2);
+    const electronic = nb*epsBondHartree(Z,R) + na*epsAntiHartree(Z,R);
+    const nuclear = (Z*Z) / R;
+    const correction = Z * Math.max(0, N - Z) / R;
+    return (electronic + nuclear + correction) * HARTREE_EV;
+  }
+
+  // ---------- displayed per-orbital levels (what the MO diagram and PE curve reference
+  // lines actually show) ----------
+  // The naive approach would attach the FULL Z^2/R nuclear repulsion to each orbital
+  // individually, which is only correct for a single occupied electron (N=1). For N>1,
+  // that repulsion (plus the screening correction) is a property of the whole system,
+  // shared between however many electrons are actually there — so it's divided evenly
+  // across all N occupied electrons here. This is what fixes the MO diagram bug found for
+  // He-based species: without this, a bonding LEVEL never dipped below the AO reference for
+  // multi-electron He systems (since a lone unscreened electron doesn't see the same
+  // physics that 3 electrons together do), even when the actual system is genuinely bound.
+  // These levels are built so that nBond*displayedBond + nAnti*displayedAnti always exactly
+  // reconstructs totalEnergyEV, and (since the shared term -> 0 as R -> large) each
+  // individually approaches E1s(Z) correctly for any N, not just N<=Z.
+  function sharedTermPerElectronEV(Z, N, R){
+    const Ncount = Math.max(N, 1); // guard N=0 (no electrons to show levels "for" anyway)
+    const nuclear = (Z*Z) / R;
+    const correction = Z * Math.max(0, N - Z) / R;
+    return (nuclear + correction) / Ncount * HARTREE_EV;
+  }
+  function displayedBondLevelEV(Z, N, R){
+    return epsBondHartree(Z,R)*HARTREE_EV + sharedTermPerElectronEV(Z,N,R);
+  }
+  function displayedAntiLevelEV(Z, N, R){
+    return epsAntiHartree(Z,R)*HARTREE_EV + sharedTermPerElectronEV(Z,N,R);
+  }
+
+  // ---------- PE curve panel: toggle-aware pure-electronic vs nuclear-repulsion-inclusive ----------
+  // The MO diagram (above) always includes nuclear repulsion — see the notes on
+  // computeMOAxis for why. The PE curve panel, however, has an explicit toggle (default
+  // off) so the effect of adding nuclear repulsion can be shown directly: with it off, the
+  // curves are pure electronic energy only (no Z^2/R, no screening correction), which has
+  // no interior minimum at all — electron sharing alone never predicts a stable bond
+  // length, it always "wants" to collapse to R=0. Only once nuclear repulsion is switched
+  // on does a genuine energy minimum (equilibrium bond length) appear.
+  function refBondEV(Z, N, R, withNuclear){
+    if (!withNuclear) return epsBondHartree(Z,R) * HARTREE_EV;
+    return displayedBondLevelEV(Z, N, R);
+  }
+  function refAntiEV(Z, N, R, withNuclear){
+    if (!withNuclear) return epsAntiHartree(Z,R) * HARTREE_EV;
+    return displayedAntiLevelEV(Z, N, R);
+  }
+  function refTotalEV(Z, N, R, withNuclear){
+    if (!withNuclear){
+      const nb = Math.min(2, N), na = Math.max(0, N - 2);
+      return (nb*epsBondHartree(Z,R) + na*epsAntiHartree(Z,R)) * HARTREE_EV;
+    }
+    return totalEnergyEV(Z, N, R);
+  }
+  function refFindMinimum(Z, N, withNuclear){
+    let best = null;
+    for (let r = R_MIN; r <= R_MAX; r += 0.005){
+      const e = refTotalEV(Z, N, r/BOHR, withNuclear);
+      if (best === null || e < best[1]) best = [r, e];
+    }
+    return best;
+  }
+
+  const R_MIN = 0.4, R_MAX = 5.0; // Å, slider bounds
+
+  // ---------- species / electron-configuration state ----------
+  let Z = 1;            // nuclear charge per atom: 1 = H, 2 = He
+  let nElectrons = 2;    // total electrons in the system (0-4; only 1s-derived MOs modelled)
+
+  function nBondElectrons(){ return Math.min(2, nElectrons); }
+  function nAntiElectrons(){ return Math.max(0, nElectrons - 2); }
+  function bondOrder(){ return (nBondElectrons() - nAntiElectrons()) / 2; }
+
+  const SUP = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','+':'⁺','-':'⁻'};
+  function toSup(s){ return String(s).split('').map(c => SUP[c] || c).join(''); }
+
+  function speciesLabel(){
+    const elem = Z === 1 ? 'H' : 'He';
+    const charge = 2*Z - nElectrons; // net charge on the diatomic system
+    let chargeStr = '';
+    if (charge !== 0){
+      const mag = Math.abs(charge);
+      chargeStr = toSup((mag === 1 ? '' : String(mag)) + (charge > 0 ? '+' : '-'));
+    }
+    return elem + '₂' + chargeStr;
+  }
+  function configLabel(){
+    const nb = nBondElectrons(), na = nAntiElectrons();
+    let s = '(σ1s)' + toSup(nb);
+    if (na > 0) s += '(σ*1s)' + toSup(na);
+    return s;
+  }
+
+  // Numerically find where the total energy of the currently-selected species (Z and N —
+  // via totalEnergyEV's screening correction) is lowest.
+  function findTotalMinimum(Z, N){
+    let best = null;
+    for (let r = R_MIN; r <= R_MAX; r += 0.005){
+      const e = totalEnergyEV(Z, N, r/BOHR);
+      if (best === null || e < best[1]) best = [r, e];
+    }
+    return best; // [R_ang, E_eV]
+  }
+
+  function niceStep(sp){
+    const rough = sp/6;
+    const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+    const norm = rough/mag;
+    return (norm < 1.5 ? 1 : norm < 3.5 ? 2 : norm < 7.5 ? 5 : 10) * mag;
+  }
+  function percentile(arr, p){
+    const s = [...arr].sort((a,b) => a-b);
+    return s[Math.floor(p * (s.length - 1))];
+  }
+
+  // Wide axis for the potential energy curve panel — has to fit the *entire* curve across
+  // all R at once, so stays wide rather than tracking anything. Fit to the actual total
+  // multi-electron energy for the current species (now that the screening correction makes
+  // it reliable) AND the sigma(1s)/sigma*(1s) reference curves, so all three stay visible
+  // for any species rather than just the bold total curve. Floor uses true minima (the
+  // total curve's own well, or the bonding reference's, whichever is lower); ceiling uses
+  // the 85th percentile of the total and antibonding curves — deliberately not their full
+  // peaks, which spike steeply at the closest separations and would squash everything else
+  // (shown via the off-scale ▲ indicator instead). Cached per (Z, N).
+  let axisCache = null, axisCacheKey = null;
+  function computeAxisForSpecies(Z, N){
+    const key = Z + '_' + N + '_' + showNuclearRepulsion;
+    if (axisCacheKey === key) return axisCache;
+    const e1s = E1sEV(Z);
+    const totalVals = [], bondVals = [], antiVals = [];
+    for (let r = R_MIN; r <= R_MAX; r += 0.02){
+      const Rb = r / BOHR;
+      totalVals.push(refTotalEV(Z, N, Rb, showNuclearRepulsion));
+      bondVals.push(refBondEV(Z, N, Rb, showNuclearRepulsion));
+      antiVals.push(refAntiEV(Z, N, Rb, showNuclearRepulsion));
+    }
+    const totalLo = Math.min(...totalVals);
+    const bondLo = Math.min(...bondVals);
+    const totalHi = percentile(totalVals, 0.85);
+    const antiHi = percentile(antiVals, 0.85);
+    const lowest = Math.min(e1s, totalLo, bondLo);
+    const highest = Math.max(e1s, totalHi, antiHi);
+    const span = Math.max(highest - lowest, Math.abs(e1s)*0.05, 1);
+    const rawMin = lowest - 0.1*span;
+    const rawMax = highest + 0.1*span;
+    const gridStep = niceStep(rawMax - rawMin);
+    axisCache = {
+      yMinEV: Math.floor(rawMin/gridStep) * gridStep,
+      yMaxEV: Math.ceil(rawMax/gridStep) * gridStep,
+      gridStep
+    };
+    axisCacheKey = key;
+    return axisCache;
+  }
+
+  // MO diagram axis: fixed per species (not tracking R), sized to fully show the bonding
+  // and antibonding LEVELS. When the selected species (Z, N) has a genuine interior
+  // total-energy minimum (found via findTotalMinimum, reliable now thanks to the screening
+  // correction), the axis is anchored there — showing the levels right where the molecule
+  // is most stable. When there's no such minimum (bond order 0, or too few electrons to
+  // form one — e.g. He with 0 or 1 electrons, which just monotonically approach the
+  // boundary rather than turning over), anchoring at that boundary point would be
+  // meaningless, so this instead falls back to fitting the levels' overall range across
+  // the whole slider, same spirit as the PE curve panel's axis. Deliberately not shared
+  // with computeAxisForSpecies below — that one has to fit the *entire* curve across all R,
+  // which can span tens of eV and would squash this diagram's splitting to a sliver. Values
+  // away from the anchor may still run off this fixed axis; shown via the off-scale ▲/▼
+  // indicators rather than by rescaling.
+  //
+  // NOTE on why nuclear repulsion IS included here, despite standard MO-theory convention
+  // usually excluding it from orbital levels: a pure-electronic version was tried and
+  // reverted, because without nuclear repulsion the antibonding level sits BELOW the AO
+  // reference for ~84% of this slider's range (nuclear repulsion is what normally shifts
+  // both levels up enough to keep antibonding above AO at these separations — removing it
+  // breaks that far more often than the rarer case it was meant to fix, where bonding sits
+  // above AO for a species with too few electrons to overcome nuclear repulsion).
+  let moAxisCache = null, moAxisCacheKey = null;
+  function computeMOAxis(Z, N){
+    const key = Z + '_' + N;
+    if (moAxisCacheKey === key) return moAxisCache;
+    const e1s = E1sEV(Z);
+    const eq = findTotalMinimum(Z, N);
+    const isInterior = eq[0] > R_MIN + 0.02 && eq[0] < R_MAX - 0.02;
+
+    let lowest, highest;
+    if (isInterior){
+      const Rb = eq[0] / BOHR;
+      const eBondEq = displayedBondLevelEV(Z, N, Rb);
+      const eAntiEq = displayedAntiLevelEV(Z, N, Rb);
+      lowest = Math.min(e1s, eBondEq);
+      highest = Math.max(e1s, eAntiEq);
+    } else {
+      const bondVals = [], antiVals = [];
+      for (let r = R_MIN; r <= R_MAX; r += 0.02){
+        const Rb = r / BOHR;
+        bondVals.push(displayedBondLevelEV(Z, N, Rb));
+        antiVals.push(displayedAntiLevelEV(Z, N, Rb));
+      }
+      const bondLo = Math.min(...bondVals);
+      const antiHi = percentile(antiVals, 0.85);
+      lowest = Math.min(e1s, bondLo);
+      highest = Math.max(e1s, antiHi);
+    }
+    const span = Math.max(highest - lowest, Math.abs(e1s)*0.05, 1);
+    const rawMin = lowest - 0.15*span;
+    const rawMax = highest + 0.3*span;
+    const gridStep = niceStep(rawMax - rawMin);
+    moAxisCache = {
+      yMinEV: Math.floor(rawMin/gridStep) * gridStep,
+      yMaxEV: Math.ceil(rawMax/gridStep) * gridStep,
+      gridStep
+    };
+    moAxisCacheKey = key;
+    return moAxisCache;
+  }
+
+  // ---------- state ----------
+  let R_ang = 4.0;
+  let animating = false;
+  let animDir = -1;
+  const ANIM_SPEED = 0.55; // A/s
+  let showNuclearRepulsion = false; // PE curve panel toggle, off by default
+
+  // ---------- DOM ----------
+  const slider = document.getElementById('separation');
+  const rReadout = document.getElementById('r-readout');
+  const statsRow = document.getElementById('stats-row');
+  const playBtn = document.getElementById('play-btn');
+  const speciesLabelEl = document.getElementById('species-label');
+  const configLabelEl = document.getElementById('config-label');
+  const bondOrderEl = document.getElementById('bondorder-label');
+  const bondVerdictEl = document.getElementById('bond-verdict');
+  const nucleusHBtn = document.getElementById('nucleus-H');
+  const nucleusHeBtn = document.getElementById('nucleus-He');
+  const electronButtons = Array.from(document.querySelectorAll('#electron-group button'));
+  const presetEqBtn = document.getElementById('preset-eq');
+  const toggleNuclearBtn = document.getElementById('toggle-nuclear-repulsion');
+  const peTagEl = document.getElementById('pe-tag');
+
+  slider.value = R_ang;
+  slider.addEventListener('input', () => { R_ang = parseFloat(slider.value); animating = false; playBtn.classList.remove('active'); playBtn.textContent = '▶ Animate approach'; });
+
+  document.getElementById('preset-far').addEventListener('click', () => setR(R_MAX));
+  presetEqBtn.addEventListener('click', () => {
+    const eq = refFindMinimum(Z, nElectrons, showNuclearRepulsion);
+    const isInterior = eq[0] > R_MIN + 0.02 && eq[0] < R_MAX - 0.02;
+    if (isInterior) setR(eq[0]);
+  });
+  document.getElementById('preset-close').addEventListener('click', () => setR(0.7));
+  playBtn.addEventListener('click', () => {
+    animating = !animating;
+    playBtn.classList.toggle('active', animating);
+    playBtn.textContent = animating ? '❚❚ Pause' : '▶ Animate approach';
+  });
+  toggleNuclearBtn.addEventListener('click', () => {
+    showNuclearRepulsion = !showNuclearRepulsion;
+    toggleNuclearBtn.classList.toggle('active', showNuclearRepulsion);
+    toggleNuclearBtn.textContent = showNuclearRepulsion ? '✓ nuclear repulsion included' : '+ include nuclear repulsion';
+    peTagEl.textContent = showNuclearRepulsion ? 'incl. nuclear repulsion' : 'electronic energy only';
+    updateEqButton();
+  });
+
+  function setSpecies(newZ, newN){
+    Z = newZ;
+    nElectrons = Math.max(0, Math.min(4, newN));
+    nucleusHBtn.classList.toggle('active', Z === 1);
+    nucleusHeBtn.classList.toggle('active', Z === 2);
+    electronButtons.forEach(b => b.classList.toggle('active', parseInt(b.dataset.n,10) === nElectrons));
+    updateSpeciesReadout();
+    updateEqButton();
+  }
+  function updateEqButton(){
+    const eq = refFindMinimum(Z, nElectrons, showNuclearRepulsion);
+    const isInterior = eq[0] > R_MIN + 0.02 && eq[0] < R_MAX - 0.02;
+    presetEqBtn.disabled = !isInterior;
+    presetEqBtn.style.opacity = isInterior ? '1' : '0.4';
+    presetEqBtn.style.cursor = isInterior ? 'pointer' : 'not-allowed';
+    presetEqBtn.textContent = isInterior ? 'Bonding minimum' : 'No minimum in range';
+    if (isInterior){
+      presetEqBtn.title = '';
+    } else if (!showNuclearRepulsion){
+      presetEqBtn.title = 'Electronic energy alone has no interior minimum — it always favours getting closer. Try including nuclear repulsion.';
+    } else {
+      presetEqBtn.title = 'This species has bond order ' + bondOrder() + ' — the total energy curve has no interior minimum, so there\'s nothing to jump to. See the model notes below.';
+    }
+  }
+  function updateSpeciesReadout(){
+    speciesLabelEl.textContent = speciesLabel();
+    configLabelEl.textContent = nElectrons === 0 ? '(no electrons)' : configLabel();
+    const bo = bondOrder();
+    bondOrderEl.textContent = bo.toString();
+    if (bo <= 0){
+      bondVerdictEl.textContent = 'bond order 0 → no net covalent bond expected';
+    } else {
+      bondVerdictEl.textContent = 'bond order ' + bo + ' → expected to be bound';
+    }
+  }
+
+  nucleusHBtn.addEventListener('click', () => setSpecies(1, nElectrons));
+  nucleusHeBtn.addEventListener('click', () => setSpecies(2, nElectrons));
+  electronButtons.forEach(b => b.addEventListener('click', () => setSpecies(Z, parseInt(b.dataset.n,10))));
+  document.getElementById('preset-h2plus').addEventListener('click', () => setSpecies(1,1));
+  document.getElementById('preset-h2').addEventListener('click', () => setSpecies(1,2));
+  document.getElementById('preset-he2plus').addEventListener('click', () => setSpecies(2,3));
+  document.getElementById('preset-he2').addEventListener('click', () => setSpecies(2,4));
+  updateSpeciesReadout();
+  updateEqButton();
+
+
+  function setR(v){
+    R_ang = Math.max(R_MIN, Math.min(R_MAX, v));
+    slider.value = R_ang;
+    animating = false;
+    playBtn.classList.remove('active');
+    playBtn.textContent = '▶ Animate approach';
+  }
+
+  // ---------- canvas setup helper (device-pixel-ratio aware) ----------
+  function setupCanvas(canvas, cssHeight){
+    const dpr = window.devicePixelRatio || 1;
+    const cssWidth = canvas.parentElement.clientWidth - 28; // minus panel padding
+    canvas.style.height = cssHeight + 'px';
+    canvas.width = Math.round(cssWidth * dpr);
+    canvas.height = Math.round(cssHeight * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: cssWidth, h: cssHeight };
+  }
+
+  const cBond = document.getElementById('canvas-bond');
+  const cAnti = document.getElementById('canvas-anti');
+  const cMO = document.getElementById('canvas-mo');
+  const cCurve = document.getElementById('canvas-curve');
+
+  // ---------- colour helpers ----------
+  function css(varName){
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
+  function hexToRgb(hex){
+    hex = hex.replace('#','');
+    return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)];
+  }
+  const CORAL_RGB = hexToRgb(css('--coral'));
+  const BLUE_RGB  = hexToRgb(css('--blue'));
+  const PANEL_RGB = hexToRgb(css('--panel-2'));
+
+  function fieldColor(t){
+    // t in [-1,1]; returns [r,g,b,a]
+    const mag = Math.min(1, Math.abs(t));
+    const alpha = Math.pow(mag, 0.65) * 0.92;
+    const base = t >= 0 ? CORAL_RGB : BLUE_RGB;
+    return [base[0], base[1], base[2], alpha];
+  }
+
+  // ---------- marching squares (returns array of {x0,y0,x1,y1} in grid-index space) ----------
+  function marchingSquares(grid, gw, gh, iso){
+    const segs = [];
+    function interp(v0, v1){ return (iso - v0) / (v1 - v0); }
+    for (let j = 0; j < gh-1; j++){
+      for (let i = 0; i < gw-1; i++){
+        const v00 = grid[j*gw+i],     v10 = grid[j*gw+i+1];
+        const v01 = grid[(j+1)*gw+i], v11 = grid[(j+1)*gw+i+1];
+        let idx = 0;
+        if (v00 > iso) idx |= 1;
+        if (v10 > iso) idx |= 2;
+        if (v11 > iso) idx |= 4;
+        if (v01 > iso) idx |= 8;
+        if (idx === 0 || idx === 15) continue;
+        const pts = {};
+        if ((idx & 1) !== (idx & 2) >> 1) pts.top = [i + interp(v00,v10), j];
+        if ((idx & 2) >> 1 !== (idx & 4) >> 2) pts.right = [i+1, j + interp(v10,v11)];
+        if ((idx & 8) >> 3 !== (idx & 4) >> 2) pts.bottom = [i + interp(v01,v11), j+1];
+        if ((idx & 1) !== (idx & 8) >> 3) pts.left = [i, j + interp(v00,v01)];
+        const edges = [];
+        if (pts.top) edges.push(pts.top);
+        if (pts.right) edges.push(pts.right);
+        if (pts.bottom) edges.push(pts.bottom);
+        if (pts.left) edges.push(pts.left);
+        for (let k = 0; k+1 < edges.length; k += 2){
+          segs.push({x0: edges[k][0], y0: edges[k][1], x1: edges[k+1][0], y1: edges[k+1][1]});
+        }
+      }
+    }
+    return segs;
+  }
+
+  // ---------- orbital panel rendering ----------
+  const GW = 130, GH = 88;
+  const offBond = document.createElement('canvas'); offBond.width = GW; offBond.height = GH;
+  const offAnti = document.createElement('canvas'); offAnti.width = GW; offAnti.height = GH;
+
+  // Fixed physical view window (bohr), sized to comfortably fit both nuclei and their
+  // orbital clouds even at the largest slider separation. Keeping this fixed (rather than
+  // recomputing it from the current R every frame) is what stops the contours "bobbling":
+  // a window that continuously rescales gets resampled onto the same fixed-resolution grid
+  // slightly differently each frame, which shows up as jitter in the contour lines.
+  const VIEW_HALF_X = (R_MAX/BOHR)/2 + 2.2;
+  const VIEW_HALF_Y = 4.3;
+
+  function drawOrbitalPanel(canvas, offscreen, sign){
+    const { ctx, w, h } = setupCanvas(canvas, 260);
+    const Rbohr = R_ang / BOHR;
+    const xMin = -VIEW_HALF_X, xMax = VIEW_HALF_X, yMin = -VIEW_HALF_Y, yMax = VIEW_HALF_Y;
+
+    // build field grid
+    const grid = new Float32Array(GW*GH);
+    const nxA = -Rbohr/2, nxB = Rbohr/2;
+    for (let j = 0; j < GH; j++){
+      const y = yMin + (yMax-yMin) * j/(GH-1);
+      for (let i = 0; i < GW; i++){
+        const x = xMin + (xMax-xMin) * i/(GW-1);
+        const rA = Math.hypot(x-nxA, y);
+        const rB = Math.hypot(x-nxB, y);
+        const val = Math.exp(-Z*rA) + sign*Math.exp(-Z*rB);
+        grid[j*GW+i] = val;
+      }
+    }
+    // Analytic peak magnitude (occurs exactly at each nucleus), generalized to charge Z.
+    const maxAbs = Math.abs(1 + sign * Math.exp(-Z*Rbohr));
+
+    // paint offscreen heatmap
+    const octx = offscreen.getContext('2d');
+    const imgData = octx.createImageData(GW, GH);
+    for (let k = 0; k < GW*GH; k++){
+      const t = grid[k] / maxAbs;
+      const [r,g,b,a] = fieldColor(t);
+      const pr = PANEL_RGB;
+      const outR = pr[0]*(1-a) + r*a;
+      const outG = pr[1]*(1-a) + g*a;
+      const outB = pr[2]*(1-a) + b*a;
+      imgData.data[k*4]   = outR;
+      imgData.data[k*4+1] = outG;
+      imgData.data[k*4+2] = outB;
+      imgData.data[k*4+3] = 255;
+    }
+    octx.putImageData(imgData, 0, 0);
+
+    // background fill
+    ctx.fillStyle = css('--panel-2');
+    ctx.fillRect(0,0,w,h);
+    ctx.imageSmoothingEnabled = true;
+
+    // isotropic (aspect-preserving) scale: same bohr-per-pixel in x and y,
+    // so a spherically symmetric 1s cloud renders as a circle, not an ellipse.
+    // Letterbox (centre) whichever axis has spare room.
+    const scale = Math.min(w/(xMax-xMin), h/(yMax-yMin));
+    const boxW = (xMax-xMin) * scale, boxH = (yMax-yMin) * scale;
+    const offX = (w - boxW)/2, offY = (h - boxH)/2;
+
+    ctx.drawImage(offscreen, offX, offY, boxW, boxH);
+
+    // coordinate transform helpers (all isotropic, centred in canvas)
+    const toPx = (x) => offX + (x - xMin)/(xMax-xMin) * boxW;
+    const toPy = (y) => offY + (y - yMin)/(yMax-yMin) * boxH;
+    const gridToPx = (gi) => toPx(xMin + (xMax-xMin)*gi/(GW-1));
+    const gridToPy = (gj) => toPy(yMin + (yMax-yMin)*gj/(GH-1));
+
+    // contour lines
+    function drawContours(levelFracs, color, dashed){
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      if (dashed) ctx.setLineDash([4,3]); else ctx.setLineDash([]);
+      levelFracs.forEach(f => {
+        const segs = marchingSquares(grid, GW, GH, f*maxAbs);
+        ctx.beginPath();
+        segs.forEach(s => {
+          ctx.moveTo(gridToPx(s.x0), gridToPy(s.y0));
+          ctx.lineTo(gridToPx(s.x1), gridToPy(s.y1));
+        });
+        ctx.stroke();
+      });
+    }
+    drawContours([0.15, 0.35, 0.6], 'rgba(232,227,218,0.30)', false);
+    drawContours([-0.15, -0.35, -0.6], 'rgba(232,227,218,0.30)', false);
+    if (sign < 0){
+      // nodal plane exactly at midpoint by symmetry
+      ctx.strokeStyle = 'rgba(232,227,218,0.55)';
+      ctx.setLineDash([5,4]);
+      ctx.lineWidth = 1.3;
+      const midPx = toPx(0);
+      ctx.beginPath(); ctx.moveTo(midPx, 0); ctx.lineTo(midPx, h); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+
+    // internuclear axis
+    ctx.strokeStyle = 'rgba(232,227,218,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, toPy(0)); ctx.lineTo(w, toPy(0)); ctx.stroke();
+
+    // nuclei
+    [nxA, nxB].forEach(nx => {
+      const px = toPx(nx), py = toPy(0);
+      ctx.beginPath();
+      ctx.arc(px, py, 4, 0, Math.PI*2);
+      ctx.fillStyle = css('--text');
+      ctx.fill();
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillStyle = css('--text-dim');
+      ctx.textAlign = 'center';
+      ctx.fillText(Z === 1 ? 'H' : 'He', px, py - 9);
+    });
+
+    // occupancy indicator
+    const nHere = sign > 0 ? nBondElectrons() : nAntiElectrons();
+    ctx.textAlign = 'left';
+    ctx.font = '10.5px -apple-system, sans-serif';
+    if (nHere === 0){
+      ctx.fillStyle = 'rgba(232,227,218,0.35)';
+      ctx.fillText('unoccupied', 6, h - 8);
+    } else {
+      ctx.fillStyle = css('--text-dim');
+      ctx.fillText(nHere + (nHere===1 ? ' electron' : ' electrons'), 6, h - 8);
+    }
+  }
+
+  // ---------- MO diagram ----------
+  function drawMODiagram(){
+    const { ctx, w, h } = setupCanvas(cMO, 300);
+    ctx.clearRect(0,0,w,h);
+
+    const padL = 46, padR = 14, padT = 16, padB = 28;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+
+    // Fixed axis anchored at the bonding minimum (see computeMOAxis) — distinct from the
+    // PE curve panel's axis, which has to show the whole curve at once and so needs to
+    // stay wide. This one stays put as the separation slider moves; values away from the
+    // minimum may run off it, shown via the off-scale indicators below.
+    const e1s = E1sEV(Z);
+    const { yMinEV, yMaxEV, gridStep } = computeMOAxis(Z, nElectrons);
+    const toY = (ev) => padT + (yMaxEV - ev)/(yMaxEV - yMinEV) * plotH;
+
+    // gridlines + axis labels
+    ctx.strokeStyle = css('--grid-line');
+    ctx.fillStyle = css('--text-dim');
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    for (let ev = yMinEV; ev <= yMaxEV + 1e-6; ev += gridStep){
+      const y = toY(ev);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); ctx.stroke();
+      ctx.fillText(Math.round(ev) + '', padL - 6, y + 3);
+    }
+    ctx.save();
+    ctx.translate(12, padT + plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign = 'center';
+    ctx.fillText('orbital energy / eV', 0, 0);
+    ctx.restore();
+
+    // Displayed per-orbital levels (see displayedBondLevelEV/displayedAntiLevelEV) — these
+    // include nuclear repulsion, shared out across however many electrons are actually
+    // present. Deliberately not the pure-electronic energy alone: without nuclear repulsion,
+    // the antibonding level sits below the AO reference for the large majority of this
+    // slider's range (see the note above computeMOAxis) — worse than the rarer case this
+    // fixes (bonding above AO for species with too few electrons to bond).
+    const R = R_ang / BOHR;
+    const eBond = displayedBondLevelEV(Z, nElectrons, R);
+    const eAnti = displayedAntiLevelEV(Z, nElectrons, R);
+
+    const xAOL = padL + plotW*0.06, xAOLend = padL + plotW*0.22;
+    const xAOR = padL + plotW*0.94, xAORstart = padL + plotW*0.78;
+    const xMOL = padL + plotW*0.40, xMOR = padL + plotW*0.60;
+
+    const yAO = toY(e1s);
+    const yBond = toY(Math.max(yMinEV, Math.min(yMaxEV, eBond)));
+    const yAnti = toY(Math.max(yMinEV, Math.min(yMaxEV, eAnti)));
+
+    // correlation (fan) lines
+    ctx.strokeStyle = 'rgba(232,227,218,0.18)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    [[xAOLend,yAO,xMOL,yBond],[xAOLend,yAO,xMOL,yAnti],
+     [xAORstart,yAO,xMOR,yBond],[xAORstart,yAO,xMOR,yAnti]].forEach(([x0,y0,x1,y1])=>{
+      ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // AO levels
+    const elemName = Z === 1 ? 'H 1s' : 'He 1s';
+    ctx.strokeStyle = css('--text-dim');
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(xAOL, yAO); ctx.lineTo(xAOLend, yAO); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xAORstart, yAO); ctx.lineTo(xAOR, yAO); ctx.stroke();
+    ctx.fillStyle = css('--text-dim');
+    ctx.font = '10.5px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(elemName, (xAOL+xAOLend)/2, yAO + 16);
+    ctx.fillText(elemName, (xAORstart+xAOR)/2, yAO + 16);
+
+    // MO levels
+    ctx.strokeStyle = css('--coral'); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(xMOL, yBond); ctx.lineTo(xMOR, yBond); ctx.stroke();
+    ctx.strokeStyle = css('--peach'); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(xMOL, yAnti); ctx.lineTo(xMOR, yAnti); ctx.stroke();
+
+    ctx.font = '11px -apple-system, sans-serif';
+    ctx.fillStyle = css('--coral');
+    ctx.textAlign = 'center';
+    ctx.fillText('σ(1s)', (xMOL+xMOR)/2, yBond + (yBond > h-30 ? -8 : 16));
+    ctx.fillStyle = css('--peach');
+    ctx.fillText('σ*(1s)', (xMOL+xMOR)/2, yAnti - 8);
+
+    // off-scale indicators, in case a level sits beyond this (still auto-scaled) axis
+    if (eAnti > yMaxEV){
+      ctx.fillStyle = css('--peach');
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillText('▲ ' + eAnti.toFixed(1) + ' eV', (xMOL+xMOR)/2, yAnti + 13);
+    }
+    if (eBond < yMinEV){
+      ctx.fillStyle = css('--coral');
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillText('▼ ' + eBond.toFixed(1) + ' eV', (xMOL+xMOR)/2, yBond - 8);
+    }
+
+    // electron filling — up to 2 per level, via Aufbau, reflecting the chosen species
+    const midX = (xMOL+xMOR)/2;
+    const nb = nBondElectrons(), na = nAntiElectrons();
+    if (nb >= 1) drawSpinArrow(ctx, midX - (nb>=2?8:0), yBond, true);
+    if (nb >= 2) drawSpinArrow(ctx, midX + 8, yBond, false);
+    if (na >= 1) drawSpinArrow(ctx, midX - (na>=2?8:0), yAnti, true);
+    if (na >= 2) drawSpinArrow(ctx, midX + 8, yAnti, false);
+
+    // When sigma(1s) itself sits ABOVE the AO reference, that's not a display error — it's
+    // a genuine prediction that too few electrons occupy it to overcome this Z's
+    // nuclear-nuclear repulsion (real physics: heavier/more-charged nuclei need more
+    // bonding electrons before net stabilisation is possible — a lone electron binds two H
+    // nuclei just fine but can't come close for two He nuclei). Fixed position at the
+    // bottom of the plot, well clear of the level labels, so it reads as a predicted
+    // result rather than an unexplained inversion.
+    if (eBond > e1s + 0.01){
+      ctx.fillStyle = css('--text-dim');
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('σ(1s) sits above the AO — too few electrons to', midX, h - 18);
+      ctx.fillText('overcome the Z²/R nuclear repulsion here', midX, h - 6);
+    }
+  }
+
+  function drawSpinArrow(ctx, x, y, up){
+    ctx.strokeStyle = css('--text');
+    ctx.lineWidth = 1.4;
+    const len = 12;
+    const y0 = up ? y+6 : y-6;
+    const y1 = up ? y-6 : y+6;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+    ctx.beginPath();
+    const dir = up ? 1 : -1;
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x-3, y1+3*dir);
+    ctx.moveTo(x, y1);
+    ctx.lineTo(x+3, y1+3*dir);
+    ctx.stroke();
+  }
+
+  // ---------- potential energy curve ----------
+  let bondCurvePts = null, antiCurvePts = null, totalCurvePts = null, curvesForKey = null;
+  function buildCurves(){
+    const key = Z + '_' + nElectrons + '_' + showNuclearRepulsion;
+    if (curvesForKey === key) return;
+    bondCurvePts = []; antiCurvePts = []; totalCurvePts = [];
+    for (let rA = R_MIN; rA <= R_MAX + 1e-9; rA += 0.015){
+      const Rb = rA / BOHR;
+      bondCurvePts.push([rA, refBondEV(Z, nElectrons, Rb, showNuclearRepulsion)]);
+      antiCurvePts.push([rA, refAntiEV(Z, nElectrons, Rb, showNuclearRepulsion)]);
+      totalCurvePts.push([rA, refTotalEV(Z, nElectrons, Rb, showNuclearRepulsion)]);
+    }
+    curvesForKey = key;
+  }
+  buildCurves();
+
+  function drawEnergyCurve(){
+    buildCurves();
+    const { ctx, w, h } = setupCanvas(cCurve, 300);
+    ctx.clearRect(0,0,w,h);
+
+    const padL = 46, padR = 14, padT = 16, padB = 30;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+
+    // Species-aware axis (see computeAxisForSpecies), fit to the actual total curve.
+    const { yMinEV, yMaxEV, gridStep } = computeAxisForSpecies(Z, nElectrons);
+
+    const toX = (r) => padL + (r - R_MIN)/(R_MAX - R_MIN) * plotW;
+    const toY = (ev) => padT + (yMaxEV - ev)/(yMaxEV - yMinEV) * plotH;
+
+    ctx.strokeStyle = css('--grid-line');
+    ctx.fillStyle = css('--text-dim');
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    for (let ev = yMinEV; ev <= yMaxEV + 1e-6; ev += gridStep){
+      const y = toY(ev);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); ctx.stroke();
+      ctx.fillText(Math.round(ev) + '', padL - 6, y + 3);
+    }
+    ctx.textAlign = 'center';
+    for (let r = R_MIN; r <= R_MAX; r += 1){
+      const x = toX(r);
+      ctx.fillText(r.toFixed(0), x, h - padB + 14);
+    }
+    ctx.fillText('R / Å', padL + plotW/2, h - 4);
+    ctx.save();
+    ctx.translate(12, padT + plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.fillText('potential energy / eV', 0, 0);
+    ctx.restore();
+
+    function plotCurve(pts, color, lineWidth, dashed){
+      ctx.strokeStyle = color; ctx.lineWidth = lineWidth;
+      ctx.setLineDash(dashed ? [4,3] : []);
+      ctx.beginPath();
+      let started = false;
+      pts.forEach(([r, ev]) => {
+        const x = toX(r), y = toY(ev);
+        if (ev > yMaxEV + 3 || ev < yMinEV - 3){ started = false; return; }
+        if (!started){ ctx.moveTo(x,y); started = true; } else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    // sigma(1s)/sigma*(1s) reference curves: thin, dashed — the individual one-electron
+    // orbital energies, shown for context.
+    plotCurve(antiCurvePts, css('--peach'), 1.3, true);
+    plotCurve(bondCurvePts, css('--coral'), 1.3, true);
+    // total system energy for the selected species: bold, solid — this is what actually
+    // determines whether the species is bound, correctly accounting for the number of
+    // electrons occupying each level (see refTotalEV). Off by default: pure electronic
+    // energy alone always favours getting closer, with no equilibrium — nuclear repulsion
+    // is what makes a real bond length possible.
+    plotCurve(totalCurvePts, css('--text'), 2.6, false);
+
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.fillStyle = css('--text');
+    ctx.textAlign = 'left';
+    ctx.fillText('— total (' + speciesLabel() + (showNuclearRepulsion ? '' : ', electronic only') + ')', padL + 4, padT + 12);
+    ctx.fillStyle = css('--coral');
+    ctx.fillText('- - σ(1s)', padL + 4, padT + 24);
+    ctx.fillStyle = css('--peach');
+    ctx.fillText('- - σ*(1s)', padL + 4, padT + 36);
+
+    // current R marker
+    const xCur = toX(R_ang);
+    ctx.strokeStyle = 'rgba(232,227,218,0.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(xCur, padT); ctx.lineTo(xCur, h-padB); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const Rb = R_ang / BOHR;
+    [[refBondEV(Z,nElectrons,Rb,showNuclearRepulsion), css('--coral'), 3],
+     [refAntiEV(Z,nElectrons,Rb,showNuclearRepulsion), css('--peach'), 3],
+     [refTotalEV(Z,nElectrons,Rb,showNuclearRepulsion), css('--text'), 4.5]].forEach(([ev,color,radius]) => {
+      const y = toY(ev);
+      if (y >= padT-2 && y <= h-padB+2){
+        ctx.beginPath(); ctx.arc(xCur, y, radius, 0, Math.PI*2);
+        ctx.fillStyle = color; ctx.fill();
+        ctx.strokeStyle = css('--panel'); ctx.lineWidth = 1.5; ctx.stroke();
+      }
+    });
+
+    // equilibrium marker — for the actual species' total energy, only shown when it
+    // genuinely turns over within this R range. Without nuclear repulsion, electronic
+    // energy alone never has an interior minimum (it always favours getting closer), so
+    // this marker only appears when nuclear repulsion is included AND the species has
+    // enough electrons to bond (bond order > 0).
+    const eqPoint = refFindMinimum(Z, nElectrons, showNuclearRepulsion);
+    const isInteriorMin = eqPoint[0] > R_MIN + 0.02 && eqPoint[0] < R_MAX - 0.02;
+    if (isInteriorMin){
+      const xMin = toX(eqPoint[0]);
+      ctx.fillStyle = 'rgba(232,227,218,0.4)';
+      ctx.font = '9.5px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Rₑ ≈ ' + eqPoint[0].toFixed(2) + ' Å', xMin, padT + 10);
+    }
+  }
+
+  // ---------- stats readout ----------
+  function updateStats(){
+    const Rb = R_ang / BOHR;
+    const s = S(Z*Rb);
+    const totalNow = refTotalEV(Z, nElectrons, Rb, showNuclearRepulsion);
+    const totalSeparated = nElectrons * E1sEV(Z); // N isolated 1s electrons, fully apart (same asymptote either way)
+    const bindingEnergy = totalNow - totalSeparated;
+    rReadout.textContent = R_ang.toFixed(2) + ' Å';
+    statsRow.innerHTML =
+      'overlap S(R) = <b>' + s.toFixed(3) + '</b>' +
+      ' &nbsp;·&nbsp; splitting = <b>' + (refAntiEV(Z,nElectrons,Rb,showNuclearRepulsion)-refBondEV(Z,nElectrons,Rb,showNuclearRepulsion)).toFixed(2) + ' eV</b>' +
+      ' &nbsp;·&nbsp; total energy relative to separated atoms = <b>' + bindingEnergy.toFixed(2) + ' eV</b>';
+  }
+
+  // ---------- main loop ----------
+  let lastT = performance.now();
+  function frame(now){
+    const dt = Math.min(0.05, (now - lastT)/1000);
+    lastT = now;
+    if (animating){
+      R_ang += animDir * ANIM_SPEED * dt;
+      if (R_ang <= R_MIN){ R_ang = R_MIN; animDir = 1; }
+      if (R_ang >= R_MAX){ R_ang = R_MAX; animDir = -1; }
+      slider.value = R_ang;
+    }
+    drawOrbitalPanel(cBond, offBond, +1);
+    drawOrbitalPanel(cAnti, offAnti, -1);
+    drawMODiagram();
+    drawEnergyCurve();
+    updateStats();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ---------- resize & height reporting ----------
+  function reportHeight(){
+    try{
+      window.parent.postMessage({ type: 'resize', height: document.body.scrollHeight }, '*');
+    }catch(e){}
+  }
+  window.addEventListener('resize', reportHeight);
+  window.addEventListener('load', reportHeight);
+  new ResizeObserver(reportHeight).observe(document.body);
+  setInterval(reportHeight, 800);
+
+})();
+</script>
+
+</body>
+</html>

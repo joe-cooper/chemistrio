@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collision Theory — Rates of Reaction</title>
+<link rel="stylesheet" href="../assets/css/theme.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  /* Species colours are local tokens (not part of the shared palette)
+     since they're specific to this sim, with a light-mode override
+     block so they stay legible against the lighter canvas background —
+     same pattern as diffusion-tube-sim.html and eqm-sim.html. */
+  :root{
+    --A:#4d9fff; --B:#ff8a3d; --P:#2dd4bf;
+    --radius:6px;
+    --mono: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+  }
+  :root[data-theme="light"]{
+    --A:#2f6fd6; --B:#d9691f; --P:#0f9e8c;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--font);
+    -webkit-font-smoothing:antialiased; padding:16px; line-height:1.45;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{
+    display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+    padding-bottom:14px;
+  }
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:11px;letter-spacing:.28em;text-transform:uppercase;
+    color:var(--muted-dim);
+    border:1px solid var(--border);border-radius:2px;
+    padding:5px 9px;
+  }
+  h1{font-size:1.3rem;font-weight:600;letter-spacing:-.01em;margin:0;line-height:1.2;}
+  .tagline{color:var(--muted);font-size:13px;margin-left:auto;max-width:380px;line-height:1.5;}
+  @media(max-width:720px){.tagline{margin-left:0;flex-basis:100%;}}
+
+  .tabbar{
+    display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:14px;
+  }
+  .tabbar button{
+    font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    padding:10px 16px;background:transparent;border:none;color:var(--muted-dim);cursor:pointer;
+    border-bottom:2px solid transparent;margin-bottom:-1px;
+    transition:color .15s,border-color .15s;
+  }
+  .tabbar button:hover:not(.active){color:var(--text);}
+  .tabbar button.active{color:var(--text);border-bottom-color:var(--gold);}
+
+  .stage{display:grid;grid-template-columns:minmax(300px,460px) 1fr;gap:14px;margin-bottom:14px;}
+  @media(max-width:860px){.stage{grid-template-columns:1fr;}}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;}
+  .card-label{
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted-dim);margin-bottom:8px;
+  }
+  .card-label .right{color:var(--gold);}
+  .chip-toggle{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;
+    padding:4px 9px;border-radius:3px;border:1px solid var(--border);
+    background:transparent;color:var(--muted-dim);cursor:pointer;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .chip-toggle:hover:not(.active){color:var(--text);border-color:var(--muted-dim);}
+  .chip-toggle.active{background:var(--raised);color:var(--gold);border-color:var(--gold-dim);}
+
+  canvas{display:block;width:100%;height:auto;border-radius:3px;background:var(--raised);}
+
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;}
+  .ldot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
+
+  .readout{display:flex;flex-direction:column;}
+  .graph-wrap{flex:1;min-height:0;}
+
+  .stats{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+    background:var(--border-soft);border:1px solid var(--border-soft);
+    border-radius:4px;overflow:hidden;margin-top:12px;
+  }
+  .stat{background:var(--raised);padding:9px 11px;}
+  .stat .k{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted-dim);display:block;margin-bottom:4px;
+  }
+  .stat .v{font-family:var(--mono);font-size:16px;font-weight:500;color:var(--text);line-height:1;}
+  .stat.accent .v{color:var(--gold);}
+  @media(max-width:520px){.stats{grid-template-columns:repeat(2,1fr);}}
+
+  .controls{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 18px;
+    display:flex;flex-wrap:wrap;gap:18px 26px;align-items:center;
+  }
+  .reaction-row{
+    flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:12px;
+    padding-bottom:14px;margin-bottom:2px;border-bottom:1px solid var(--border-soft);
+  }
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+  .seg button{
+    font-family:var(--mono);font-size:12.5px;letter-spacing:.02em;padding:7px 14px;
+    background:transparent;color:var(--muted);border:none;cursor:pointer;
+    transition:background .15s,color .15s;
+  }
+  .seg button+button{border-left:1px solid var(--border);}
+  .seg button.active{background:var(--raised);color:var(--text);}
+  .seg button:hover:not(.active){color:var(--text);}
+
+  .ctl-label{
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--muted-dim);
+  }
+  .slider-row{flex:1 1 200px;display:flex;flex-direction:column;gap:7px;}
+  .slider-head{display:flex;justify-content:space-between;align-items:baseline;}
+  .slider-head .val{font-family:var(--mono);font-size:13px;color:var(--text);}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;background:var(--border);border-radius:99px;outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--gold);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--border);cursor:pointer;margin-top:-5.5px;}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--gold);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--border);cursor:pointer;}
+  input[type=range]::-moz-range-track{height:3px;background:var(--border);border-radius:99px;}
+  #aSlider::-webkit-slider-thumb{background:var(--A);}
+  #aSlider::-moz-range-thumb{background:var(--A);}
+  #tSlider::-webkit-slider-thumb{background:#ff5d5d;}
+  #tSlider::-moz-range-thumb{background:#ff5d5d;}
+  #piecesSlider::-webkit-slider-thumb{background:var(--P);}
+  #piecesSlider::-moz-range-thumb{background:var(--P);}
+
+  .ctl-run{display:flex;gap:10px;align-items:center;margin-left:auto;}
+  @media(max-width:480px){ .ctl-run{width:100%;margin-left:0;justify-content:flex-end;} }
+  .btn{
+    font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:.03em;
+    cursor:pointer;border-radius:4px;padding:10px 18px;
+    transition:background .15s,border-color .15s,color .15s,opacity .15s;
+  }
+  .btn-run{background:var(--text);color:var(--bg);border:1px solid var(--text);min-width:96px;}
+  .btn-run:hover{opacity:.85;}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:var(--muted-dim);}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .note{
+    margin-top:14px;border:1px solid var(--border-soft);border-radius:6px;
+    padding:14px 16px;background:var(--surface);
+    display:grid;grid-template-columns:1fr;gap:14px;align-items:start;
+  }
+  .note .marker{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gold-dim);border:1px solid var(--gold-dim);border-radius:2px;
+    padding:4px 7px;white-space:nowrap;
+  }
+  .note p{margin:0 0 8px;font-size:12.5px;line-height:1.6;color:var(--muted);}
+  .note p:last-child{margin-bottom:0;}
+  .note b{color:var(--text);font-weight:500;}
+  @media(max-width:560px){.note{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <!-- <span class="eyebrow">Collision Theory</span> -->
+    <!-- <h1>Rates of reaction</h1> -->
+    <!-- <p class="tagline">Use the tabs to explore how concentration, temperature and surface area each affect the rate of reaction.</p> -->
+  </header>
+
+  <div class="tabbar" id="moduleTabs">
+    <button type="button" class="active" data-module="conc">Concentration</button>
+    <button type="button" data-module="temp">Temperature</button>
+    <button type="button" data-module="surf">Surface area</button>
+  </div>
+
+  <div class="stage">
+    <!-- reaction vessel -->
+    <div class="card">
+      <div class="card-label">
+        <span id="eqnLabel">Reaction vessel — A → B</span>
+        <span class="right" id="phaseLabel">ready</span>
+      </div>
+      <canvas id="box" aria-label="Particle simulation box"></canvas>
+      <div class="legend" id="legendBox">
+        <span><span class="ldot" style="background:var(--A)"></span>Reactant A</span>
+        <span><span class="ldot" style="background:var(--B)"></span>Product B</span>
+      </div>
+    </div>
+
+    <!-- graph + stats -->
+    <div class="card readout">
+      <div class="card-label">
+        <span>Particle count vs time</span>
+        <button type="button" class="chip-toggle" id="prevToggle" title="Overlay the previous run as dashed, faded lines">Show previous run</button>
+      </div>
+      <div class="graph-wrap"><canvas id="graph" aria-label="Reactant and product counts over time"></canvas></div>
+      <div class="stats">
+        <div class="stat"><span class="k">Time</span><span class="v" id="sTime">0.0 s</span></div>
+        <div class="stat"><span class="k">Reactions</span><span class="v" id="sReactions">0</span></div>
+        <div class="stat accent"><span class="k">Rate</span><span class="v" id="sRate">0.00 s⁻¹</span></div>
+        <div class="stat"><span class="k" id="sALabel">A remaining</span><span class="v" id="sA" style="color:var(--A)">—</span></div>
+        <div class="stat"><span class="k" id="sBLabel">B formed</span><span class="v" id="sB" style="color:var(--B)">—</span></div>
+        <div class="stat accent"><span class="k" id="sExtraLabel">Volume</span><span class="v" id="sExtra">100%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- controls -->
+  <div class="controls">
+    <div class="reaction-row" id="reactionRow">
+      <span class="ctl-label">Reaction</span>
+      <div class="seg" id="reactionSeg">
+        <button type="button" class="active" data-mode="A1">A → B</button>
+        <button type="button" data-mode="A2">2A → B</button>
+      </div>
+    </div>
+    <div class="slider-row" id="aSliderRow">
+      <div class="slider-head"><span class="ctl-label">Reactant A particles</span><span class="val" id="aVal">120</span></div>
+      <input type="range" id="aSlider" min="50" max="250" step="10" value="120">
+    </div>
+
+    <!-- concentration-module controls -->
+    <div class="slider-row" id="pSliderRow">
+      <div class="slider-head"><span class="ctl-label">Collision success chance</span><span class="val" id="pVal">50%</span></div>
+      <input type="range" id="pSlider" min="0" max="100" step="1" value="50">
+    </div>
+    <div class="slider-row" id="volSliderRow">
+      <div class="slider-head"><span class="ctl-label">Vessel volume</span><span class="val" id="volVal">100%</span></div>
+      <input type="range" id="volSlider" min="25" max="100" step="5" value="100">
+    </div>
+
+    <!-- temperature-module controls -->
+    <div class="slider-row" id="tSliderRow" style="display:none">
+      <div class="slider-head"><span class="ctl-label">Temperature</span><span class="val" id="tVal">400 K</span></div>
+      <input type="range" id="tSlider" min="200" max="1000" step="20" value="400">
+    </div>
+    <div class="slider-row" id="eaSliderRow" style="display:none">
+      <div class="slider-head"><span class="ctl-label">Activation energy</span><span class="val" id="eaVal">800</span></div>
+      <input type="range" id="eaSlider" min="200" max="2000" step="50" value="800">
+    </div>
+
+    <!-- surface-area-module controls -->
+    <div class="slider-row" id="piecesSliderRow" style="display:none">
+      <div class="slider-head"><span class="ctl-label">Number of pieces</span><span class="val" id="piecesVal">1</span></div>
+      <input type="range" id="piecesSlider" min="0" max="15" step="1" value="0">
+    </div>
+    <div class="slider-row" id="fluidSliderRow" style="display:none">
+      <div class="slider-head"><span class="ctl-label">Fluid particles</span><span class="val" id="fluidVal">120</span></div>
+      <input type="range" id="fluidSlider" min="20" max="200" step="10" value="120">
+    </div>
+    <div class="slider-row" id="surfPSliderRow" style="display:none">
+      <div class="slider-head"><span class="ctl-label">Collision success chance</span><span class="val" id="surfPVal">50%</span></div>
+      <input type="range" id="surfPSlider" min="0" max="100" step="1" value="50">
+    </div>
+
+    <div class="ctl-run">
+      <button class="btn btn-run" id="runBtn">Run</button>
+      <button class="btn btn-ghost" id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <!-- <div class="note">
+    <span class="marker">Model</span>
+    <div>
+      <div id="noteConc">
+        <p>Every qualifying collision has the <b>same chance of reacting</b>, set by the slider — regardless of how fast the particles are moving. This isolates <b>collision frequency</b> (set by concentration) from <b>collision energy</b>, which the Temperature tab explores directly.</p>
+        <p>The box volume is fixed by default, so adding particles directly raises concentration, matching mol/dm³ ∝ N/V for a fixed V. The <b>vessel volume</b> slider offers the other route to the same thing: hold the particle count still and shrink the box instead — the vessel visibly compresses around the same set of particles, raising concentration (and rate) without adding a single one. Halving the volume doubles the concentration, same as it would in a real gas or solution.</p>
+      </div>
+      <div id="noteTemp" style="display:none">
+        <p>Raising the temperature does <b>two</b> things at once here, matching the two-part explanation used in collision theory. Particle speed scales as <b>√T</b> (kinetic theory: average kinetic energy ∝ T, so speed ∝ √T), so particles collide more often. Separately, the <b>chance a collision succeeds</b> — shown live as "Success chance" — grows with temperature too, following an Arrhenius-style relationship exp(−Eₐ / T): only collisions energetic enough to clear the activation energy barrier react, and a hotter sample has a larger share of those.</p>
+        <p>Dragging <b>Temperature</b> rescales the speed of every particle already in the box and updates the success chance immediately — like heating a reaction that's already running, nothing resets. Changing <b>Activation energy</b> behaves the same way: it's the height of the energy barrier a collision must clear, and lowering it (without touching temperature) is exactly what a catalyst does — a later module will build on this directly.</p>
+        <p>This is a simplification of the real Boltzmann energy distribution — every particle here moves at close to the same speed for a given temperature, rather than the wide spread of speeds real molecules have. The overall trend it captures — faster particles, more frequent collisions, and a rapidly growing successful fraction — matches real chemistry, including why "10°C roughly doubles the rate" holds reasonably well over everyday temperature ranges.</p>
+      </div>
+      <div id="noteSurf" style="display:none">
+        <p>This tab models a <b>solid reactant</b> (blue) sitting in a <b>fluid reactant</b> (teal) — like marble chips in acid. The solid is always exactly <b>120 particles</b>; only how they're <b>arranged</b> changes. A fluid particle can only react with a solid particle it can actually touch — one on the <b>exposed surface</b> of a piece. Particles buried inside a lump are shielded until the layers above them dissolve away.</p>
+        <p>The <b>number of pieces</b> slider splits the same 120 particles into that many separate blocks, spread out in the vessel — the slider only lands on values that divide 120 exactly, so every piece is always the same size. Splitting one lump into many smaller pieces exposes far more surface for exactly the same amount of solid — that's the whole idea of surface area's effect on rate. Watch the <b>Exposed surface</b> stat: it jumps enormously as you increase the pieces, even though "Solid remaining" starts at 120 either way.</p>
+        <p>As the reaction proceeds, a lump doesn't dissolve as one lump-sized event — it erodes from the outside in, exposing fresh particles underneath as the outer layer disappears, exactly like a real shrinking piece of solid reactant.</p>
+      </div>
+      <div id="noteStoich">
+        <p>In <b>A → B</b>, a successful collision converts <b>both</b> colliding particles into B — particle count is conserved throughout. In <b>2A → B</b>, a successful collision converts one particle into B and removes the other — modelling the 2:1 stoichiometry means particle count falls over time. This is a deliberate simplification: it isn't tracking mass or momentum through the "lost" particle, just making the 2:1 ratio visible at a glance.</p>
+      </div>
+    </div>
+  </div> -->
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- constants ----------
+  const LMAX = 640;           // reference frame size, sim units — the "full volume" box
+  let L = LMAX;                 // current box side (shrinks with vessel volume, concentration tab only)
+  const R = 4;                   // particle radius, sim units
+  const T_REF = 400;            // K, the temperature at which BASE_SPEED applies exactly
+  const BASE_SPEED = 130;      // sim units / s, at speedScale = 1
+  const SPEED_VAR = 0.35;      // fractional random speed spread
+  const SAMPLE_DT = 0.15;      // s between graph samples
+  const RATE_WINDOW = 3;       // s, trailing window for the rate readout
+  const MAX_DT = 1/30;         // s, clamp per-frame integration step
+  const N_SOLID = 120;         // fixed total solid particles, surface-area tab
+  const PIECE_DIVISORS = [1,2,3,4,5,6,8,10,12,15,20,24,30,40,60,120]; // exact divisors of N_SOLID
+  function piecesFromSlider(){ return PIECE_DIVISORS[+el.piecesSlider.value]; }
+
+  const el = {
+    box: document.getElementById('box'),
+    graph: document.getElementById('graph'),
+    phaseLabel: document.getElementById('phaseLabel'),
+    aSlider: document.getElementById('aSlider'),
+    aSliderRow: document.getElementById('aSliderRow'),
+    pSlider: document.getElementById('pSlider'),
+    volSlider: document.getElementById('volSlider'),
+    tSlider: document.getElementById('tSlider'),
+    eaSlider: document.getElementById('eaSlider'),
+    piecesSlider: document.getElementById('piecesSlider'),
+    fluidSlider: document.getElementById('fluidSlider'),
+    surfPSlider: document.getElementById('surfPSlider'),
+    pSliderRow: document.getElementById('pSliderRow'),
+    volSliderRow: document.getElementById('volSliderRow'),
+    tSliderRow: document.getElementById('tSliderRow'),
+    eaSliderRow: document.getElementById('eaSliderRow'),
+    piecesSliderRow: document.getElementById('piecesSliderRow'),
+    fluidSliderRow: document.getElementById('fluidSliderRow'),
+    surfPSliderRow: document.getElementById('surfPSliderRow'),
+    aVal: document.getElementById('aVal'),
+    pVal: document.getElementById('pVal'),
+    volVal: document.getElementById('volVal'),
+    tVal: document.getElementById('tVal'),
+    eaVal: document.getElementById('eaVal'),
+    piecesVal: document.getElementById('piecesVal'),
+    fluidVal: document.getElementById('fluidVal'),
+    surfPVal: document.getElementById('surfPVal'),
+    runBtn: document.getElementById('runBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    sTime: document.getElementById('sTime'),
+    sReactions: document.getElementById('sReactions'),
+    sRate: document.getElementById('sRate'),
+    sA: document.getElementById('sA'),
+    sB: document.getElementById('sB'),
+    sALabel: document.getElementById('sALabel'),
+    sBLabel: document.getElementById('sBLabel'),
+    sExtra: document.getElementById('sExtra'),
+    sExtraLabel: document.getElementById('sExtraLabel'),
+    eqnLabel: document.getElementById('eqnLabel'),
+    legendBox: document.getElementById('legendBox'),
+    reactionRow: document.getElementById('reactionRow'),
+    reactionSeg: document.getElementById('reactionSeg'),
+    prevToggle: document.getElementById('prevToggle'),
+    moduleTabs: document.getElementById('moduleTabs'),
+    noteConc: document.getElementById('noteConc'),
+    noteTemp: document.getElementById('noteTemp'),
+    noteSurf: document.getElementById('noteSurf'),
+    noteStoich: document.getElementById('noteStoich'),
+  };
+  const bctx = el.box.getContext('2d');
+  const gctx = el.graph.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  function cssVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function speedFactorForT(T){ return Math.sqrt(T/T_REF); }
+  function reactProbForTEa(T, Ea){ return Math.min(1, Math.exp(-Ea/T)); }
+
+  // ---------- state ----------
+  let activeModule = 'conc'; // 'conc' | 'temp' | 'surf'
+  let reactionMode = 'A1'; // 'A1': A -> B (count-conserving)   |   'A2': 2A -> B (merging) — gas tabs only
+  let showPrevRun = false;
+  let prevHist = null; // snapshot of the run that was just cleared, for comparison
+  let particles = [];         // gas tabs: {x,y,vx,vy,type,dead} type: 0=A 1=B
+  let t = 0, reactions = 0, running = false, rafId = null, lastTs = null;
+  let reactionTimes = [];
+  let hist = { t:[0], a:[0], b:[0] };
+  let lastSampleT = 0;
+  let xMaxAnim = 8; // eased graph time-window, mirrors eqm-sim's curXMax pattern
+  let yMaxFixed = 1; // graph y-axis ceiling, set once per init from the starting total
+  let speedScale = 1;    // current multiplier on BASE_SPEED — driven by temperature on the temp tab
+  let REACT_PROB = 0.35; // current per-collision success chance for whichever tab is active
+
+  // surface-area tab state
+  let solids = [];      // {x,y,cid,row,col,alive,exposed}
+  let solidIndex = new Map(); // "cid:row:col" -> particle, for neighbour lookups
+  let fluid = [];        // {x,y,vx,vy} — never consumed, just triggers dissolution on contact
+
+  // ---------- gas-tab particle placement ----------
+  function place(n0, type, out){
+    for(let i=0;i<n0;i++){
+      let x,y,ok,tries=0;
+      do{
+        x = R + Math.random()*(L-2*R);
+        y = R + Math.random()*(L-2*R);
+        ok = true;
+        for(let j=0;j<out.length;j++){
+          const dx=x-out[j].x, dy=y-out[j].y;
+          if(dx*dx+dy*dy < (2*R+1)*(2*R+1)){ ok=false; break; }
+        }
+        tries++;
+      } while(!ok && tries<30);
+      const speed = BASE_SPEED*speedScale*(1-SPEED_VAR/2 + Math.random()*SPEED_VAR);
+      const ang = Math.random()*Math.PI*2;
+      out.push({ x, y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, type });
+    }
+  }
+
+  // ---------- surface-area tab: build solid clusters + fluid ----------
+  function updateExposure(p){
+    if(!p.alive){ p.exposed=false; return; }
+    const nbrs = [[p.row-1,p.col],[p.row+1,p.col],[p.row,p.col-1],[p.row,p.col+1]];
+    let exposed=false;
+    for(const [nr,nc] of nbrs){
+      const nb = solidIndex.get(p.cid+':'+nr+':'+nc);
+      if(!nb || !nb.alive){ exposed=true; break; } // open face: no neighbour there, or it's dissolved
+    }
+    p.exposed = exposed;
+  }
+
+  function buildSurf(){
+    const pieces = piecesFromSlider();
+    const nFluid = +el.fluidSlider.value;
+    REACT_PROB = (+el.surfPSlider.value)/100;
+
+    solids = [];
+    solidIndex = new Map();
+    const base = Math.floor(N_SOLID/pieces);
+    const remainder = N_SOLID - base*pieces;
+    const cols = Math.ceil(Math.sqrt(pieces));
+    const rows = Math.ceil(pieces/cols);
+    const margin = 40;
+    const cellW = (LMAX - 2*margin)/cols;
+    const cellH = (LMAX - 2*margin)/rows;
+    const spacing = 2*R;
+
+    let cid = 0;
+    for(let ry=0; ry<rows && cid<pieces; ry++){
+      for(let rx=0; rx<cols && cid<pieces; rx++){
+        const nc = base + (cid<remainder?1:0);
+        if(nc>0){
+          const side = Math.ceil(Math.sqrt(nc));
+          const ccx = margin + cellW*(rx+0.5);
+          const ccy = margin + cellH*(ry+0.5);
+          const blockW = side*spacing;
+          const originX = ccx - blockW/2 + spacing/2;
+          const originY = ccy - blockW/2 + spacing/2;
+          let placed=0;
+          for(let row=0; row<side && placed<nc; row++){
+            for(let col=0; col<side && placed<nc; col++){
+              const p = { x:originX+col*spacing, y:originY+row*spacing, cid, row, col, alive:true, exposed:false };
+              solids.push(p);
+              solidIndex.set(cid+':'+row+':'+col, p);
+              placed++;
+            }
+          }
+        }
+        cid++;
+      }
+    }
+    for(const p of solids) updateExposure(p);
+
+    fluid = [];
+    for(let i=0;i<nFluid;i++){
+      let x,y,ok,tries=0;
+      do{
+        x = R + Math.random()*(LMAX-2*R);
+        y = R + Math.random()*(LMAX-2*R);
+        ok = true;
+        for(const s of solids){
+          const dx=x-s.x, dy=y-s.y;
+          if(dx*dx+dy*dy < (2*R+2)*(2*R+2)){ ok=false; break; }
+        }
+        tries++;
+      } while(!ok && tries<40);
+      const speed = BASE_SPEED*(1-SPEED_VAR/2 + Math.random()*SPEED_VAR);
+      const ang = Math.random()*Math.PI*2;
+      fluid.push({ x, y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed });
+    }
+  }
+
+  function surfStep(dt){
+    for(const f of fluid){
+      f.x += f.vx*dt; f.y += f.vy*dt;
+      if(f.x < R){ f.x=R; f.vx=Math.abs(f.vx); }
+      else if(f.x > LMAX-R){ f.x=LMAX-R; f.vx=-Math.abs(f.vx); }
+      if(f.y < R){ f.y=R; f.vy=Math.abs(f.vy); }
+      else if(f.y > LMAX-R){ f.y=LMAX-R; f.vy=-Math.abs(f.vy); }
+      if(!isFinite(f.x) || !isFinite(f.y)){ f.x=LMAX/2; f.y=LMAX/2; f.vx=0; f.vy=0; }
+      f.x = Math.min(Math.max(f.x, R), LMAX-R);
+      f.y = Math.min(Math.max(f.y, R), LMAX-R);
+    }
+
+    // fluid-fluid elastic collisions, same spatial-grid pattern as the gas tabs
+    const cell = 2*R;
+    const grid = new Map();
+    for(let i=0;i<fluid.length;i++){
+      const f=fluid[i];
+      const cx=(f.x/cell)|0, cy=(f.y/cell)|0;
+      const key=cx*100000+cy;
+      let arr=grid.get(key); if(!arr){arr=[];grid.set(key,arr);} arr.push(i);
+    }
+    const minDist = 2*R, minDist2 = minDist*minDist;
+    for(let i=0;i<fluid.length;i++){
+      const f=fluid[i];
+      const cx=(f.x/cell)|0, cy=(f.y/cell)|0;
+      for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){
+        const arr=grid.get((cx+ox)*100000+(cy+oy));
+        if(!arr) continue;
+        for(const j of arr){
+          if(j<=i) continue;
+          const g=fluid[j];
+          const dx=g.x-f.x, dy=g.y-f.y;
+          const dist2=dx*dx+dy*dy;
+          if(dist2>=minDist2 || dist2<1e-9) continue;
+          const dist=Math.sqrt(dist2);
+          const nx=dx/dist, ny=dy/dist;
+          const overlap=(minDist-dist)/2;
+          f.x-=nx*overlap; f.y-=ny*overlap;
+          g.x+=nx*overlap; g.y+=ny*overlap;
+          const rvx=g.vx-f.vx, rvy=g.vy-f.vy;
+          const velAlongNormal = rvx*nx+rvy*ny;
+          if(velAlongNormal>0) continue;
+          f.vx+=velAlongNormal*nx; f.vy+=velAlongNormal*ny;
+          g.vx-=velAlongNormal*nx; g.vy-=velAlongNormal*ny;
+        }
+      }
+    }
+
+    // fluid-solid collisions: solid is stationary (infinite mass) — reflect
+    // the fluid particle like a wall bounce, and roll for dissolution if
+    // the solid particle it hit is exposed on the surface
+    for(const f of fluid){
+      for(const s of solids){
+        if(!s.alive) continue;
+        const dx=f.x-s.x, dy=f.y-s.y;
+        const dist2=dx*dx+dy*dy;
+        const minDistFS = 2*R;
+        if(dist2>=minDistFS*minDistFS || dist2<1e-9) continue;
+        const dist=Math.sqrt(dist2);
+        const nx=dx/dist, ny=dy/dist;
+        const overlap = minDistFS-dist;
+        f.x += nx*overlap; f.y += ny*overlap;
+        const velAlongNormal = f.vx*nx+f.vy*ny;
+        if(velAlongNormal<0){
+          f.vx -= 2*velAlongNormal*nx;
+          f.vy -= 2*velAlongNormal*ny;
+        }
+        if(s.exposed && Math.random()<REACT_PROB){
+          s.alive = false;
+          s.exposed = false;
+          reactions++; reactionTimes.push(t);
+          for(const [nr,nc] of [[s.row-1,s.col],[s.row+1,s.col],[s.row,s.col-1],[s.row,s.col+1]]){
+            const nb = solidIndex.get(s.cid+':'+nr+':'+nc);
+            if(nb && nb.alive) updateExposure(nb);
+          }
+        }
+        break; // resolve at most one solid contact per fluid particle per frame
+      }
+    }
+    t += dt;
+  }
+
+  function init(){
+    // snapshot whatever run is being replaced, so it can be shown as a
+    // faded comparison line once a new run starts
+    if(hist.t.length>1){
+      prevHist = { t:hist.t.slice(), a:hist.a.slice(), b:hist.b.slice(), total:hist.a[0]+hist.b[0] };
+    }
+    t = 0; reactions = 0; reactionTimes = []; lastSampleT = 0; xMaxAnim = 8;
+
+    if(activeModule==='surf'){
+      buildSurf();
+      yMaxFixed = niceMax(N_SOLID);
+      hist = { t:[0], a:[N_SOLID], b:[0] };
+    } else {
+      const nA = +el.aSlider.value;
+      if(activeModule==='conc'){
+        const volPct = +el.volSlider.value;
+        // area-based scaling: volume% is the fraction of the reference box's
+        // area, so halving volPct doubles concentration (N / area)
+        L = LMAX * Math.sqrt(volPct/100);
+        speedScale = 1;
+        REACT_PROB = (+el.pSlider.value)/100;
+      } else {
+        L = LMAX; // temperature tab keeps the vessel at full size
+        const T = +el.tSlider.value, Ea = +el.eaSlider.value;
+        speedScale = speedFactorForT(T);
+        REACT_PROB = reactProbForTEa(T, Ea);
+      }
+      particles = [];
+      place(nA, 0, particles);
+      yMaxFixed = niceMax(nA); // fixed ceiling: totals never increase from the starting count
+      hist = { t:[0], a:[nA], b:[0] };
+    }
+    updateStatsDisplay();
+    renderBox();
+    renderGraph();
+  }
+
+  // ---------- physics: gas tabs (concentration / temperature) ----------
+  function step(dt){
+    if(activeModule==='surf'){ surfStep(dt); return; }
+    for(const p of particles){
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      if(p.x < R){ p.x=R; p.vx=Math.abs(p.vx); }
+      else if(p.x > L-R){ p.x=L-R; p.vx=-Math.abs(p.vx); }
+      if(p.y < R){ p.y=R; p.vy=Math.abs(p.vy); }
+      else if(p.y > L-R){ p.y=L-R; p.vy=-Math.abs(p.vy); }
+      // belt-and-braces clamp so no NaN/overshoot can push a particle
+      // permanently outside the box regardless of step size
+      if(!isFinite(p.x) || !isFinite(p.y)){ p.x=L/2; p.y=L/2; p.vx=0; p.vy=0; }
+      p.x = Math.min(Math.max(p.x, R), L-R);
+      p.y = Math.min(Math.max(p.y, R), L-R);
+    }
+
+    // spatial grid for pairwise collisions, same bucketing pattern as
+    // mb-sim.html / diffusion-tube-sim.html
+    const cell = 2*R;
+    const grid = new Map();
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i];
+      const cx=(p.x/cell)|0, cy=(p.y/cell)|0;
+      const key=cx*100000+cy;
+      let arr=grid.get(key); if(!arr){arr=[];grid.set(key,arr);} arr.push(i);
+    }
+    const minDist = 2*R, minDist2 = minDist*minDist;
+    let anyDead = false;
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i];
+      if(p.dead) continue;
+      const cx=(p.x/cell)|0, cy=(p.y/cell)|0;
+      for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){
+        const arr=grid.get((cx+ox)*100000+(cy+oy));
+        if(!arr) continue;
+        for(const j of arr){
+          if(j<=i) continue;
+          const q=particles[j];
+          if(q.dead) continue;
+          const dx=q.x-p.x, dy=q.y-p.y;
+          const dist2=dx*dx+dy*dy;
+          if(dist2>=minDist2 || dist2<1e-9) continue;
+          const dist=Math.sqrt(dist2);
+          const nx=dx/dist, ny=dy/dist;
+          const overlap=(minDist-dist)/2;
+          p.x-=nx*overlap; p.y-=ny*overlap;
+          q.x+=nx*overlap; q.y+=ny*overlap;
+
+          const rvx=q.vx-p.vx, rvy=q.vy-p.vy;
+          const velAlongNormal = rvx*nx+rvy*ny;
+          if(velAlongNormal>0) continue; // separating already, don't resolve twice
+
+          // both reactions here are triggered only by an A–A collision —
+          // there is no second reactant species in either mode
+          if(p.type===0 && q.type===0){
+            if(Math.random()<REACT_PROB){
+              if(reactionMode==='A1'){
+                // A -> B: both colliding particles become product; count conserved
+                p.type=1; q.type=1;
+              } else {
+                // 2A -> B: one becomes product, the other is removed —
+                // trades strict mass/count conservation for a clear 2:1
+                // stoichiometry visual, a deliberate teaching simplification
+                q.type=1; p.dead=true; anyDead=true;
+              }
+              reactions++; reactionTimes.push(t);
+            }
+          }
+          // equal-mass elastic bounce: exchange normal velocity components
+          p.vx+=velAlongNormal*nx; p.vy+=velAlongNormal*ny;
+          q.vx-=velAlongNormal*nx; q.vy-=velAlongNormal*ny;
+        }
+      }
+    }
+    if(anyDead) particles = particles.filter(pt => !pt.dead);
+    t += dt;
+  }
+
+  function counts(){
+    if(activeModule==='surf'){
+      let a=0;
+      for(const s of solids) if(s.alive) a++;
+      return { a, b:N_SOLID-a };
+    }
+    let a=0,b=0;
+    for(const pt of particles){ if(pt.type===0)a++; else b++; }
+    return {a,b};
+  }
+
+  function maybeSample(){
+    if(t-lastSampleT>=SAMPLE_DT){
+      const c=counts();
+      hist.t.push(t); hist.a.push(c.a); hist.b.push(c.b);
+      lastSampleT=t;
+      if(hist.t.length>2000){ // cap history length for long-running sessions
+        hist.t.splice(0, hist.t.length-2000);
+        hist.a.splice(0, hist.a.length-2000);
+        hist.b.splice(0, hist.b.length-2000);
+      }
+    }
+    reactionTimes = reactionTimes.filter(tt => t-tt<=RATE_WINDOW);
+  }
+
+  function updateStatsDisplay(){
+    const c=counts();
+    el.sTime.textContent = t.toFixed(1)+' s';
+    el.sReactions.textContent = reactions.toLocaleString();
+    const rate = reactionTimes.length/RATE_WINDOW;
+    el.sRate.textContent = rate.toFixed(2)+' s⁻¹';
+    el.sA.textContent = c.a;
+    el.sB.textContent = c.b;
+    if(activeModule==='conc'){
+      el.sExtraLabel.textContent = 'Volume';
+      el.sExtra.textContent = Math.round(L*L/(LMAX*LMAX)*100)+'%';
+    } else if(activeModule==='temp'){
+      el.sExtraLabel.textContent = 'Success chance';
+      el.sExtra.textContent = (REACT_PROB*100).toFixed(1)+'%';
+    } else {
+      el.sExtraLabel.textContent = 'Exposed surface';
+      let exposedCount=0;
+      for(const s of solids) if(s.alive && s.exposed) exposedCount++;
+      el.sExtra.textContent = exposedCount;
+    }
+  }
+
+  // ---------- rendering: box ----------
+  let boxScale = 1;
+  function sizeBox(){
+    const w = el.box.parentElement.clientWidth;
+    el.box.style.height = w+'px';
+    el.box.width = Math.round(w*dpr);
+    el.box.height = Math.round(w*dpr);
+    bctx.setTransform(dpr,0,0,dpr,0,0);
+    boxScale = w/LMAX; // fixed reference frame, so a shrinking box is visibly smaller
+  }
+  function renderBox(){
+    bctx.save();
+    bctx.scale(boxScale, boxScale);
+    bctx.clearRect(0,0,LMAX,LMAX);
+    if(activeModule==='surf'){
+      bctx.strokeStyle = cssVar('--border-soft');
+      bctx.lineWidth = 2;
+      bctx.strokeRect(0,0,LMAX,LMAX);
+      const colA=cssVar('--A'), colP=cssVar('--P');
+      for(const s of solids){
+        if(!s.alive) continue;
+        bctx.beginPath();
+        bctx.arc(s.x, s.y, R, 0, Math.PI*2);
+        bctx.fillStyle = colA;
+        bctx.fill();
+      }
+      for(const f of fluid){
+        bctx.beginPath();
+        bctx.arc(f.x, f.y, R, 0, Math.PI*2);
+        bctx.fillStyle = colP;
+        bctx.fill();
+      }
+    } else {
+      const off = (LMAX-L)/2; // centre the (possibly smaller) box in the reference frame
+      bctx.strokeStyle = cssVar('--border-soft');
+      bctx.lineWidth = 2;
+      bctx.strokeRect(off, off, L, L);
+      const colA=cssVar('--A'), colB=cssVar('--B');
+      for(const p of particles){
+        bctx.beginPath();
+        bctx.arc(p.x+off, p.y+off, R, 0, Math.PI*2);
+        bctx.fillStyle = p.type===0?colA:colB;
+        bctx.fill();
+      }
+    }
+    bctx.restore();
+  }
+
+  // ---------- rendering: graph ----------
+  const PAD={l:44,r:12,t:12,b:26};
+  function sizeGraph(){
+    const w = el.graph.parentElement.clientWidth;
+    const h = Math.max(220, Math.round(w*0.6));
+    el.graph.style.height = h+'px';
+    el.graph.width = Math.round(w*dpr);
+    el.graph.height = Math.round(h*dpr);
+    gctx.setTransform(dpr,0,0,dpr,0,0);
+    return {w,h};
+  }
+  function niceMax(v){
+    if(v<=0) return 1;
+    const pow=Math.pow(10,Math.floor(Math.log10(v)));
+    const n=v/pow;
+    const step=n<=1?1:n<=2?2:n<=5?5:10;
+    return step*pow;
+  }
+  function curXMax(){
+    let base = Math.max(t*1.05, 8);
+    if(showPrevRun && prevHist && prevHist.t.length){
+      base = Math.max(base, prevHist.t[prevHist.t.length-1]);
+    }
+    const target = niceMax(base);
+    xMaxAnim += (target-xMaxAnim)*0.15;
+    if(Math.abs(target-xMaxAnim)<target*0.001) xMaxAnim=target;
+    return xMaxAnim;
+  }
+  function renderGraph(){
+    const {w,h} = sizeGraph();
+    gctx.clearRect(0,0,w,h);
+    const x0=PAD.l, y0=h-PAD.b, x1=w-PAD.r, y1=PAD.t;
+    const xMax = curXMax();
+    const showPrev = showPrevRun && prevHist && prevHist.t.length>1;
+    const yMax = showPrev ? niceMax(Math.max(yMaxFixed, prevHist.total)) : yMaxFixed;
+
+    gctx.font='10px '+cssVar('--mono') || '10px monospace';
+    gctx.textBaseline='middle';
+    gctx.strokeStyle=cssVar('--border'); gctx.fillStyle=cssVar('--muted-dim'); gctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const yy=y0-(y0-y1)*i/4;
+      gctx.beginPath(); gctx.moveTo(x0,yy); gctx.lineTo(x1,yy); gctx.stroke();
+      gctx.textAlign='right';
+      gctx.fillText(Math.round(yMax*i/4), x0-7, yy);
+    }
+    gctx.textAlign='center'; gctx.textBaseline='top';
+    for(let i=0;i<=4;i++){
+      const xx=x0+(x1-x0)*i/4;
+      gctx.fillText((xMax*i/4).toFixed(1), xx, y0+7);
+    }
+    gctx.fillStyle=cssVar('--muted'); gctx.textBaseline='alphabetic';
+    gctx.fillText('time / s', (x0+x1)/2, h-3);
+    gctx.save(); gctx.translate(12,(y0+y1)/2); gctx.rotate(-Math.PI/2);
+    gctx.textAlign='center'; gctx.fillText('particles', 0, 0);
+    gctx.restore();
+
+    function plot(ts, ys, color, dashed){
+      const X = tv => x0+(x1-x0)*(xMax>0?tv/xMax:0);
+      const Y = v => y0-(y0-y1)*(yMax>0?v/yMax:0);
+      gctx.beginPath();
+      for(let i=0;i<ts.length;i++){
+        const px=X(ts[i]), py=Y(ys[i]);
+        i===0?gctx.moveTo(px,py):gctx.lineTo(px,py);
+      }
+      gctx.save();
+      if(dashed){ gctx.setLineDash([5,4]); gctx.globalAlpha=0.45; }
+      else { gctx.setLineDash([]); gctx.globalAlpha=1; }
+      gctx.strokeStyle=color; gctx.lineWidth=2.2; gctx.lineJoin='round'; gctx.lineCap='round';
+      gctx.stroke();
+      gctx.restore();
+    }
+    const colA=cssVar('--A'), colB = activeModule==='surf' ? cssVar('--B') : cssVar('--B');
+    if(showPrev){
+      plot(prevHist.t, prevHist.a, colA, true);
+      plot(prevHist.t, prevHist.b, colB, true);
+    }
+    plot(hist.t, hist.a, colA, false);
+    plot(hist.t, hist.b, colB, false);
+  }
+
+  function render(){ renderBox(); renderGraph(); updateStatsDisplay(); }
+
+  // ---------- main loop ----------
+  function loop(ts){
+    if(!running){ rafId=null; return; }
+    if(lastTs===null) lastTs=ts;
+    const dt = Math.min((ts-lastTs)/1000, MAX_DT);
+    lastTs = ts;
+    step(dt);
+    maybeSample();
+    render();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function setRunning(on){
+    running = on;
+    el.runBtn.textContent = on ? 'Pause' : 'Run';
+    el.phaseLabel.textContent = on ? 'running' : 'paused';
+    if(on){ lastTs=null; if(!rafId) rafId=requestAnimationFrame(loop); }
+  }
+
+  // ---------- controls ----------
+  el.runBtn.addEventListener('click', ()=> setRunning(!running));
+  el.resetBtn.addEventListener('click', ()=>{ setRunning(false); init(); });
+  el.aSlider.addEventListener('input', ()=>{
+    el.aVal.textContent = el.aSlider.value;
+    init(); // new starting concentration = a fresh experiment
+  });
+  el.pSlider.addEventListener('input', ()=>{
+    el.pVal.textContent = el.pSlider.value+'%';
+    REACT_PROB = (+el.pSlider.value)/100;
+    // no init() here: this doesn't change starting concentration, so the
+    // current run continues and the effect on rate is visible immediately
+  });
+  el.volSlider.addEventListener('input', ()=>{
+    el.volVal.textContent = el.volSlider.value+'%';
+    init(); // changing the vessel volume changes starting concentration = a fresh experiment
+  });
+  el.tSlider.addEventListener('input', ()=>{
+    const T = +el.tSlider.value;
+    el.tVal.textContent = T+' K';
+    // rescale every particle already in flight, like heating a reaction
+    // that's already running — nothing about the current run resets
+    const newSpeedScale = speedFactorForT(T);
+    const ratio = speedScale>0 ? newSpeedScale/speedScale : 1;
+    for(const p of particles){ p.vx*=ratio; p.vy*=ratio; }
+    speedScale = newSpeedScale;
+    REACT_PROB = reactProbForTEa(T, +el.eaSlider.value);
+    updateStatsDisplay();
+  });
+  el.eaSlider.addEventListener('input', ()=>{
+    el.eaVal.textContent = el.eaSlider.value;
+    REACT_PROB = reactProbForTEa(+el.tSlider.value, +el.eaSlider.value);
+    // no speed change and no reset: lowering the barrier doesn't heat
+    // anything, it just makes existing collisions more likely to succeed
+    updateStatsDisplay();
+  });
+  el.piecesSlider.addEventListener('input', ()=>{
+    el.piecesVal.textContent = piecesFromSlider();
+    init(); // re-arranging the solid is a new experiment
+  });
+  el.fluidSlider.addEventListener('input', ()=>{
+    el.fluidVal.textContent = el.fluidSlider.value;
+    init();
+  });
+  el.surfPSlider.addEventListener('input', ()=>{
+    el.surfPVal.textContent = el.surfPSlider.value+'%';
+    REACT_PROB = (+el.surfPSlider.value)/100;
+    // live update, no reset — same rationale as the concentration tab's success-chance slider
+  });
+
+  function applyReactionModeUI(){
+    el.eqnLabel.textContent = 'Reaction vessel — ' + (reactionMode==='A1' ? 'A → B' : '2A → B');
+    for(const btn of el.reactionSeg.querySelectorAll('button')){
+      btn.classList.toggle('active', btn.dataset.mode===reactionMode);
+    }
+  }
+  el.reactionSeg.addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-mode]');
+    if(!btn || btn.dataset.mode===reactionMode) return;
+    reactionMode = btn.dataset.mode;
+    applyReactionModeUI();
+    setRunning(false);
+    init(); // switching reaction changes what's being modelled entirely
+  });
+  el.prevToggle.addEventListener('click', ()=>{
+    showPrevRun = !showPrevRun;
+    el.prevToggle.classList.toggle('active', showPrevRun);
+    renderGraph();
+  });
+
+  const SURF_LEGEND = '<span><span class="ldot" style="background:var(--A)"></span>Solid (undissolved)</span>'
+    + '<span><span class="ldot" style="background:var(--P)"></span>Fluid</span>';
+  const GAS_LEGEND = '<span><span class="ldot" style="background:var(--A)"></span>Reactant A</span>'
+    + '<span><span class="ldot" style="background:var(--B)"></span>Product B</span>';
+
+  function applyModuleUI(){
+    const isConc = activeModule==='conc';
+    const isTemp = activeModule==='temp';
+    const isSurf = activeModule==='surf';
+
+    el.reactionRow.style.display = isSurf ? 'none' : '';
+    el.aSliderRow.style.display = isSurf ? 'none' : '';
+    el.pSliderRow.style.display = isConc ? '' : 'none';
+    el.volSliderRow.style.display = isConc ? '' : 'none';
+    el.tSliderRow.style.display = isTemp ? '' : 'none';
+    el.eaSliderRow.style.display = isTemp ? '' : 'none';
+    el.piecesSliderRow.style.display = isSurf ? '' : 'none';
+    el.fluidSliderRow.style.display = isSurf ? '' : 'none';
+    el.surfPSliderRow.style.display = isSurf ? '' : 'none';
+
+    if(el.noteConc) el.noteConc.style.display = isConc ? '' : 'none';
+    if(el.noteTemp) el.noteTemp.style.display = isTemp ? '' : 'none';
+    if(el.noteSurf) el.noteSurf.style.display = isSurf ? '' : 'none';
+    if(el.noteStoich) el.noteStoich.style.display = isSurf ? 'none' : '';
+
+    el.legendBox.innerHTML = isSurf ? SURF_LEGEND : GAS_LEGEND;
+    el.sALabel.textContent = isSurf ? 'Solid remaining' : 'A remaining';
+    el.sBLabel.textContent = isSurf ? 'Dissolved' : 'B formed';
+
+    if(isSurf){
+      el.eqnLabel.textContent = 'Reaction vessel — solid + fluid';
+    } else {
+      applyReactionModeUI();
+    }
+
+    for(const btn of el.moduleTabs.querySelectorAll('button')){
+      btn.classList.toggle('active', btn.dataset.module===activeModule);
+    }
+  }
+  el.moduleTabs.addEventListener('click', e=>{
+    const btn = e.target.closest('button[data-module]');
+    if(!btn || btn.dataset.module===activeModule) return;
+    activeModule = btn.dataset.module;
+    applyModuleUI();
+    setRunning(false);
+    init(); // switching modules changes what's being controlled entirely
+  });
+
+  window.addEventListener('keydown', e=>{
+    if(e.code==='Space'){ e.preventDefault(); setRunning(!running); }
+    else if(e.key==='r'||e.key==='R'){ setRunning(false); init(); }
+  });
+
+  let rt;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(rt);
+    rt=setTimeout(()=>{ sizeBox(); render(); reportHeight(); }, 120);
+  });
+
+  function reportHeight(){
+    const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    window.parent.postMessage({ type:'simHeight', height:h }, '*');
+  }
+
+  // ---------- boot ----------
+  applyModuleUI();
+  sizeBox();
+  init();
+  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>

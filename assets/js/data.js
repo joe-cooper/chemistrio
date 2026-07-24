@@ -26,7 +26,10 @@
 const simulations = [
   { id:"phase-transitions-sim", title:"State Changes", topic:"Kinetic Theory of Matter", level:"GCSE",
     desc:"Simulations of particles and their state changes.", featured:true, file:"simulations/phase-transitions-sim.html", notes:"simulations/notes/phase-transitions-sim.md" },
-  { id:"maxwell-boltzmann", title:"Maxwell–Boltzmann Distribution", topic:"Kinetics", level:"A-level",
+  { id:"rates-collision-sim", title:"Collision Theory", topic:"Rates/Kinetics", level:"GCSE",
+    desc:"How concentration, temperature and surface area affect the rate of reaction shown using collision theory", featured:true, file:"simulations/rates-collision-sim.html",
+    notes:"simulations/notes/rates-collision-sim.md" },
+  { id:"maxwell-boltzmann", title:"Maxwell–Boltzmann Distribution", topic:"Rates/Kinetics", level:"A-level",
     desc:"Distribution of molecular speeds and how it shifts with temperature.", featured:true, file:"simulations/mb-sim.html",
     notes:"simulations/notes/maxwell-boltzmann.md" },
 
@@ -45,6 +48,9 @@ const simulations = [
     { id:"ao-density-sim", title:"Atomic Orbitals Density", topic:"Quantum", level:"Pre-University",
     desc:"Density plots of atomic orbitals", featured:true, file:"simulations/ao-density-sim.html",
     notes:"simulations/notes/ao-density-sim.md" },
+    { id:"mo-formation-sim", title:"Molecular Orbital Formation", topic:"Quantum", level:"Pre-University",
+    desc:"Formation of molecular orbitals", featured:true, file:"simulations/mo-formation-sim.html",
+    notes:"simulations/notes/mo-formation-sim.md" },
 ];
 
 const resources = [

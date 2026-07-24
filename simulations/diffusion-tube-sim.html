@@ -31,6 +31,12 @@
 
   .legend{display:flex;gap:16px;margin-top:10px;font-size:12.5px;color:var(--muted);align-items:center;flex-wrap:wrap}
   .ldot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+  .lline{width:11px;height:2px;display:inline-block;margin-right:4px;vertical-align:middle}
+  .lline.dashed{background:transparent!important;border-top:2px dashed var(--expected)}
+  .legend-toggle{cursor:pointer;user-select:none;padding:2px 5px;margin:-2px -5px;border-radius:3px;opacity:.5;transition:opacity .15s,background .15s}
+  .legend-toggle:hover{background:var(--raised)}
+  .legend-toggle.on{opacity:1}
+  .legend-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 
   .controls{
     background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
@@ -77,9 +83,9 @@
       <span><span class="ldot" style="background:#378ADD"></span>NH&#8323;</span>
       <span><span class="ldot" style="background:#E24B4A"></span>HCl</span>
       <span><span class="ldot" style="background:var(--text);border:1.5px solid var(--muted-dim);"></span>NH&#8324;Cl</span>
-      <span><span class="ldot" style="background:rgba(136,135,128,0.5)"></span>Air (N&#8322;/O&#8322;)</span>
-      <span><span style="display:inline-block;width:11px;height:2px;background:#0F6E56;vertical-align:middle;margin-right:4px"></span>Mean position</span>
-      <span><span style="display:inline-block;width:11px;height:2px;background:var(--expected);border-top:2px dashed var(--expected);vertical-align:middle;margin-right:4px"></span>Expected position</span>
+      <span class="legend-toggle" id="legendAir" role="button" tabindex="0" aria-pressed="false" onclick="toggleAir()"><span class="ldot" style="background:rgba(136,135,128,0.5)"></span>Air (N&#8322;/O&#8322;)</span>
+      <span class="legend-toggle on" id="legendMean" role="button" tabindex="0" aria-pressed="true" onclick="toggleMean()"><span class="lline" style="background:#0F6E56"></span>Mean position</span>
+      <span class="legend-toggle" id="legendExpected" role="button" tabindex="0" aria-pressed="false" onclick="toggleExpected()"><span class="lline dashed"></span>Expected position</span>
     </div>
   </div>
 
@@ -95,14 +101,6 @@
     <div class="ctrl-row">
       <div class="head"><label>Air density</label><span class="val" id="aVal">1000</span></div>
       <input type="range" id="aSlider" min="0" max="2000" step="50" value="1000" oninput="onAChange(this.value)">
-    </div>
-    <div class="ctrl-row">
-      <div class="head"><label>Show air</label></div>
-      <button class="btn toggle" id="airToggle" onclick="toggleAir()">Hidden</button>
-    </div>
-    <div class="ctrl-row">
-      <div class="head"><label>Expected pos.</label></div>
-      <button class="btn toggle" id="expectedToggle" onclick="toggleExpected()">Hidden</button>
     </div>
   </div>
 
@@ -156,8 +154,8 @@ const THEORY_FRAC = Math.sqrt(HCL_M) / (Math.sqrt(NH3_M) + Math.sqrt(HCL_M));
 
 let particles = [], airParticles = [], products = [];
 let running = false, raf = null, reacted = 0, frameCount = 0;
-let nEach = 120, tempK = 300, airCount = 80;
-let airVisible = false, expectedVisible = false;
+let nEach = 120, tempK = 300, airCount = 1000;
+let airVisible = false, expectedVisible = false, meanVisible = true;
 
 function speedFor(mass, T) {
   return 1.15 * Math.sqrt(T / T_REF) * Math.sqrt(NH3_M / mass) * 1.6;
@@ -268,6 +266,7 @@ function meanRingX() {
 }
 
 function drawMeanMarker() {
+  if (!meanVisible) return;
   const mx = meanRingX();
   if (mx === null) return;
   ctx.save();
@@ -456,19 +455,30 @@ function onTChange(v) {
   for (const a of airParticles) { a.vx *= factor; a.vy *= factor; }
   if (!running) { drawTube(); drawParticles(); }
 }
+function setLegendState(id, on) {
+  const el = document.getElementById(id);
+  el.classList.toggle('on', on);
+  el.setAttribute('aria-pressed', on ? 'true' : 'false');
+}
 function toggleAir() {
   airVisible = !airVisible;
-  const btn = document.getElementById('airToggle');
-  btn.textContent = airVisible ? 'Visible' : 'Hidden';
-  btn.classList.toggle('on', airVisible);
+  setLegendState('legendAir', airVisible);
   if (!running) { drawTube(); drawParticles(); }
 }
 function toggleExpected() {
   expectedVisible = !expectedVisible;
-  const btn = document.getElementById('expectedToggle');
-  btn.textContent = expectedVisible ? 'Visible' : 'Hidden';
-  btn.classList.toggle('on', expectedVisible);
+  setLegendState('legendExpected', expectedVisible);
   if (!running) { drawTube(); drawParticles(); }
+}
+function toggleMean() {
+  meanVisible = !meanVisible;
+  setLegendState('legendMean', meanVisible);
+  if (!running) { drawTube(); drawParticles(); }
+}
+for (const id of ['legendAir', 'legendMean', 'legendExpected']) {
+  document.getElementById(id).addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById(id).click(); }
+  });
 }
 
 // Particle x-positions and speeds are stored in tube pixel-space, so when
