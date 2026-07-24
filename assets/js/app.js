@@ -29,6 +29,19 @@ const PAGES = [
 
 function uniq(a){ return [...new Set(a)]; }
 
+// A sim shows a "New" badge for this many days after its `added` date.
+const NEW_BADGE_DAYS = 30;
+
+function isNewSim(s) {
+  if (!s.added) return false;
+  const ageMs = Date.now() - Date.parse(s.added);
+  return ageMs >= 0 && ageMs < NEW_BADGE_DAYS * 24 * 60 * 60 * 1000;
+}
+
+function newBadge(s) {
+  return isNewSim(s) ? `<span class="new-badge">New</span>` : "";
+}
+
 function renderSimCategories() {
   const topics = uniq(simulations.map(s => s.topic));
   const html = topics.map((topic, i) => {
@@ -37,7 +50,7 @@ function renderSimCategories() {
       <li>
         <button class="item-row" onclick="openSim('${s.id}')">
           <span class="item-main">
-            <span class="item-title">${s.title}</span><br>
+            <span class="item-title">${s.title}</span>${newBadge(s)}<br>
             <span class="item-desc">${s.desc}</span>
           </span>
           <span class="level-tag">${s.level}</span>
@@ -89,7 +102,7 @@ function renderFeatured() {
   document.getElementById("featuredList").innerHTML = featured.map(s => `
     <li>
       <button class="linkish" onclick="openSim('${s.id}')">
-        <span>${s.title}</span>
+        <span>${s.title}</span>${newBadge(s)}
         <span class="meta">${s.topic} · ${s.level}</span>
       </button>
     </li>`).join("");
@@ -327,19 +340,48 @@ function getNaturalContentWidth(iframe) {
   }
 }
 
+// Reads the simulation's own rendered height directly rather than
+// waiting for its postMessage('simHeight') report: each simulation
+// implements that report differently (some debounce a window resize
+// listener, some use a ResizeObserver, timings vary), so waiting on
+// it to land before zooming in was unreliable — most simulations
+// just sat at their unscaled natural size instead of filling the
+// screen. Reading contentDocument's scrollHeight forces a synchronous
+// layout flush of the iframe's document, so as long as the width has
+// already been set, this reflects the height at that width immediately.
+function measureNaturalContentHeight(iframe) {
+  try {
+    const doc = iframe.contentDocument;
+    if (!doc) return null;
+    const h = Math.max(doc.documentElement.scrollHeight, doc.body.scrollHeight);
+    return h || null;
+  } catch (err) {
+    return null; // cross-origin iframe — can't inspect it
+  }
+}
+
 // The iframe is `position: absolute; top: 50%; left: 50%` (see
-// site.css) so its own top-left sits at the container's centre;
-// translate(-50%,-50%) pulls it back by half its own size to
-// actually centre it, and the scale is appended to the same
-// transform so it grows from that already-centred point.
-const CENTER_TRANSFORM = 'translate(-50%, -50%)';
+// site.css) so its own top-left sits at the container's centre; it
+// then needs pulling back by half its own size to actually centre
+// it. That pull-back used to be a `translate(-50%, -50%)`, but a
+// percentage translate is resolved against the iframe's own
+// just-changed width/height, and Firefox is more prone than Chromium
+// to resolving that against a not-yet-settled box mid-transition,
+// throwing the centring off. Since the target width/height are
+// already known values here, offsetWidth/offsetHeight (which force a
+// layout flush, so they reflect the size we just set) let us pull
+// back by an exact pixel amount instead, leaving nothing for either
+// engine to get wrong.
+function centerTransform(iframe) {
+  return 'translate(' + (-iframe.offsetWidth / 2) + 'px, ' + (-iframe.offsetHeight / 2) + 'px)';
+}
 
 function applyFullscreenZoom(iframe, height) {
   const naturalW = getNaturalContentWidth(iframe);
   if (!naturalW) {
     iframe.style.width = '100%';
     iframe.style.height = '100%';
-    iframe.style.transform = CENTER_TRANSFORM;
+    iframe.style.transform = centerTransform(iframe);
     return;
   }
   iframe.style.width = naturalW + 'px';
@@ -351,7 +393,7 @@ function applyFullscreenZoom(iframe, height) {
   // actually centred in, throwing the zoom off-centre.
   const box = document.getElementById('viewerFrame').getBoundingClientRect();
   const scale = Math.min(box.width / naturalW, box.height / height);
-  iframe.style.transform = CENTER_TRANSFORM + ' scale(' + scale + ')';
+  iframe.style.transform = centerTransform(iframe) + ' scale(' + scale + ')';
 }
 
 document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -362,13 +404,16 @@ function onFullscreenChange() {
   const iframe = document.querySelector('#viewerFrame iframe');
   if (!iframe) return;
   if (isViewerFullscreen()) {
-    // Force the simulation to remeasure at its natural width; the
-    // resize this triggers makes it report a fresh height, which is
-    // what applyFullscreenZoom() above then scales to fit the screen.
     const naturalW = getNaturalContentWidth(iframe);
     if (naturalW) {
+      // Set the width first so the height measured just below already
+      // reflects layout at that width, then zoom immediately — see
+      // measureNaturalContentHeight() for why we don't wait on the
+      // simulation's own postMessage height report here.
       iframe.style.width = naturalW + 'px';
-      iframe.style.transform = CENTER_TRANSFORM; // correctly scaled once the height report lands
+      const height = measureNaturalContentHeight(iframe);
+      if (height) applyFullscreenZoom(iframe, height);
+      else iframe.style.transform = centerTransform(iframe);
     }
   } else {
     iframe.style.width = '100%';

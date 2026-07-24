@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<script src="../assets/js/theme.js"></script>
 <title>Molecular Orbital Formation &amp; Bond Order</title>
 <style>
   :root{
@@ -12,6 +14,7 @@
     --border: #262f3d;
     --text: #e8e3da;
     --text-dim: #8b93a3;
+    --ink-rgb: 232,227,218;
     --coral: #e8735f;
     --coral-dim: #a8574a;
     --peach: #e3a98c;
@@ -20,6 +23,25 @@
     --blue-dim: #4f6690;
     --grid-line: rgba(232,227,218,0.07);
   }
+  /* Local palette is hand-tuned per theme so canvas fills/strokes (which read
+     these vars live) and the surrounding chrome stay legible in both modes —
+     the dark values above are too washed-out against a white page. */
+  :root[data-theme="light"]{
+    --bg: #f4f6f9;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --border: #d8dee6;
+    --text: #161c26;
+    --text-dim: #5f6b7a;
+    --ink-rgb: 22,28,38;
+    --coral: #c85a44;
+    --coral-dim: #9c4433;
+    --peach: #b97a55;
+    --peach-dim: #8f5c3d;
+    --blue: #3d5f96;
+    --blue-dim: #2c4570;
+    --grid-line: rgba(22,28,38,0.08);
+  }
   *{ box-sizing: border-box; }
   html,body{
     margin:0; padding:0;
@@ -27,7 +49,8 @@
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
-  body{ padding: 18px 20px 26px; }
+  body{ padding: 18px 20px 60px; }
+  .container { max-width: 980px; margin: 0 auto; }
   h1{
     font-size: 17px; font-weight: 600; letter-spacing: 0.02em;
     margin: 0 0 2px; color: var(--text);
@@ -56,13 +79,13 @@
     -webkit-appearance:none; appearance:none;
     width:15px; height:15px; border-radius:50%;
     background: var(--coral);
-    border: 2px solid #1a1008;
+    border: 2px solid var(--bg);
     cursor:pointer;
-    box-shadow: 0 0 0 3px rgba(232,115,95,0.15);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 15%, transparent);
   }
   input[type=range]::-moz-range-thumb{
     width:15px; height:15px; border-radius:50%;
-    background: var(--coral); border: 2px solid #1a1008; cursor:pointer;
+    background: var(--coral); border: 2px solid var(--bg); cursor:pointer;
   }
   .readout{
     font-variant-numeric: tabular-nums;
@@ -80,7 +103,7 @@
     transition: border-color .15s, color .15s;
   }
   button:hover{ border-color: var(--coral); color: var(--coral); }
-  button.active{ border-color: var(--coral); color: var(--coral); background: rgba(232,115,95,0.08); }
+  button.active{ border-color: var(--coral); color: var(--coral); background: color-mix(in srgb, var(--coral) 8%, transparent); }
   button:disabled:hover{ border-color: var(--border); color: var(--text); }
   .stats{
     display:flex; gap: 18px; flex-wrap: wrap;
@@ -130,7 +153,7 @@
 </style>
 </head>
 <body>
-
+<div class="container">
 <h1>Molecular Orbital Formation &amp; Bond Order</h1>
 <p class="subtitle">Two 1s orbitals combining by linear combination (LCAO) — choose a nucleus and electron count to explore H₂⁺, H₂, He₂⁺, He₂ and more</p>
 
@@ -252,7 +275,7 @@
     </p>
   </details>
 </div>
-
+</div>
 
 <script>
 (function(){
@@ -620,7 +643,7 @@
   }
 
   // ---------- canvas setup helper (device-pixel-ratio aware) ----------
-  function setupCanvas(canvas, cssHeight){
+    function setupCanvas(canvas, cssHeight){
     const dpr = window.devicePixelRatio || 1;
     const cssWidth = canvas.parentElement.clientWidth - 28; // minus panel padding
     canvas.style.height = cssHeight + 'px';
@@ -629,7 +652,7 @@
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { ctx, w: cssWidth, h: cssHeight };
-  }
+   }
 
   const cBond = document.getElementById('canvas-bond');
   const cAnti = document.getElementById('canvas-anti');
@@ -644,9 +667,19 @@
     hex = hex.replace('#','');
     return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)];
   }
-  const CORAL_RGB = hexToRgb(css('--coral'));
-  const BLUE_RGB  = hexToRgb(css('--blue'));
-  const PANEL_RGB = hexToRgb(css('--panel-2'));
+  // Cached rather than read live on every pixel (this feeds a per-pixel loop),
+  // so it must be refreshed whenever the theme can have changed — see the
+  // refreshPalette() call at the top of drawOrbitalPanel().
+  let CORAL_RGB, BLUE_RGB, PANEL_RGB;
+  function refreshPalette(){
+    CORAL_RGB = hexToRgb(css('--coral'));
+    BLUE_RGB  = hexToRgb(css('--blue'));
+    PANEL_RGB = hexToRgb(css('--panel-2'));
+  }
+  refreshPalette();
+  // Read live (not cached like the RGB triplets above) since it's only ever
+  // used to build a one-off rgba() string, not in a hot per-pixel loop.
+  function rgbaInk(alpha){ return 'rgba(' + css('--ink-rgb') + ',' + alpha + ')'; }
 
   function fieldColor(t){
     // t in [-1,1]; returns [r,g,b,a]
@@ -702,6 +735,7 @@
   const VIEW_HALF_Y = 4.3;
 
   function drawOrbitalPanel(canvas, offscreen, sign){
+    refreshPalette();
     const { ctx, w, h } = setupCanvas(canvas, 260);
     const Rbohr = R_ang / BOHR;
     const xMin = -VIEW_HALF_X, xMax = VIEW_HALF_X, yMin = -VIEW_HALF_Y, yMax = VIEW_HALF_Y;
@@ -774,11 +808,11 @@
         ctx.stroke();
       });
     }
-    drawContours([0.15, 0.35, 0.6], 'rgba(232,227,218,0.30)', false);
-    drawContours([-0.15, -0.35, -0.6], 'rgba(232,227,218,0.30)', false);
+    drawContours([0.15, 0.35, 0.6], rgbaInk(0.30), false);
+    drawContours([-0.15, -0.35, -0.6], rgbaInk(0.30), false);
     if (sign < 0){
       // nodal plane exactly at midpoint by symmetry
-      ctx.strokeStyle = 'rgba(232,227,218,0.55)';
+      ctx.strokeStyle = rgbaInk(0.55);
       ctx.setLineDash([5,4]);
       ctx.lineWidth = 1.3;
       const midPx = toPx(0);
@@ -787,7 +821,7 @@
     ctx.setLineDash([]);
 
     // internuclear axis
-    ctx.strokeStyle = 'rgba(232,227,218,0.18)';
+    ctx.strokeStyle = rgbaInk(0.18);
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(0, toPy(0)); ctx.lineTo(w, toPy(0)); ctx.stroke();
 
@@ -809,7 +843,7 @@
     ctx.textAlign = 'left';
     ctx.font = '10.5px -apple-system, sans-serif';
     if (nHere === 0){
-      ctx.fillStyle = 'rgba(232,227,218,0.35)';
+      ctx.fillStyle = rgbaInk(0.35);
       ctx.fillText('unoccupied', 6, h - 8);
     } else {
       ctx.fillStyle = css('--text-dim');
@@ -869,7 +903,7 @@
     const yAnti = toY(Math.max(yMinEV, Math.min(yMaxEV, eAnti)));
 
     // correlation (fan) lines
-    ctx.strokeStyle = 'rgba(232,227,218,0.18)';
+    ctx.strokeStyle = rgbaInk(0.18);
     ctx.lineWidth = 1;
     ctx.setLineDash([3,3]);
     [[xAOLend,yAO,xMOL,yBond],[xAOLend,yAO,xMOL,yAnti],
@@ -1041,7 +1075,7 @@
 
     // current R marker
     const xCur = toX(R_ang);
-    ctx.strokeStyle = 'rgba(232,227,218,0.4)';
+    ctx.strokeStyle = rgbaInk(0.4);
     ctx.lineWidth = 1;
     ctx.setLineDash([3,3]);
     ctx.beginPath(); ctx.moveTo(xCur, padT); ctx.lineTo(xCur, h-padB); ctx.stroke();
@@ -1068,7 +1102,7 @@
     const isInteriorMin = eqPoint[0] > R_MIN + 0.02 && eqPoint[0] < R_MAX - 0.02;
     if (isInteriorMin){
       const xMin = toX(eqPoint[0]);
-      ctx.fillStyle = 'rgba(232,227,218,0.4)';
+      ctx.fillStyle = rgbaInk(0.4);
       ctx.font = '9.5px -apple-system, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('Rₑ ≈ ' + eqPoint[0].toFixed(2) + ' Å', xMin, padT + 10);
@@ -1112,7 +1146,7 @@
   // ---------- resize & height reporting ----------
   function reportHeight(){
     try{
-      window.parent.postMessage({ type: 'resize', height: document.body.scrollHeight }, '*');
+      window.parent.postMessage({ type: 'simHeight', height: document.body.scrollHeight }, '*');
     }catch(e){}
   }
   window.addEventListener('resize', reportHeight);

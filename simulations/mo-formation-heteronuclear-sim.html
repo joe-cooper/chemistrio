@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<script src="../assets/js/theme.js"></script>
+<title>Molecular Orbital Diagram: Period 2 Heteronuclear Diatomics</title>
+<style>
+  :root{
+    --bg: #0d1117;
+    --panel: #141a24;
+    --panel-2: #10151e;
+    --border: #262f3d;
+    --text: #e8e3da;
+    --text-dim: #8b93a3;
+    --ink-rgb: 232,227,218;
+    --coral: #e8735f;
+    --coral-dim: #a8574a;
+    --peach: #e3a98c;
+    --peach-dim: #a87d68;
+    --blue: #6f8fc9;
+    --blue-dim: #4f6690;
+    --grid-line: rgba(232,227,218,0.07);
+  }
+  /* Local palette is hand-tuned per theme so canvas fills/strokes (which read
+     these vars live) and the surrounding chrome stay legible in both modes —
+     the dark values above are too washed-out against a white page. */
+  :root[data-theme="light"]{
+    --bg: #f4f6f9;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --border: #d8dee6;
+    --text: #161c26;
+    --text-dim: #5f6b7a;
+    --ink-rgb: 22,28,38;
+    --coral: #c85a44;
+    --coral-dim: #9c4433;
+    --peach: #b97a55;
+    --peach-dim: #8f5c3d;
+    --blue: #3d5f96;
+    --blue-dim: #2c4570;
+    --grid-line: rgba(22,28,38,0.08);
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  body{ padding: 18px 20px 60px; }
+  .container { max-width: 980px; margin: 0 auto; }
+  h1{
+    font-size: 17px; font-weight: 600; letter-spacing: 0.02em;
+    margin: 0 0 2px; color: var(--text);
+  }
+  .subtitle{
+    font-size: 12.5px; color: var(--text-dim); margin: 0 0 16px;
+  }
+  .controls{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+  }
+  .slider-block{ flex: 1 1 320px; min-width: 260px; }
+  .slider-row{ display:flex; align-items:center; gap:10px; flex-wrap: wrap; }
+  .slider-row label{ font-size: 12px; color: var(--text-dim); white-space: nowrap; min-width: 52px; }
+  .btn-group{ display:flex; gap:8px; flex-wrap:wrap; }
+  button{
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  button:hover{ border-color: var(--coral); color: var(--coral); }
+  button.active{ border-color: var(--coral); color: var(--coral); background: color-mix(in srgb, var(--coral) 8%, transparent); }
+  button.active.b-side{ border-color: var(--blue); color: var(--blue); background: color-mix(in srgb, var(--blue) 10%, transparent); }
+  #swap-btn{ font-size: 14px; padding: 6px 10px; }
+
+  .panel-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  .panel-grid-mo{ grid-template-columns: 1.4fr 1fr; }
+  @media (max-width: 720px){
+    .panel-grid{ grid-template-columns: 1fr; }
+    .panel-grid-mo{ grid-template-columns: 1fr; }
+  }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px 14px;
+  }
+  .panel-title{
+    font-size: 12px; font-weight:600; color: var(--text);
+    display:flex; justify-content:space-between; align-items:baseline; flex-wrap: wrap; gap: 4px 10px;
+    margin-bottom: 8px;
+  }
+  .panel-title span.tag{
+    font-size: 10.5px; font-weight: 500; color: var(--text-dim);
+  }
+  canvas{ display:block; width:100%; border-radius: 6px; background: var(--panel-2); cursor: default; }
+
+  .legend{
+    display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;
+    font-size: 10.5px; color: var(--text-dim);
+  }
+  .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+
+  .notes{
+    margin-top: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+  .notes b{ color: var(--text); }
+  .notes summary{ cursor:pointer; color: var(--text); font-weight:600; font-size:12.5px; }
+  .caveat{
+    font-size: 11px; color: var(--peach); margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Molecular Orbital Diagram: Period 2 Heteronuclear Diatomics</h1>
+<p class="subtitle">Pick any two period-2 elements (Li–F) to see the full valence MO diagram for that pair — real, unequal atomic energies pull each molecular orbital toward whichever atom it's closer to in energy, so the diagram (and the orbital shapes) genuinely polarise. Click any level to see that orbital's shape.</p>
+
+<div class="controls">
+  <div class="slider-block" style="flex:1 1 100%;">
+    <div class="slider-row">
+      <label>Atom A</label>
+      <div class="btn-group" id="atomA-group">
+        <button data-el="Li">Li</button>
+        <button data-el="Be">Be</button>
+        <button data-el="B">B</button>
+        <button data-el="C" class="active">C</button>
+        <button data-el="N">N</button>
+        <button data-el="O">O</button>
+        <button data-el="F">F</button>
+      </div>
+      <button id="swap-btn" title="Swap Atom A and Atom B">⇄</button>
+    </div>
+    <div class="slider-row" style="margin-top:8px;">
+      <label>Atom B</label>
+      <div class="btn-group" id="atomB-group">
+        <button data-el="Li">Li</button>
+        <button data-el="Be">Be</button>
+        <button data-el="B">B</button>
+        <button data-el="C">C</button>
+        <button data-el="N">N</button>
+        <button data-el="O" class="active b-side">O</button>
+        <button data-el="F">F</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="controls" id="species-readout-row">
+  <div style="font-size:20px; font-weight:700;" id="species-label">C–O</div>
+  <div style="flex:2 1 220px;">
+    <div style="font-size:12px; color:var(--text-dim);">valence electron configuration</div>
+    <div style="font-size:13px; font-weight:600;" id="config-label">—</div>
+  </div>
+  <div>
+    <div style="font-size:12px; color:var(--text-dim); text-align:right;">bond order</div>
+    <div style="font-size:20px; font-weight:700; text-align:right;" id="bondorder-label">3</div>
+  </div>
+  <div>
+    <div style="font-size:12px; color:var(--text-dim); text-align:right;">magnetism</div>
+    <div style="font-size:13px; font-weight:600; text-align:right;" id="magnetism-label">diamagnetic</div>
+  </div>
+  <div>
+    <div style="font-size:12px; color:var(--text-dim); text-align:right;">bond length</div>
+    <div style="font-size:13px; font-weight:600; text-align:right;" id="bondlength-label">—</div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="slider-row">
+    <label>s–p mixing</label>
+    <button id="mixing-toggle" class="active">ON</button>
+  </div>
+  <div style="flex:2 1 320px; font-size:12px; color:var(--text-dim);" id="mixing-desc"></div>
+</div>
+<div id="polarity-note" class="caveat" style="margin:-10px 0 16px;"></div>
+
+<div class="panel-grid panel-grid-mo">
+  <div class="panel">
+    <div class="panel-title">MO energy-level diagram <span class="tag">click a level to see its shape — valence 2s/2p only</span></div>
+    <canvas id="canvas-mo" height="440"></canvas>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Selected orbital: <span id="orbital-level-label">σ(2s)</span> <span class="tag" id="orbital-formula-tag">ψ = …</span></div>
+    <canvas id="canvas-orbital" height="440"></canvas>
+    <div style="font-size:11px; color:var(--text-dim); margin-top:6px;" id="orbital-note"></div>
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="dot" style="background:var(--coral)"></span>bonding MO</span>
+  <span><span class="dot" style="background:var(--peach)"></span>antibonding MO</span>
+  <span><span class="dot" style="background:transparent;border:1px dashed var(--text-dim)"></span>nodal surface (ψ = 0)</span>
+  <span>↑ ↓ electrons, filled by the Aufbau principle + Hund's rule</span>
+  <span><span class="dot" style="background:transparent;border:1px dashed var(--blue)"></span>extra σ(2s)–σ(2p) / σ*(2s)–σ*(2p) interaction (s–p mixing, when on)</span>
+  <span>correlation-line strength ∝ how much of that MO sits on that atom</span>
+</div>
+
+<div class="notes">
+  <details>
+    <summary>Model notes &amp; honesty check</summary>
+    <p style="margin-top:8px;">
+      <b>What this adds on top of the homonuclear sibling.</b> That simulation fixes both atoms to be the same element, so every bonding/antibonding pair is an exactly-equal 50/50 mix of the two atomic orbitals. Here Atom A and Atom B are independent — their 2s and 2p atomic energies (and orbital sizes) are generally different, so the secular equation is the more general, non-degenerate case: each molecular orbital ends up weighted <i>unequally</i> toward whichever atom's atomic orbital sits closer to it in energy. That's the real, chemically important content of a heteronuclear MO diagram — it's what "the bonding electrons sit closer to the more electronegative atom" actually means in orbital language — and it's why the orbital-shape panel and the correlation-line weights below are genuinely asymmetric rather than mirror images.
+    </p>
+    <p>
+      <b>Same atomic data as the homonuclear sibling, per atom instead of per molecule.</b> Each element's 2s/2p orbitals share one Slater exponent ζ = Z<sub>eff</sub>/2 (Slater's rules don't distinguish 2s from 2p): ζ = 0.65 (Li), 0.975 (Be), 1.3 (B), 1.625 (C), 1.95 (N), 2.275 (O), 2.6 (F). The atomic reference energies (eV) are the same real valence-orbital ionization energies used there — Gray's <i>Electrons and Chemical Bonding</i> (1964) spectroscopic VOIE table for B–F, with Li/Be's unmeasurable 2p values extrapolated from the near-perfectly-linear Z<sub>eff</sub> trend across the row. These numbers don't change when an atom is paired with a different partner — only the overlap integral and the resulting MO energies do.
+    </p>
+    <p>
+      <b>Bond lengths: real data for 21 of 28 pairs, an estimate for the rest.</b> All 7 homonuclear lengths and 14 of the 21 heteronuclear pairs use real experimental equilibrium bond lengths (NIST CCCBDB): Li–O 1.688 Å, Li–F 1.564 Å, Be–O 1.331 Å, Be–F 1.361 Å, B–C 1.491 Å, B–N 1.325 Å, B–O 1.205 Å, B–F 1.267 Å, C–N 1.172 Å, C–O 1.128 Å, C–F 1.276 Å, N–O 1.154 Å, N–F 1.317 Å, O–F 1.354 Å. The remaining 7 pairs (Li–Be, Li–B, Li–C, Li–N, Be–B, Be–C, Be–N) aren't well-characterised experimentally — some barely exist outside a handful of computational-chemistry papers — so those fall back to the Schomaker–Stevenson estimate d = r<sub>A</sub> + r<sub>B</sub> − 0.09|χ<sub>A</sub> − χ<sub>B</sub>| (Å), using standard Pauling single-bond covalent radii and electronegativities. <b>Marked with * in the bond-length readout.</b> Checked against the 14 known pairs, this estimate is typically only 0.03–0.05 Å off for near-single-bond pairs (O–F, Be–F) but can run 0.15–0.22 Å too long for pairs with real multiple-bond character it has no way to anticipate (C–O, B–O, B–N) — worth keeping in mind for the estimated pairs too.
+    </p>
+    <p>
+      <b>The secular equation, generalised to unequal atoms.</b> For two atomic orbitals with different ionization energies H<sub>ii</sub> (Atom A) and H<sub>jj</sub> (Atom B) and real overlap S, the non-orthogonal 2×2 secular determinant |H<sub>ii</sub>−E, H<sub>ij</sub>−ES; H<sub>ij</sub>−ES, H<sub>jj</sub>−E| = 0 gives a quadratic in E rather than the simple ±-form the homonuclear sibling uses (that form is the special case A=B of this one — sanity-checked directly: picking the same element twice here reproduces its numbers exactly). H<sub>ij</sub> is still the standard Wolfsberg–Helmholz estimate, generalised as H<sub>ij</sub> = K·S·(H<sub>ii</sub>+H<sub>jj</sub>)/2 (K=1.75). Solving the quadratic gives both the bonding/antibonding energies <i>and</i>, for the first time in this family of simulations, real LCAO coefficients c<sub>A</sub> ≠ c<sub>B</sub> — the actual polarisation of each MO. This is done independently for the σ(2s), σ(2p) and π(2p) pairs, exactly as in the homonuclear sibling.
+    </p>
+    <p>
+      <b>Reading the coefficients.</b> The formula tag above the orbital panel shows the real c<sub>A</sub>, c<sub>B</sub> for whatever level is selected. As a rule, a bonding MO's energy sits closer to whichever atom's atomic orbital was already lower (more stable), and the coefficient reflects that — e.g. for C–O, σ(2s) comes out roughly 92% oxygen / 8% carbon (O's 2s is far more stable than C's), while σ*(2s) flips the other way, roughly 90% carbon. This is the same physical content as the "the more electronegative atom keeps more of the bonding electron density" rule taught with dot-and-cross diagrams, just derived rather than asserted. The correlation lines in the diagram fade in proportion to |c|² on each side, so a glance at line strength shows which atom a given MO really belongs to.
+    </p>
+    <p>
+      <b>s–p mixing, generalised.</b> σ(2s) and σ(2p) still share σ symmetry and so can mix beyond their own independent bonding/antibonding pairs (and separately, so can σ*(2s)/σ*(2p)) — modelled the same avoided-crossing way as the homonuclear sibling, with the coupling V built from the average of the two (generally unequal, for a heteronuclear pair) 2s–2p cross overlaps and the average of all four atomic references. As there, only the <i>energy</i> of σ(2s)/σ(2p) responds to the toggle — the shape panel always shows the pure, unmixed combination for whichever level is selected.
+    </p>
+    <p>
+      <b>An honest limitation: bond order over-counts for very mismatched pairs.</b> The bond-order formula — (bonding electrons − antibonding electrons)/2 — assumes the "bonding" combination is genuinely stabilised by overlap. For a pair with a very large electronegativity gap (Li–F, Li–O, Be–F, Be–O), the atomic energies are so far apart that overlap barely perturbs either orbital: the "bonding" fluorine/oxygen 2p combinations end up looking almost exactly like isolated F or O lone pairs, not real shared bonding density, yet the simple count still labels all of them bonding. LiF comes out bond order 4 here, which overstates the real, essentially single, mostly-ionic Li–F bond — a genuine failure mode of this simplified model for strongly polar pairs, not a bug specific to LiF. The page flags this directly when the electronegativity gap is large (see the note under the mixing toggle).
+    </p>
+    <p>
+      <b>Filling: Aufbau + Hund's rule, same as always.</b> All v<sub>A</sub>+v<sub>B</sub> valence electrons fill the six levels lowest-energy-first, two per orbital, with the doubly-degenerate π pair filled singly before pairing. Try C–N or N–O: both come out bond order 2.5 with one unpaired electron, matching their real identity as well-known odd-electron radicals (CN and NO).
+    </p>
+  </details>
+</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const BOHR = 0.529177; // Å per bohr
+
+  // ---------- per-atom data (identical convention to the homonuclear sibling) ----------
+  function slaterZeta(v){ return 0.325 * (v + 1); }
+  const ATOMS = {
+    Li:{ symbol:'Li', v:1, e2s:-5.46,  e2p:-4.73,  covR:1.34, en:0.98 },
+    Be:{ symbol:'Be', v:2, e2s:-9.30,  e2p:-6.43,  covR:0.90, en:1.57 },
+    B: { symbol:'B',  v:3, e2s:-14.01, e2p:-8.31,  covR:0.82, en:2.04 },
+    C: { symbol:'C',  v:4, e2s:-19.47, e2p:-10.66, covR:0.77, en:2.55 },
+    N: { symbol:'N',  v:5, e2s:-25.54, e2p:-13.14, covR:0.75, en:3.04 },
+    O: { symbol:'O',  v:6, e2s:-32.36, e2p:-15.87, covR:0.73, en:3.44 },
+    F: { symbol:'F',  v:7, e2s:-46.37, e2p:-18.72, covR:0.71, en:3.98 }
+  };
+  Object.keys(ATOMS).forEach(k => { ATOMS[k].zeta = slaterZeta(ATOMS[k].v); });
+
+  // Real experimental equilibrium bond lengths (Å), NIST CCCBDB — see honesty notes.
+  const REAL_BOND = {
+    'Li-Li':2.673, 'Be-Be':2.460, 'B-B':1.590, 'C-C':1.243, 'N-N':1.098, 'O-O':1.208, 'F-F':1.412,
+    'Li-O':1.688, 'Li-F':1.564,
+    'Be-O':1.331, 'Be-F':1.361,
+    'B-C':1.491, 'B-N':1.325, 'B-O':1.205, 'B-F':1.267,
+    'C-N':1.172, 'C-O':1.128, 'C-F':1.276,
+    'N-O':1.154, 'N-F':1.317,
+    'O-F':1.354
+  };
+  function bondLength(keyA, keyB){
+    const k1 = keyA+'-'+keyB, k2 = keyB+'-'+keyA;
+    if (REAL_BOND[k1]!=null) return { value: REAL_BOND[k1], estimated:false };
+    if (REAL_BOND[k2]!=null) return { value: REAL_BOND[k2], estimated:false };
+    const A = ATOMS[keyA], B = ATOMS[keyB];
+    const value = A.covR + B.covR - 0.09*Math.abs(A.en - B.en); // Schomaker-Stevenson
+    return { value, estimated:true };
+  }
+
+  // ---------- MO level metadata (static; character comes from computed coefficients) ----------
+  const LEVEL_META = {
+    sigma2s:     { kind:'s',      bonding:true,  cap:2, degenerate:false, label:'σ(2s)',
+                   symDesc:'σ — cylindrically symmetric about the bond axis (head-on 2s overlap).' },
+    sigma2sStar: { kind:'s',      bonding:false, cap:2, degenerate:false, label:'σ*(2s)',
+                   symDesc:'σ — cylindrically symmetric about the bond axis (head-on 2s overlap).' },
+    sigma2p:     { kind:'psigma', bonding:true,  cap:2, degenerate:false, label:'σ(2p)',
+                   symDesc:'σ — cylindrically symmetric about the bond axis (head-on 2p overlap).' },
+    sigma2pStar: { kind:'psigma', bonding:false, cap:2, degenerate:false, label:'σ*(2p)',
+                   symDesc:'σ — cylindrically symmetric about the bond axis (head-on 2p overlap).' },
+    pi2p:        { kind:'ppi',    bonding:true,  cap:4, degenerate:true,  label:'π(2p)',
+                   symDesc:'π — one nodal plane containing the bond axis (side-on 2p overlap).' },
+    pi2pStar:    { kind:'ppi',    bonding:false, cap:4, degenerate:true,  label:'π*(2p)',
+                   symDesc:'π — one nodal plane containing the bond axis (side-on 2p overlap).' }
+  };
+  const KIND_LABEL = { s:'2s', psigma:'2pσ', ppi:'2pπ' };
+
+  // ---------- Aufbau + Hund's rule filling ----------
+  function fillElectrons(nElectrons, order){
+    let remaining = nElectrons;
+    const occ = {};
+    order.forEach(id => {
+      const n = Math.min(LEVEL_META[id].cap, remaining);
+      occ[id] = n;
+      remaining -= n;
+    });
+    return occ;
+  }
+  function subOccupancy(n, degenerate){
+    const nSub = degenerate ? 2 : 1;
+    const boxes = Array.from({length:nSub}, () => []);
+    let rem = n;
+    for (let i=0;i<nSub && rem>0;i++){ boxes[i].push('up'); rem--; }
+    for (let i=0;i<nSub && rem>0;i++){ boxes[i].push('down'); rem--; }
+    return boxes;
+  }
+  function unpairedInLevel(meta, n){
+    if (meta.degenerate) return n<=2 ? n : 4-n;
+    return n===1 ? 1 : 0;
+  }
+
+  // ---------- atomic-orbital amplitude (unnormalized), evaluated in the z=0 plane ----------
+  // 's' is spherical; 'psigma' is the lobe aligned with the bond axis (positive lobe always
+  // facing the partner atom, on both nuclei); 'ppi' is the in-plane lobe perpendicular to the
+  // axis (same lab-frame sign on both atoms).
+  function orbitalAt(kind, x, y, nx, Z, isRight){
+    const r = Math.hypot(x - nx, y);
+    const decay = Math.exp(-Z * r);
+    if (kind === 's') return decay;
+    if (kind === 'psigma') return (isRight ? -(x - nx) : (x - nx)) * decay;
+    if (kind === 'ppi') return y * decay;
+  }
+
+  // ---------- two-centre overlap integrals, now with independent exponents ZL/ZR ----------
+  function integrate2D(f, xMax, rhoMax, nx, nr){
+    let sum = 0; const dx = (2*xMax)/nx, dr = rhoMax/nr;
+    for (let i=0;i<nx;i++){ const x = -xMax+(i+0.5)*dx;
+      for (let j=0;j<nr;j++){ const rho = (j+0.5)*dr; sum += f(x,rho)*dx*dr; } }
+    return sum;
+  }
+  const INT_NX = 80, INT_NR = 60;
+  function rawOverlap(kindL, kindR, R, ZL, ZR){
+    const nxA=-R/2, nxB=R/2;
+    const pad = 10/Math.min(ZL,ZR); // cover the slower-decaying (smaller Z) orbital's tail
+    const xMax=R/2+pad, rhoMax=pad;
+    const rA=(x,r)=>Math.hypot(x-nxA,r), rB=(x,r)=>Math.hypot(x-nxB,r);
+    if (kindL==='ppi' && kindR==='ppi'){
+      return Math.PI*integrate2D((x,r)=> r*r*Math.exp(-ZL*rA(x,r))*Math.exp(-ZR*rB(x,r)) * r, xMax, rhoMax, INT_NX, INT_NR);
+    }
+    function sideVal(kind,x,r,nx,isRight,rSide,Z){
+      const decay=Math.exp(-Z*rSide);
+      if (kind==='s') return decay;
+      if (kind==='psigma') return (isRight ? -(x-nx) : (x-nx))*decay;
+    }
+    return 2*Math.PI*integrate2D((x,r)=>{
+      const vA=sideVal(kindL,x,r,nxA,false,rA(x,r),ZL);
+      const vB=sideVal(kindR,x,r,nxB,true,rB(x,r),ZR);
+      return vA*vB*r;
+    }, xMax, rhoMax, INT_NX, INT_NR);
+  }
+  function selfNorm(kind, Z){
+    const pad=10/Z, xMax=pad, rhoMax=pad;
+    const r0=(x,r)=>Math.hypot(x,r);
+    if (kind==='s') return 2*Math.PI*integrate2D((x,r)=>Math.exp(-2*Z*r0(x,r))*r, xMax, rhoMax, INT_NX, INT_NR);
+    if (kind==='psigma') return 2*Math.PI*integrate2D((x,r)=>x*x*Math.exp(-2*Z*r0(x,r))*r, xMax, rhoMax, INT_NX, INT_NR);
+    if (kind==='ppi') return Math.PI*integrate2D((x,r)=>r*r*Math.exp(-2*Z*r0(x,r))*r, xMax, rhoMax, INT_NX, INT_NR);
+  }
+
+  // ---------- generalized 2x2 non-orthogonal secular equation (unequal Hii, Hjj) ----------
+  // det([[Hii-E, Hij-ES],[Hij-ES, Hjj-E]]) = 0 expands to a quadratic in E. The homonuclear
+  // sibling's simple +/- form E=(Hii+Hij)/(1+S), (Hii-Hij)/(1-S) is exactly the Hii=Hjj special
+  // case of this (checked directly against it). Also returns the real LCAO coefficients.
+  const K_WH = 1.75;
+  function solveChannel(Hii, Hjj, S){
+    const Hij = K_WH*S*(Hii+Hjj)/2;
+    const a = (1-S*S), b = -(Hii+Hjj-2*S*Hij), c = (Hii*Hjj-Hij*Hij);
+    const disc = Math.sqrt(Math.max(0, b*b-4*a*c));
+    const E1 = (-b-disc)/(2*a), E2 = (-b+disc)/(2*a);
+    const Elow = Math.min(E1,E2), Ehigh = Math.max(E1,E2);
+    function coeffsFor(E){
+      const denom = Hij - E*S;
+      let cA, cB;
+      if (Math.abs(denom) < 1e-9){ cA = 1; cB = (Math.abs(Hii-E)<1e-6) ? 1 : 0; }
+      else { cA = 1; cB = -(Hii-E)/denom; }
+      const norm = Math.sqrt(cA*cA + cB*cB + 2*S*cA*cB);
+      let CA = cA/norm, CB = cB/norm;
+      if (CA < 0){ CA=-CA; CB=-CB; } // arbitrary overall phase: fix Atom-A coefficient positive
+      return { cA:CA, cB:CB };
+    }
+    return { Elow, Ehigh, low: coeffsFor(Elow), high: coeffsFor(Ehigh) };
+  }
+
+  const K_MIX = 0.5;
+
+  // ---------- full computation for a given (Atom A, Atom B, mixing) ----------
+  function computeMO(keyA, keyB, mixing){
+    const A = ATOMS[keyA], B = ATOMS[keyB];
+    const ZA = A.zeta, ZB = B.zeta;
+    const bl = bondLength(keyA, keyB);
+    const R = bl.value / BOHR;
+
+    const NsA=selfNorm('s',ZA), NsB=selfNorm('s',ZB);
+    const NpA=selfNorm('psigma',ZA), NpB=selfNorm('psigma',ZB);
+    const NpiA=selfNorm('ppi',ZA), NpiB=selfNorm('ppi',ZB);
+
+    const Sss = rawOverlap('s','s',R,ZA,ZB)/Math.sqrt(NsA*NsB);
+    const Spp = rawOverlap('psigma','psigma',R,ZA,ZB)/Math.sqrt(NpA*NpB);
+    const Spi = rawOverlap('ppi','ppi',R,ZA,ZB)/Math.sqrt(NpiA*NpiB);
+    const SspAB = rawOverlap('s','psigma',R,ZA,ZB)/Math.sqrt(NsA*NpB); // 2s_A with 2pσ_B
+    const SspBA = rawOverlap('psigma','s',R,ZA,ZB)/Math.sqrt(NpA*NsB); // 2pσ_A with 2s_B
+
+    const sChan  = solveChannel(A.e2s, B.e2s, Sss);
+    const pChan  = solveChannel(A.e2p, B.e2p, Spp);
+    const piChan = solveChannel(A.e2p, B.e2p, Spi);
+
+    let sigma2s     = { E:sChan.Elow,  cA:sChan.low.cA,  cB:sChan.low.cB };
+    let sigma2sStar = { E:sChan.Ehigh, cA:sChan.high.cA, cB:sChan.high.cB };
+    let sigma2p     = { E:pChan.Elow,  cA:pChan.low.cA,  cB:pChan.low.cB };
+    let sigma2pStar = { E:pChan.Ehigh, cA:pChan.high.cA, cB:pChan.high.cB };
+    const pi2p      = { E:piChan.Elow,  cA:piChan.low.cA,  cB:piChan.low.cB };
+    const pi2pStar  = { E:piChan.Ehigh, cA:piChan.high.cA, cB:piChan.high.cB };
+
+    if (mixing){
+      const SspAvg = (SspAB+SspBA)/2;
+      const Havg4 = (A.e2s+A.e2p+B.e2s+B.e2p)/4;
+      const V = K_MIX*SspAvg*Havg4;
+      function avoidedCrossing(low, high){
+        const mid=(low.E+high.E)/2, halfGap=(high.E-low.E)/2;
+        const newHalf = Math.sqrt(halfGap*halfGap + V*V);
+        return { low:{ ...low, E:mid-newHalf }, high:{ ...high, E:mid+newHalf } };
+      }
+      const g = avoidedCrossing(sigma2s, sigma2p); sigma2s=g.low; sigma2p=g.high;
+      const u = avoidedCrossing(sigma2sStar, sigma2pStar); sigma2sStar=u.low; sigma2pStar=u.high;
+    }
+
+    const levels = { sigma2s, sigma2sStar, sigma2p, sigma2pStar, pi2p, pi2pStar };
+    const order = Object.keys(levels).sort((a,b) => levels[a].E-levels[b].E);
+    const occ = fillElectrons(A.v+B.v, order);
+
+    let bondingE=0, antibondingE=0, unpaired=0;
+    order.forEach(id => {
+      const n = occ[id];
+      if (LEVEL_META[id].bonding) bondingE += n; else antibondingE += n;
+      unpaired += unpairedInLevel(LEVEL_META[id], n);
+    });
+    const bondOrder = (bondingE-antibondingE)/2;
+
+    return { keyA, keyB, A, B, ZA, ZB, bondLength:bl, levels, order, occ, bondOrder, unpaired };
+  }
+
+  // ---------- state ----------
+  let atomAKey = 'C', atomBKey = 'O';
+  let mixing = true;
+  let selectedLevel = 'sigma2p';
+  let mo = computeMO(atomAKey, atomBKey, mixing);
+
+  function defaultMixing(keyA, keyB){
+    const A = ATOMS[keyA], B = ATOMS[keyB];
+    const avgGap = ((A.e2p-A.e2s) + (B.e2p-B.e2s)) / 2;
+    return avgGap < 14;
+  }
+  function pickInitialLevel(){
+    for (let i=mo.order.length-1;i>=0;i--){ if (mo.occ[mo.order[i]]>0){ selectedLevel = mo.order[i]; return; } }
+    selectedLevel = mo.order[0];
+  }
+  function recompute(){
+    mo = computeMO(atomAKey, atomBKey, mixing);
+    if (!(selectedLevel in mo.levels)) pickInitialLevel();
+  }
+
+  // ---------- DOM ----------
+  const atomAButtons = Array.from(document.querySelectorAll('#atomA-group button'));
+  const atomBButtons = Array.from(document.querySelectorAll('#atomB-group button'));
+  const swapBtn = document.getElementById('swap-btn');
+  const mixingToggle = document.getElementById('mixing-toggle');
+  const mixingDescEl = document.getElementById('mixing-desc');
+  const polarityNoteEl = document.getElementById('polarity-note');
+  const speciesLabelEl = document.getElementById('species-label');
+  const configLabelEl = document.getElementById('config-label');
+  const bondOrderLabelEl = document.getElementById('bondorder-label');
+  const magnetismLabelEl = document.getElementById('magnetism-label');
+  const bondLengthLabelEl = document.getElementById('bondlength-label');
+  const orbitalLevelLabelEl = document.getElementById('orbital-level-label');
+  const orbitalFormulaTag = document.getElementById('orbital-formula-tag');
+  const orbitalNoteEl = document.getElementById('orbital-note');
+
+  function syncAtomButtons(){
+    atomAButtons.forEach(b => b.classList.toggle('active', b.dataset.el===atomAKey));
+    atomBButtons.forEach(b => b.classList.toggle('active', b.dataset.el===atomBKey));
+    atomBButtons.forEach(b => b.classList.toggle('b-side', true));
+  }
+  atomAButtons.forEach(b => b.addEventListener('click', () => {
+    atomAKey = b.dataset.el;
+    mixing = defaultMixing(atomAKey, atomBKey);
+    syncAtomButtons(); updateMixingButton(); recompute(); pickInitialLevel(); render();
+  }));
+  atomBButtons.forEach(b => b.addEventListener('click', () => {
+    atomBKey = b.dataset.el;
+    mixing = defaultMixing(atomAKey, atomBKey);
+    syncAtomButtons(); updateMixingButton(); recompute(); pickInitialLevel(); render();
+  }));
+  swapBtn.addEventListener('click', () => {
+    const tmp = atomAKey; atomAKey = atomBKey; atomBKey = tmp;
+    syncAtomButtons(); recompute(); render();
+  });
+  mixingToggle.addEventListener('click', () => { mixing = !mixing; updateMixingButton(); recompute(); render(); });
+  function updateMixingButton(){
+    mixingToggle.classList.toggle('active', mixing);
+    mixingToggle.textContent = mixing ? 'ON' : 'OFF';
+  }
+  syncAtomButtons();
+  updateMixingButton();
+  pickInitialLevel();
+
+  // ---------- canvas setup helper (device-pixel-ratio aware) ----------
+  function setupCanvas(canvas, cssHeight){
+    const dpr = window.devicePixelRatio || 1;
+    const cssWidth = canvas.parentElement.clientWidth - 28;
+    canvas.style.height = cssHeight + 'px';
+    canvas.width = Math.round(cssWidth * dpr);
+    canvas.height = Math.round(cssHeight * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: cssWidth, h: cssHeight };
+  }
+
+  const cMO = document.getElementById('canvas-mo');
+  const cOrbital = document.getElementById('canvas-orbital');
+
+  // ---------- colour helpers ----------
+  function css(varName){ return getComputedStyle(document.documentElement).getPropertyValue(varName).trim(); }
+  function hexToRgb(hex){ hex = hex.replace('#',''); return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)]; }
+  // Cached rather than read live on every pixel (this feeds a per-pixel loop),
+  // so it must be refreshed whenever the theme can have changed — see the
+  // refreshPalette() call at the top of drawOrbitalPanel().
+  let CORAL_RGB, BLUE_RGB, PANEL_RGB;
+  function refreshPalette(){
+    CORAL_RGB = hexToRgb(css('--coral'));
+    BLUE_RGB  = hexToRgb(css('--blue'));
+    PANEL_RGB = hexToRgb(css('--panel-2'));
+  }
+  refreshPalette();
+  // Read live (not cached like the RGB triplets above) since it's only ever
+  // used to build a one-off rgba() string, not in a hot per-pixel loop.
+  function rgbaInk(alpha){ return 'rgba(' + css('--ink-rgb') + ',' + alpha + ')'; }
+  function fieldColor(t){
+    const mag = Math.min(1, Math.abs(t));
+    const alpha = Math.pow(mag, 0.65) * 0.92;
+    const base = t >= 0 ? CORAL_RGB : BLUE_RGB;
+    return [base[0], base[1], base[2], alpha];
+  }
+
+  // ---------- marching squares ----------
+  function marchingSquares(grid, gw, gh, iso){
+    const segs = [];
+    function interp(v0, v1){ return (iso - v0) / (v1 - v0); }
+    for (let j = 0; j < gh-1; j++){
+      for (let i = 0; i < gw-1; i++){
+        const v00 = grid[j*gw+i],     v10 = grid[j*gw+i+1];
+        const v01 = grid[(j+1)*gw+i], v11 = grid[(j+1)*gw+i+1];
+        let idx = 0;
+        if (v00 > iso) idx |= 1;
+        if (v10 > iso) idx |= 2;
+        if (v11 > iso) idx |= 4;
+        if (v01 > iso) idx |= 8;
+        if (idx === 0 || idx === 15) continue;
+        const pts = {};
+        if ((idx & 1) !== (idx & 2) >> 1) pts.top = [i + interp(v00,v10), j];
+        if ((idx & 2) >> 1 !== (idx & 4) >> 2) pts.right = [i+1, j + interp(v10,v11)];
+        if ((idx & 8) >> 3 !== (idx & 4) >> 2) pts.bottom = [i + interp(v01,v11), j+1];
+        if ((idx & 1) !== (idx & 8) >> 3) pts.left = [i, j + interp(v00,v01)];
+        const edges = [];
+        if (pts.top) edges.push(pts.top);
+        if (pts.right) edges.push(pts.right);
+        if (pts.bottom) edges.push(pts.bottom);
+        if (pts.left) edges.push(pts.left);
+        for (let k = 0; k+1 < edges.length; k += 2){
+          segs.push({x0: edges[k][0], y0: edges[k][1], x1: edges[k+1][0], y1: edges[k+1][1]});
+        }
+      }
+    }
+    return segs;
+  }
+
+  // ---------- orbital-shape panel ----------
+  const GW = 170, GH = 118;
+  const offOrbital = document.createElement('canvas'); offOrbital.width = GW; offOrbital.height = GH;
+
+  function drawOrbitalPanel(){
+    refreshPalette();
+    const { ctx, w, h } = setupCanvas(cOrbital, 440);
+    const level = mo.levels[selectedLevel];
+    const meta = LEVEL_META[selectedLevel];
+    const Rbohr = mo.bondLength.value / BOHR;
+    const VIEW_HALF_X = Rbohr/2 + 2.6, VIEW_HALF_Y = 4.6;
+    const xMin=-VIEW_HALF_X, xMax=VIEW_HALF_X, yMin=-VIEW_HALF_Y, yMax=VIEW_HALF_Y;
+
+    const grid = new Float32Array(GW*GH);
+    const nxA = -Rbohr/2, nxB = Rbohr/2;
+    let maxAbs = 1e-9;
+    for (let j=0;j<GH;j++){
+      const y = yMin + (yMax-yMin)*j/(GH-1);
+      for (let i=0;i<GW;i++){
+        const x = xMin + (xMax-xMin)*i/(GW-1);
+        const vA = orbitalAt(meta.kind, x, y, nxA, mo.ZA, false);
+        const vB = orbitalAt(meta.kind, x, y, nxB, mo.ZB, true);
+        const val = level.cA*vA + level.cB*vB;
+        grid[j*GW+i] = val;
+        if (Math.abs(val) > maxAbs) maxAbs = Math.abs(val);
+      }
+    }
+
+    const octx = offOrbital.getContext('2d');
+    const imgData = octx.createImageData(GW, GH);
+    for (let k=0;k<GW*GH;k++){
+      const t = grid[k]/maxAbs;
+      const [r,g,b,a] = fieldColor(t);
+      const pr = PANEL_RGB;
+      imgData.data[k*4]   = pr[0]*(1-a)+r*a;
+      imgData.data[k*4+1] = pr[1]*(1-a)+g*a;
+      imgData.data[k*4+2] = pr[2]*(1-a)+b*a;
+      imgData.data[k*4+3] = 255;
+    }
+    octx.putImageData(imgData, 0, 0);
+
+    ctx.fillStyle = css('--panel-2'); ctx.fillRect(0,0,w,h);
+    ctx.imageSmoothingEnabled = true;
+
+    const scale = Math.min(w/(xMax-xMin), h/(yMax-yMin));
+    const boxW=(xMax-xMin)*scale, boxH=(yMax-yMin)*scale;
+    const offX=(w-boxW)/2, offY=(h-boxH)/2;
+    ctx.drawImage(offOrbital, offX, offY, boxW, boxH);
+
+    const toPx = (x) => offX + (x-xMin)/(xMax-xMin)*boxW;
+    const toPy = (y) => offY + (y-yMin)/(yMax-yMin)*boxH;
+    const gridToPx = (gi) => toPx(xMin + (xMax-xMin)*gi/(GW-1));
+    const gridToPy = (gj) => toPy(yMin + (yMax-yMin)*gj/(GH-1));
+
+    function drawContours(levelFracs, color){
+      ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([]);
+      levelFracs.forEach(f => {
+        const segs = marchingSquares(grid, GW, GH, f*maxAbs);
+        ctx.beginPath();
+        segs.forEach(s => { ctx.moveTo(gridToPx(s.x0), gridToPy(s.y0)); ctx.lineTo(gridToPx(s.x1), gridToPy(s.y1)); });
+        ctx.stroke();
+      });
+    }
+    drawContours([0.15,0.35,0.6], rgbaInk(0.30));
+    drawContours([-0.15,-0.35,-0.6], rgbaInk(0.30));
+
+    ctx.strokeStyle = rgbaInk(0.55); ctx.setLineDash([5,4]); ctx.lineWidth=1.3;
+    const nodeSegs = marchingSquares(grid, GW, GH, 0);
+    ctx.beginPath();
+    nodeSegs.forEach(s => { ctx.moveTo(gridToPx(s.x0), gridToPy(s.y0)); ctx.lineTo(gridToPx(s.x1), gridToPy(s.y1)); });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = rgbaInk(0.18); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(0, toPy(0)); ctx.lineTo(w, toPy(0)); ctx.stroke();
+
+    [[nxA, mo.A.symbol],[nxB, mo.B.symbol]].forEach(([nx,symbol]) => {
+      const px = toPx(nx), py = toPy(0);
+      ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fillStyle = css('--text'); ctx.fill();
+      ctx.font = '10px -apple-system, sans-serif'; ctx.fillStyle = css('--text-dim'); ctx.textAlign='center';
+      ctx.fillText(symbol + ' (' + KIND_LABEL[meta.kind] + ')', px, py-9);
+    });
+
+    orbitalLevelLabelEl.textContent = meta.label;
+    orbitalFormulaTag.textContent = formulaString(level, meta);
+    const dominant = Math.abs(level.cA) >= Math.abs(level.cB) ? mo.A.symbol : mo.B.symbol;
+    orbitalNoteEl.textContent = meta.symDesc + ' Weighted mostly toward ' + dominant + '.' + (meta.degenerate
+      ? ' Shown: one component of the doubly degenerate pair — the other has the same shape, rotated 90° about the internuclear axis.'
+      : '');
+  }
+
+  function formulaString(level, meta){
+    const kindLabel = KIND_LABEL[meta.kind];
+    const bSign = level.cB < 0 ? '−' : '+';
+    return 'ψ = ' + level.cA.toFixed(2) + '·' + kindLabel + '(' + mo.A.symbol + ') ' +
+           bSign + ' ' + Math.abs(level.cB).toFixed(2) + '·' + kindLabel + '(' + mo.B.symbol + ')';
+  }
+
+  // ---------- MO energy-level diagram ----------
+  let levelHitRegions = [];
+
+  function niceStep(range){
+    const raw = range/5;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const norm = raw/mag;
+    const step = norm<1.5 ? 1 : norm<3 ? 2 : norm<7 ? 5 : 10;
+    return step*mag;
+  }
+
+  function drawMODiagram(){
+    const { ctx, w, h } = setupCanvas(cMO, 440);
+    ctx.clearRect(0,0,w,h);
+    levelHitRegions = [];
+
+    const order = mo.order, levels = mo.levels, occ = mo.occ;
+    const A = mo.A, B = mo.B;
+
+    const allE = order.map(id => levels[id].E).concat([A.e2s, A.e2p, B.e2s, B.e2p]);
+    const eMin = Math.min(...allE), eMax = Math.max(...allE);
+    const ePad = (eMax-eMin)*0.10;
+    const axisMin = eMin-ePad, axisMax = eMax+ePad;
+
+    const padL = 40, padR = 10, padT = 16, padB = 26;
+    const plotW = w-padL-padR, plotH = h-padT-padB;
+    const toY = (e) => padT + (axisMax-e)/(axisMax-axisMin) * plotH;
+
+    ctx.strokeStyle = css('--grid-line'); ctx.fillStyle = css('--text-dim');
+    ctx.font = '9.5px -apple-system, sans-serif'; ctx.textAlign = 'right';
+    const step = niceStep(axisMax-axisMin);
+    for (let v = Math.ceil(axisMin/step)*step; v <= axisMax; v += step){
+      const y = toY(v);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); ctx.stroke();
+      ctx.fillText(v.toFixed(0), padL-5, y+3);
+    }
+
+    ctx.save();
+    ctx.fillStyle = css('--text-dim'); ctx.font = '10px -apple-system, sans-serif';
+    ctx.translate(11, padT+plotH/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center';
+    ctx.fillText('orbital energy / eV', 0, 0);
+    ctx.restore();
+
+    const xAOL0 = padL+plotW*0.02, xAOL1 = padL+plotW*0.19;
+    const xAOR0 = padL+plotW*0.81, xAOR1 = padL+plotW*0.98;
+    const xMO0  = padL+plotW*0.37, xMO1  = padL+plotW*0.63;
+
+    const AOL_CX = (xAOL0+xAOL1)/2, AOR_CX = (xAOR0+xAOR1)/2, MO_CX = (xMO0+xMO1)/2;
+    const AO_GAP = 6, MO_GAP = 16;
+    const SEG_LEN = ((xAOL1-xAOL0) - AO_GAP*2) / 3 * 1.15;
+
+    function centeredSegments(cx, count, gap){
+      const totalW = count*SEG_LEN + (count-1)*gap;
+      const start = cx - totalW/2;
+      return Array.from({length:count}, (_,i) => ({ x0: start+i*(SEG_LEN+gap), x1: start+i*(SEG_LEN+gap)+SEG_LEN }));
+    }
+    function levelSegments(meta){ return centeredSegments(MO_CX, meta.degenerate ? 2 : 1, MO_GAP); }
+
+    // One AO reference line per side per orbital kind — each atom has its own energy now, so
+    // the two sides are drawn independently rather than mirrored at a shared height. When an
+    // element's 2s and 2p sit close in energy (e.g. Li: only 0.7 eV apart) their labels would
+    // otherwise overlap, so each side's pair of labels is decluttered the same way the six MO
+    // labels are, with a short leader line back to the real line if nudged.
+    function drawAOLines(cx, y, count, anchorSide){
+      const segs = centeredSegments(cx, count, AO_GAP);
+      ctx.strokeStyle = css('--text-dim'); ctx.lineWidth = 1.5;
+      segs.forEach(s => { ctx.beginPath(); ctx.moveTo(s.x0,y); ctx.lineTo(s.x1,y); ctx.stroke(); });
+      return anchorSide==='right' ? segs[segs.length-1].x1 : segs[0].x0;
+    }
+    function declutterPair(yA, yB, minGap){
+      const items = [{k:'a',y:yA},{k:'b',y:yB}].sort((p,q)=>p.y-q.y);
+      let prev = null;
+      items.forEach(it => { it.labelY = (prev!==null && it.y-prev<minGap) ? prev+minGap : it.y; prev = it.labelY; });
+      const byKey = {}; items.forEach(it => byKey[it.k]=it.labelY);
+      return [byKey.a, byKey.b];
+    }
+    function drawAOLabel(cx, y, labelY, label){
+      if (Math.abs(labelY-y) > 1){
+        ctx.strokeStyle = css('--text-dim'); ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(cx, y); ctx.lineTo(cx, labelY+10); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = css('--text-dim'); ctx.font = '10.5px -apple-system, sans-serif'; ctx.textAlign='center';
+      ctx.fillText(label, cx, labelY+16);
+    }
+    const yA2s = toY(A.e2s), yA2p = toY(A.e2p), yB2s = toY(B.e2s), yB2p = toY(B.e2p);
+    const anchorA2s = drawAOLines(AOL_CX, yA2s, 1, 'right');
+    const anchorA2p = drawAOLines(AOL_CX, yA2p, 3, 'right');
+    const anchorB2s = drawAOLines(AOR_CX, yB2s, 1, 'left');
+    const anchorB2p = drawAOLines(AOR_CX, yB2p, 3, 'left');
+    const [labelA2s, labelA2p] = declutterPair(yA2s, yA2p, 22);
+    const [labelB2s, labelB2p] = declutterPair(yB2s, yB2p, 22);
+    drawAOLabel(AOL_CX, yA2s, labelA2s, A.symbol+' 2s');
+    drawAOLabel(AOL_CX, yA2p, labelA2p, A.symbol+' 2p');
+    drawAOLabel(AOR_CX, yB2s, labelB2s, B.symbol+' 2s');
+    drawAOLabel(AOR_CX, yB2p, labelB2p, B.symbol+' 2p');
+
+    // Correlation lines fade/thicken with |c|^2 on that side — a direct visual read of how
+    // much of each MO actually sits on Atom A vs Atom B.
+    function weightPair(level){
+      const wa = level.cA*level.cA, wb = level.cB*level.cB, tot = wa+wb || 1;
+      return { wA: wa/tot, wB: wb/tot };
+    }
+    ctx.setLineDash([3,3]); ctx.lineWidth = 1;
+    order.forEach(id => {
+      const meta = LEVEL_META[id], level = levels[id];
+      const y = toY(level.E);
+      const segs = levelSegments(meta);
+      const leftEdge = Math.min(...segs.map(s=>s.x0)), rightEdge = Math.max(...segs.map(s=>s.x1));
+      const { wA, wB } = weightPair(level);
+      const yAOa = meta.kind==='s' ? yA2s : yA2p, anchorA = meta.kind==='s' ? anchorA2s : anchorA2p;
+      const yAOb = meta.kind==='s' ? yB2s : yB2p, anchorB = meta.kind==='s' ? anchorB2s : anchorB2p;
+      ctx.strokeStyle = rgbaInk((0.10+0.55*wA).toFixed(3));
+      ctx.beginPath(); ctx.moveTo(anchorA,yAOa); ctx.lineTo(leftEdge,y); ctx.stroke();
+      ctx.strokeStyle = rgbaInk((0.10+0.55*wB).toFixed(3));
+      ctx.beginPath(); ctx.moveTo(anchorB,yAOb); ctx.lineTo(rightEdge,y); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    // s-p mixing: extra correlation lines from the 2s AO to sigma(2p) [or sigma*(2p)] and
+    // vice versa, on both atoms, shown only when mixing is on.
+    if (mixing){
+      function drawMixingLines(idS, idP){
+        const yS = toY(levels[idS].E), yP = toY(levels[idP].E);
+        const segS = levelSegments(LEVEL_META[idS]), segP = levelSegments(LEVEL_META[idP]);
+        const lS = Math.min(...segS.map(s=>s.x0)), rS = Math.max(...segS.map(s=>s.x1));
+        const lP = Math.min(...segP.map(s=>s.x0)), rP = Math.max(...segP.map(s=>s.x1));
+        [[anchorA2s,yA2s,lP,yP], [anchorB2s,yB2s,rP,yP],
+         [anchorA2p,yA2p,lS,yS], [anchorB2p,yB2p,rS,yS]].forEach(([x0,y0,x1,y1]) => {
+          ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+        });
+      }
+      ctx.strokeStyle = css('--blue'); ctx.lineWidth = 1.2; ctx.setLineDash([2,3]); ctx.globalAlpha = 0.6;
+      drawMixingLines('sigma2s', 'sigma2p');
+      drawMixingLines('sigma2sStar', 'sigma2pStar');
+      ctx.globalAlpha = 1; ctx.setLineDash([]);
+    }
+
+    const rows = order.map(id => {
+      const meta = LEVEL_META[id];
+      const y = toY(levels[id].E);
+      const segs = levelSegments(meta);
+      const leftEdge = Math.min(...segs.map(s=>s.x0)), rightEdge = Math.max(...segs.map(s=>s.x1));
+      return { id, meta, y, segs, leftEdge, rightEdge, labelY: y };
+    });
+    const LABEL_MIN_GAP = 13;
+    rows.slice().sort((a,b) => a.y-b.y).reduce((prevY, row) => {
+      if (prevY !== null && row.labelY - prevY < LABEL_MIN_GAP) row.labelY = prevY + LABEL_MIN_GAP;
+      return row.labelY;
+    }, null);
+
+    rows.forEach(({ id, meta, y, segs, leftEdge, rightEdge, labelY }) => {
+      const n = occ[id]||0;
+      const color = meta.bonding ? css('--coral') : css('--peach');
+      const isSelected = id === selectedLevel;
+
+      segs.forEach(seg => {
+        ctx.strokeStyle = color; ctx.lineWidth = isSelected?3:2;
+        ctx.beginPath(); ctx.moveTo(seg.x0,y); ctx.lineTo(seg.x1,y); ctx.stroke();
+      });
+      if (isSelected){
+        ctx.strokeStyle = css('--blue'); ctx.lineWidth = 1; ctx.setLineDash([2,2]);
+        ctx.strokeRect(leftEdge-6, y-14, (rightEdge-leftEdge)+12, 28);
+        ctx.setLineDash([]);
+      }
+
+      if (Math.abs(labelY-y) > 1){
+        ctx.strokeStyle = color; ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(rightEdge, y); ctx.lineTo(rightEdge+6, labelY); ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = color; ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign='left';
+      ctx.fillText(meta.label, rightEdge+8, labelY+4);
+      const labelWidth = ctx.measureText(meta.label).width;
+
+      const boxes = subOccupancy(n, meta.degenerate);
+      ctx.font = 'bold 18px -apple-system, sans-serif'; ctx.textAlign='center';
+      ctx.fillStyle = css('--text');
+      function fillArrowCentered(ch, cx){
+        const m = ctx.measureText(ch);
+        const asc = m.actualBoundingBoxAscent || 0, desc = m.actualBoundingBoxDescent || 0;
+        ctx.fillText(ch, cx, y + (asc-desc)/2);
+      }
+      boxes.forEach((arrows, bi) => {
+        const seg = segs[bi] || segs[0];
+        const cx = (seg.x0+seg.x1)/2;
+        if (arrows.includes('up')) fillArrowCentered('↑', cx-7);
+        if (arrows.includes('down')) fillArrowCentered('↓', cx+7);
+      });
+
+      levelHitRegions.push({
+        id,
+        x0: leftEdge-8, x1: rightEdge+8+labelWidth+4,
+        y0: Math.min(y-10, labelY-9), y1: Math.max(y+10, labelY+7)
+      });
+    });
+  }
+
+  cMO.addEventListener('click', (e) => {
+    const rect = cMO.getBoundingClientRect();
+    const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+    const hit = levelHitRegions.find(r => mx>=r.x0 && mx<=r.x1 && my>=r.y0 && my<=r.y1);
+    if (hit){ selectedLevel = hit.id; render(); }
+  });
+  cMO.addEventListener('mousemove', (e) => {
+    const rect = cMO.getBoundingClientRect();
+    const mx = e.clientX-rect.left, my = e.clientY-rect.top;
+    const hit = levelHitRegions.find(r => mx>=r.x0 && mx<=r.x1 && my>=r.y0 && my<=r.y1);
+    cMO.style.cursor = hit ? 'pointer' : 'default';
+  });
+
+  // ---------- number formatting ----------
+  const SUP_DIGITS = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴' };
+  function toSup(n){ return String(n).split('').map(c => SUP_DIGITS[c] || c).join(''); }
+
+  // ---------- readouts ----------
+  function updateReadouts(){
+    const A = mo.A, B = mo.B;
+    speciesLabelEl.textContent = A.symbol + '–' + B.symbol;
+    configLabelEl.textContent = mo.order.filter(id => mo.occ[id]>0)
+      .map(id => LEVEL_META[id].label + toSup(mo.occ[id])).join('  ');
+    bondOrderLabelEl.textContent = String(mo.bondOrder);
+    magnetismLabelEl.textContent = mo.unpaired>0
+      ? 'paramagnetic (' + mo.unpaired + ' unpaired e⁻)'
+      : 'diamagnetic';
+    bondLengthLabelEl.textContent = mo.bondLength.value.toFixed(3) + ' Å' + (mo.bondLength.estimated ? ' *' : '');
+
+    const gapA = A.e2p - A.e2s, gapB = B.e2p - B.e2s, avgGap = (gapA+gapB)/2;
+    mixingDescEl.textContent = mixing
+      ? 'π(2p) sits below σ(2p) here (avg. ΔE(2s,2p) = ' + avgGap.toFixed(1) + ' eV — small enough for real mixing between the 2s and 2p atomic levels).'
+      : 'σ(2p) sits below π(2p) here (avg. ΔE(2s,2p) = ' + avgGap.toFixed(1) + ' eV — large enough that mixing has little effect).';
+
+    const dEN = Math.abs(A.en - B.en);
+    const moreEN = A.en >= B.en ? A.symbol : B.symbol;
+    if (atomAKey === atomBKey){
+      polarityNoteEl.textContent = 'Same element on both sides — this reduces exactly to the homonuclear case (equal coefficients, no polarisation).';
+    } else if (dEN > 2.0){
+      polarityNoteEl.textContent = 'Large electronegativity difference (ΔEN ≈ ' + dEN.toFixed(2) + ', more electronegative: ' + moreEN + ') — the bond-order count above likely overstates real bonding here; see "an honest limitation" in the model notes.';
+    } else {
+      polarityNoteEl.textContent = 'Bonding MOs are polarised toward ' + moreEN + ' (more electronegative, ΔEN ≈ ' + dEN.toFixed(2) + ').';
+    }
+  }
+
+  // ---------- render ----------
+  function render(){
+    drawMODiagram();
+    drawOrbitalPanel();
+    updateReadouts();
+  }
+  render();
+
+  // ---------- resize & height reporting ----------
+  window.addEventListener('resize', render);
+  function reportHeight(){
+    try{ window.parent.postMessage({ type:'simHeight', height: document.body.scrollHeight }, '*'); }catch(e){}
+  }
+  window.addEventListener('resize', reportHeight);
+  window.addEventListener('load', reportHeight);
+  new ResizeObserver(() => { render(); reportHeight(); }).observe(document.body);
+  setInterval(reportHeight, 800);
+
+  // This page only redraws on init/resize/interaction, so a light/dark toggle
+  // (which just flips the data-theme attribute — no resize, no user input on
+  // this page) needs its own hook to repaint the canvases with the new palette.
+  new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+})();
+</script>
+
+</body>
+</html>

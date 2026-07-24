@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<script src="../assets/js/theme.js"></script>
+<title>Molecular Orbital Formation from s and p Orbitals</title>
+<style>
+  :root{
+    --bg: #0d1117;
+    --panel: #141a24;
+    --panel-2: #10151e;
+    --border: #262f3d;
+    --text: #e8e3da;
+    --text-dim: #8b93a3;
+    --ink-rgb: 232,227,218;
+    --coral: #e8735f;
+    --coral-dim: #a8574a;
+    --peach: #e3a98c;
+    --peach-dim: #a87d68;
+    --blue: #6f8fc9;
+    --blue-dim: #4f6690;
+    --grid-line: rgba(232,227,218,0.07);
+  }
+  /* Local palette is hand-tuned per theme so canvas fills/strokes (which read
+     these vars live) and the surrounding chrome stay legible in both modes —
+     the dark values above are too washed-out against a white page. */
+  :root[data-theme="light"]{
+    --bg: #f4f6f9;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --border: #d8dee6;
+    --text: #161c26;
+    --text-dim: #5f6b7a;
+    --ink-rgb: 22,28,38;
+    --coral: #c85a44;
+    --coral-dim: #9c4433;
+    --peach: #b97a55;
+    --peach-dim: #8f5c3d;
+    --blue: #3d5f96;
+    --blue-dim: #2c4570;
+    --grid-line: rgba(22,28,38,0.08);
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  body{ padding: 18px 20px 60px; }
+  .container { max-width: 980px; margin: 0 auto; }
+  h1{
+    font-size: 17px; font-weight: 600; letter-spacing: 0.02em;
+    margin: 0 0 2px; color: var(--text);
+  }
+  .subtitle{
+    font-size: 12.5px; color: var(--text-dim); margin: 0 0 16px;
+  }
+  .controls{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
+  }
+  .slider-block{ flex: 1 1 320px; min-width: 260px; }
+  .slider-row{ display:flex; align-items:center; gap:10px; }
+  .slider-row label{ font-size: 12px; color: var(--text-dim); white-space: nowrap; }
+  input[type=range]{
+    flex:1; -webkit-appearance:none; appearance:none;
+    height: 4px; border-radius: 2px;
+    background: linear-gradient(90deg, var(--coral), var(--border));
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:15px; height:15px; border-radius:50%;
+    background: var(--coral);
+    border: 2px solid var(--bg);
+    cursor:pointer;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 15%, transparent);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:15px; height:15px; border-radius:50%;
+    background: var(--coral); border: 2px solid var(--bg); cursor:pointer;
+  }
+  .readout{
+    font-variant-numeric: tabular-nums;
+    font-size: 13px; color: var(--coral); font-weight:600; min-width: 72px; text-align:right;
+  }
+  .btn-group{ display:flex; gap:8px; flex-wrap:wrap; }
+  button{
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  button:hover{ border-color: var(--coral); color: var(--coral); }
+  button.active{ border-color: var(--coral); color: var(--coral); background: color-mix(in srgb, var(--coral) 8%, transparent); }
+  .stats{
+    display:flex; gap: 18px; flex-wrap: wrap;
+    font-size: 11.5px; color: var(--text-dim);
+  }
+  .stats b{ color: var(--text); font-variant-numeric: tabular-nums; }
+
+  .panel-grid{
+    display:grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  }
+  @media (max-width: 720px){ .panel-grid{ grid-template-columns: 1fr; } }
+
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px 14px;
+  }
+  .panel-title{
+    font-size: 12px; font-weight:600; color: var(--text);
+    display:flex; justify-content:space-between; align-items:baseline;
+    margin-bottom: 8px;
+  }
+  .panel-title span.tag{
+    font-size: 10.5px; font-weight: 500; color: var(--text-dim);
+  }
+  canvas{ display:block; width:100%; border-radius: 6px; background: var(--panel-2); }
+
+  .legend{
+    display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;
+    font-size: 10.5px; color: var(--text-dim);
+  }
+  .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+
+  .notes{
+    margin-top: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+  .notes b{ color: var(--text); }
+  .notes summary{ cursor:pointer; color: var(--text); font-weight:600; font-size:12.5px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Molecular Orbital Formation from s and p Orbitals</h1>
+<p class="subtitle">Two atomic orbitals combining by linear combination (LCAO) — compare s–s, s–p and p–p overlap, and σ (head-on) vs π (side-on) symmetry</p>
+
+<div class="controls">
+  <div class="slider-block">
+    <div class="slider-row">
+      <label>Overlap</label>
+      <div class="btn-group" id="mode-group">
+        <button data-mode="ss" class="active">s + s</button>
+        <button data-mode="sp">s + p (σ)</button>
+        <button data-mode="ppsigma">p + p (σ)</button>
+        <button data-mode="pppi">p + p (π)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="controls" id="mode-readout-row">
+  <div style="font-size:20px; font-weight:700;" id="mode-label">s + s</div>
+  <div style="flex:1 1 auto;">
+    <div style="font-size:12px; color:var(--text-dim);">symmetry about the bond axis</div>
+    <div style="font-size:13px; font-weight:600;" id="symmetry-label">σ — cylindrically symmetric, no nodal plane containing the axis</div>
+  </div>
+  <div>
+    <div style="font-size:12px; color:var(--text-dim); text-align:right;">overlap integral (rel. to max over all 4 types)</div>
+    <div style="font-size:20px; font-weight:700; text-align:right;" id="overlap-label">1.00</div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="slider-block">
+    <div class="slider-row">
+      <label for="separation">Separation R</label>
+      <input type="range" id="separation" min="0.4" max="5.0" step="0.01" value="4.0">
+      <span class="readout" id="r-readout">4.00 Å</span>
+    </div>
+  </div>
+  <div class="btn-group">
+    <button id="preset-far">Far apart</button>
+    <button id="preset-cc">C–C bond length</button>
+    <button id="preset-close">Close</button>
+    <button id="play-btn">▶ Animate approach</button>
+  </div>
+</div>
+
+<div class="panel-grid">
+  <div class="panel">
+    <div class="panel-title">Bonding orbital, in phase <span class="tag" id="bond-formula-tag">ψ = s_A + s_B</span></div>
+    <canvas id="canvas-bond" height="260"></canvas>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Antibonding orbital, out of phase <span class="tag" id="anti-formula-tag">ψ = s_A − s_B</span></div>
+    <canvas id="canvas-anti" height="260"></canvas>
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="dot" style="background:var(--coral)"></span>positive phase</span>
+  <span><span class="dot" style="background:var(--blue)"></span>negative phase</span>
+  <span><span class="dot" style="background:transparent;border:1px dashed var(--text-dim)"></span>nodal surface (ψ = 0)</span>
+</div>
+
+<br>
+
+<div class="panel-grid">
+  <div class="panel">
+    <div class="panel-title">MO energy-level diagram <span class="tag">schematic — splitting ∝ overlap S(R)</span></div>
+    <canvas id="canvas-mo" height="300"></canvas>
+  </div>
+  <div class="panel">
+    <div class="panel-title">Overlap integral vs separation <span class="tag">∫ψ_Aψ_B dτ, scaled to the max over all four types</span></div>
+    <canvas id="canvas-curve" height="300"></canvas>
+  </div>
+</div>
+
+<div class="notes">
+  <details>
+    <summary>Model notes &amp; honesty check</summary>
+    <p style="margin-top:8px;">
+      <b>What changed from the 1s-1s version.</b> The sibling simulation models H₂/He₂-type species exactly (for the one-electron two-centre problem, via closed-form Coulomb/exchange/overlap integrals), including nuclear repulsion, to predict genuine equilibrium bond lengths and well depths. That approach is specific to two 1s orbitals and doesn't generalize cleanly to p orbitals. This version drops nuclear repulsion and quantitative bond energetics entirely and instead focuses purely on <b>orbital shape, phase and overlap symmetry</b> — how s and p orbitals combine, and why σ and π overlap differ.
+    </p>
+    <p>
+      <b>Orbital shapes.</b> Both "s" and "p" here are simplified Slater-type functions sharing the <i>same</i> exponential decay e<sup>−Zr</sup>, with the p orbital carrying an extra directional factor (x for the axis-aligned lobe, y for the perpendicular one). Real 2p orbitals decay more slowly than 1s (different principal quantum number), which this model ignores on purpose — using a matched decay rate keeps s and p clouds comparably sized, so the overlap comparison is about symmetry, not incidental size differences.
+    </p>
+    <p>
+      <b>Why carbon, and why fixed.</b> The orbital exponent ζ used throughout is fixed at 1.625, derived from Slater's rules for one of carbon's own 2s/2p electrons: Slater's rules give an <i>effective nuclear charge</i> Z<sub>eff</sub> = 6 − [3×0.35 for the other three 2s/2p electrons + 2×0.85 for the two 1s electrons] = 6 − 2.75 = 3.25 — and the exponent that belongs in e<sup>−ζr</sup> is ζ = Z<sub>eff</sub>/n, with n = 2 for the valence shell, giving ζ = 3.25/2 = 1.625. (An earlier version of this simulation used Z<sub>eff</sub> = 3.25 directly as the decay constant, which is the wrong quantity — it made the orbitals decay about twice as fast as they should, too contracted to overlap meaningfully at any real bond length.) This is no longer a user-adjustable "orbital size" toggle: the simulation is implicitly about carbon's own orbitals throughout, since that's the relevant case for C–C, C=C and C≡C bonding. The "C–C bond length" preset (1.54 Å) is the accepted single-bond length in, e.g., ethane or diamond.
+    </p>
+    <p>
+      <b>The bonding sign convention for p<sub>σ</sub>.</b> For the p orbital aligned along the bond axis, the lobe facing the other atom is defined as positive on both nuclei (a standard convention — the labels "bonding"/"antibonding" are meaningless without first fixing this). For the perpendicular (π-type) p orbital, no such flip is needed or applied: both atoms use the same lab-frame orientation, which is what makes the in-phase combination constructive above and below the axis.
+    </p>
+    <p>
+      <b>The overlap integral shown is scaled to the largest of all four types, not to itself.</b> The underlying quantity is ∫ψ_Aψ_B dτ for the actual, un-normalised basis functions used above (e<sup>−ζr</sup> for s, ±(x−n<sub>x</sub>)e<sup>−ζr</sup> or y·e<sup>−ζr</sup> for p) — deliberately <i>not</i> divided by each orbital's own normalization constant (that's a different quantity, used only internally for the MO diagram — see below). Instead, every mode's value is divided by the single largest |∫ψ_Aψ_B dτ| found across <i>all four</i> overlap types over the whole separation range. Dividing by one shared constant (rather than each mode's own maximum) keeps their real relative sizes intact — s–s overlap really is larger than p–p overlap at comparable separations, and this is the one presentation that still shows that, while also keeping the numbers in a readable range rather than raw values as small as 10⁻⁴. This is also why the curve panel can show all four types on one shared axis. The underlying integrals are computed by direct numerical quadrature (exploiting cylindrical symmetry about the bond axis to reduce the 3-D integral to two dimensions), checked against the exact closed-form Mulliken 1s-1s formula used in the sibling simulation, and agreeing to within ~10⁻⁴ across the full separation range.
+    </p>
+    <p>
+      <b>An honest surprise: s–p and p–p σ overlap are not monotonic.</b> Unlike s–s overlap (which is maximal at R=0 and decays smoothly), s–p overlap is exactly <i>zero</i> at R=0 — an s and a p orbital centred on the same point are orthogonal by symmetry — rises to a maximum at an intermediate separation, then decays. Head-on p–p (σ) overlap is stranger still: at very short range it is actually <i>negative</i> under the sign convention above, crosses zero, rises to a positive maximum at a more typical bonding-range separation, then decays. This is genuine two-centre overlap behaviour (it matches tabulated Slater-orbital integrals in the quantum chemistry literature), not a rendering artefact — it means the naive "in-phase combination is always lower in energy" rule of thumb can actually invert at very short range. Side-on p–p (π) overlap, by contrast, starts near its maximum at R=0 and decays smoothly throughout, with no sign change.
+    </p>
+    <p>
+      <b>MO energy diagram — the correct secular-equation form, on a schematic energy scale.</b> With nuclear repulsion removed there is no equilibrium bond length to predict, so the atomic-orbital on-site energies (α) and resonance integral (β) are schematic: α=0 for both sides in the three same-kind modes (a common reference — see the next note for why s + p differs) and β=−S(R) throughout, the same Wolfsberg–Helmholz-style proportionality to overlap used throughout. But the two levels are <i>not</i> simply α∓β — solving the proper 2×2 secular determinant for two non-orthogonal basis orbitals (|α<sub>L</sub>−E, β−ES; β−ES, α<sub>R</sub>−E| = 0) gives, in the degenerate case α<sub>L</sub>=α<sub>R</sub>=α, E<sub>bond</sub> = (α+β)/(1+S) and E<sub>anti</sub> = (α−β)/(1−S), i.e. here E<sub>bond</sub> = −S/(1+S) and E<sub>anti</sub> = S/(1−S) — exactly the same functional form already used for the exactly-solvable case in the sibling 1s-1s simulation's own level formulas. The 1±S denominators are what is actually responsible for a well-known, genuine asymmetry: the antibonding level always rises <i>more</i> than the bonding level falls, for the same |S|, and can diverge steeply at very close separation. The y-axis is symmetric about zero — the average of the two atomic-orbital references — with its half-range capped at the 90th percentile of |level| sampled across the whole separation range (per overlap type), rather than stretched to that true worst case: otherwise the split at realistic separations, like the C–C bond length, would be squeezed down to a barely-visible sliver just to make room for an extreme close-approach spike nobody's looking at. Keeping it symmetric (rather than independently fitting the top and bottom) is what keeps zero pinned dead centre, so the bonding and antibonding deviations read on one consistent visual scale rather than the axis quietly re-centring itself between modes. When the actual level does run past that cap, it's shown with a ▲/▼ off-scale marker rather than silently clipped away. S(R) itself is each mode's <i>own</i> normalized overlap integral (bounded to roughly ±1), deliberately not the max-of-all-four-scaled quantity shown in the readout and curve panel above — normalizing each mode to itself is what keeps this diagram meaningful regardless of which mode is selected. The proportionality constant behind β is still not calibrated to any real system. When S(R) itself goes negative (the p–p σ case above), the diagram will show the "bonding" level sitting <i>above</i> the "antibonding" level — this is the honest consequence of the sign flip described above, not a bug.
+    </p>
+    <p>
+      <b>The s + p mode gives its two atomic orbitals different on-site energies.</b> Every other mode here pairs same-kind orbitals (s with s, or p with p at the same n), so a single shared α was always defensible. But s + p genuinely shouldn't have α<sub>s</sub> = α<sub>p</sub>: same-shell s/p degeneracy is a hydrogenic artefact, and screening splits them apart in any real multi-electron atom — tabulated valence orbital energies for carbon (e.g. extended-Hückel parameters) put 2s around −19 to −21 eV and 2p around −10 to −11 eV, roughly a 9–10 eV gap, with 2p <i>above</i> 2s. Because this diagram's α/β have no real energy units to begin with (α=0, β=−S throughout, calibrated to nothing), that eV figure can't be dropped in directly. Instead the s + p mode uses a fixed schematic gap (α<sub>s</sub>=−0.4, α<sub>p</sub>=+0.4 in the same schematic units as β) chosen to be a few times the bonding/antibonding splitting that overlap alone produces at the C–C bond length preset — mirroring the real ratio, where the intrinsic 2s–2p gap is several times larger than a typical bonding-driven splitting and can't be closed by overlap alone. With non-degenerate α, the two MO levels are no longer the closed-form E=(α±β)/(1∓S): they come from solving the full 2×2 secular determinant |α<sub>s</sub>−E, β−ES; β−ES, α<sub>p</sub>−E| = 0 as a quadratic in E (still exactly equivalent to the closed form for the other three, degenerate-α modes). One visible consequence: the bonding MO drops <i>below</i> the s level and the antibonding MO rises <i>above</i> the p level — standard two-level mixing behaviour, not an error. The orbital-shape panels above still draw the equal-weight ψ = s<sub>A</sub> ± p<sub>B</sub> combinations regardless, exactly as they did before this change; only the energy-level diagram's placement of the two atomic-orbital reference lines and the two MO levels changed.
+    </p>
+    <p>
+      <b>What this model doesn't attempt.</b> No electron filling, bond order, or stable-species prediction is shown here (that machinery, tied to real electron counts and nuclear repulsion, lives in the 1s-1s sibling simulation). There is also no attempt at s–p mixing between different atoms' orbitals of different symmetry-adapted combinations, as happens in real N₂/O₂-type MO diagrams — each mode here is a single, isolated pair of atomic orbitals.
+    </p>
+  </details>
+</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const BOHR = 0.529177; // Å per bohr
+
+  // Slater-type-orbital exponent for a carbon 2s/2p electron. Slater's rules give the
+  // *effective nuclear charge* Z_eff = 6 - (3 other 2s/2p electrons * 0.35 + 2 1s electrons
+  // * 0.85) = 6 - 2.75 = 3.25 — but the exponent that actually belongs in e^-zeta*r is
+  // zeta = Z_eff / n, where n is the shell's principal quantum number (n=2 for valence
+  // carbon). So zeta = 3.25/2 = 1.625, not 3.25 itself: using Z_eff directly here made the
+  // orbitals decay about twice as fast as they should, leaving them too contracted to reach
+  // each other at any real bond length. Fixed rather than user-selectable — this simulation
+  // is now implicitly about carbon's own orbitals, the relevant case for C-C, C=C, C#C bonding.
+  const Z_CARBON = 1.625;
+
+  // Real carbon term values put its own 2p orbital measurably above its own 2s -- same-shell
+  // s/p degeneracy is a hydrogenic artefact that screening breaks in any real multi-electron
+  // atom (Slater's rules above give both the same zeta, but that's an approximation for the
+  // radial decay, not a claim they're equal in energy). Tabulated valence orbital energies
+  // (e.g. extended-Huckel parameters for carbon) put 2s around -19 to -21 eV and 2p around
+  // -10 to -11 eV, a gap of order 9-10 eV. The MO diagram's alpha/beta have no real energy
+  // units at all (schematic alpha=0, beta=-S throughout), so that eV figure can't be imported
+  // directly -- instead this gap is given a fixed schematic value, chosen to be a few times
+  // the bonding/antibonding splitting seen from overlap alone at the C-C bond length preset
+  // (S~0.28 there, giving a splitting of order 0.3-0.4), which mirrors the real situation:
+  // the intrinsic 2s-2p gap is several times larger than a typical bonding-driven splitting,
+  // not something overlap alone can close. Only the sp mode uses a nonzero gap -- the other
+  // three modes pair same-kind orbitals (s-s, or p-p at the same n), so there's no analogous
+  // splitting to model there.
+  const ALPHA_GAP_SP = 0.8;
+  function modeAlphas(modeKey){
+    if (modeKey === 'sp') return { alphaL: -ALPHA_GAP_SP/2, alphaR: ALPHA_GAP_SP/2 };
+    return { alphaL: 0, alphaR: 0 };
+  }
+
+  // ---------- overlap-type definitions ----------
+  const MODES = {
+    ss:      { kindL:'s',      kindR:'s',      sym:'σ', label:'s + s',
+               bondFormula:'ψ = s_A + s_B',  antiFormula:'ψ = s_A − s_B',
+               symDesc:'σ — cylindrically symmetric, no nodal plane containing the axis' },
+    sp:      { kindL:'s',      kindR:'psigma', sym:'σ', label:'s + p (σ)',
+               bondFormula:'ψ = s_A + p_B',  antiFormula:'ψ = s_A − p_B',
+               symDesc:'σ — cylindrically symmetric, no nodal plane containing the axis' },
+    ppsigma: { kindL:'psigma', kindR:'psigma', sym:'σ', label:'p + p (σ, head-on)',
+               bondFormula:'ψ = p_A + p_B',  antiFormula:'ψ = p_A − p_B',
+               symDesc:'σ — cylindrically symmetric, no nodal plane containing the axis' },
+    pppi:    { kindL:'ppi',    kindR:'ppi',    sym:'π', label:'p + p (π, side-on)',
+               bondFormula:'ψ = p_A + p_B',  antiFormula:'ψ = p_A − p_B',
+               symDesc:'π — one nodal plane containing the bond axis' }
+  };
+  const KIND_LABEL = { s:'s', psigma:'p', ppi:'p' };
+
+  // ---------- atomic-orbital amplitude (unnormalized), evaluated in the z=0 plane ----------
+  // kind 's': spherical, decays as e^-Zr.
+  // kind 'psigma': lobe aligned with the bond axis; the lobe facing the partner atom is
+  // defined positive on both nuclei (isRight flips the sign so this holds for either side).
+  // kind 'ppi': lobe perpendicular to the bond axis, in-plane; same lab-frame sign on both
+  // atoms (no flip) — that's what makes in-phase combination constructive above/below axis.
+  function orbitalAt(kind, x, y, nx, isRight, Z){
+    const r = Math.hypot(x - nx, y);
+    const decay = Math.exp(-Z * r);
+    if (kind === 's') return decay;
+    if (kind === 'psigma') return (isRight ? -(x - nx) : (x - nx)) * decay;
+    if (kind === 'ppi') return y * decay;
+  }
+
+  // ---------- numerical two-centre overlap integrals (cylindrical reduction) ----------
+  // Both orbitals share exponent Z; by dimensional analysis every normalized overlap
+  // integral here depends only on rho = Z*R (bohr), so each mode's table is built once at
+  // canonical Z=1 and reused for any actual Z, R via lookup at rho = Z*R/BOHR.
+  function integrate2D(f, xMax, rhoMax, nx, nr){
+    let sum = 0;
+    const dx = (2*xMax)/nx, dr = rhoMax/nr;
+    for (let i = 0; i < nx; i++){
+      const x = -xMax + (i+0.5)*dx;
+      for (let j = 0; j < nr; j++){
+        const rho = (j+0.5)*dr;
+        sum += f(x, rho) * dx * dr;
+      }
+    }
+    return sum;
+  }
+  const INT_NX = 70, INT_NR = 50;
+
+  function rawOverlapAt(modeKey, rho){
+    const { kindL, kindR } = MODES[modeKey];
+    const nxA = -rho/2, nxB = rho/2;
+    const xMax = rho/2 + 9, rhoMax = 9;
+    const rA = (x,r) => Math.hypot(x - nxA, r);
+    const rB = (x,r) => Math.hypot(x - nxB, r);
+    if (kindL === 'ppi' || kindR === 'ppi'){
+      // side-on p: integrand carries y*y -> average over azimuth gives a rho^3 weight and a
+      // factor of pi (instead of 2*pi) from integrating cos^2(phi) around the axis.
+      return Math.PI * integrate2D((x,r) => r*r*Math.exp(-rA(x,r))*Math.exp(-rB(x,r)) * r, xMax, rhoMax, INT_NX, INT_NR);
+    }
+    // Build each side's (x-dependent amplitude) * (radial decay) explicitly.
+    function sideVal(kind, x, r, nx, isRight, rSide){
+      const decay = Math.exp(-rSide);
+      if (kind === 's') return decay;
+      if (kind === 'psigma') return (isRight ? -(x-nx) : (x-nx)) * decay;
+    }
+    return 2*Math.PI * integrate2D((x,r) => {
+      const vA = sideVal(kindL, x, r, nxA, false, rA(x,r));
+      const vB = sideVal(kindR, x, r, nxB, true,  rB(x,r));
+      return vA * vB * r;
+    }, xMax, rhoMax, INT_NX, INT_NR);
+  }
+
+  function selfNorm2(kind){
+    const xMax = 9, rhoMax = 9;
+    const r0 = (x,r) => Math.hypot(x, r);
+    if (kind === 's'){
+      return 2*Math.PI*integrate2D((x,r) => Math.exp(-2*r0(x,r)) * r, xMax, rhoMax, INT_NX, INT_NR);
+    }
+    if (kind === 'psigma'){
+      return 2*Math.PI*integrate2D((x,r) => x*x*Math.exp(-2*r0(x,r)) * r, xMax, rhoMax, INT_NX, INT_NR);
+    }
+    if (kind === 'ppi'){
+      return Math.PI*integrate2D((x,r) => r*r*Math.exp(-2*r0(x,r)) * r, xMax, rhoMax, INT_NX, INT_NR);
+    }
+  }
+
+  const N2 = { s: selfNorm2('s'), psigma: selfNorm2('psigma'), ppi: selfNorm2('ppi') };
+
+  // Number of directional (p-type) legs in each mode's overlap product — each contributes
+  // an extra explicit factor of 1/Z once the integral is de-normalized (see rawIntegral
+  // below). ss has none, sp has one, both p-p modes have two.
+  const Z_POWER = { ss: 3, sp: 4, ppsigma: 5, pppi: 5 };
+
+  // ---------- build canonical (Z=1) overlap-integral lookup tables, once, per mode ----------
+  // By dimensional analysis every one of these integrals depends on Z and R only through the
+  // combination rho = Z*R (bohr) times an explicit power of 1/Z (see rawIntegral). So each
+  // table is built once at canonical Z=1 (rho taken directly as the separation) and reused
+  // for the actual fixed Z_CARBON via lookup at rho = Z_CARBON*R/BOHR.
+  const RHO_MIN = 0.3, RHO_MAX = 34, RHO_N = 320;
+  const rhoTables = {};
+  const NORM = {};
+  Object.keys(MODES).forEach(modeKey => {
+    const { kindL, kindR } = MODES[modeKey];
+    NORM[modeKey] = Math.sqrt(N2[kindL] * N2[kindR]);
+    const vals = new Float64Array(RHO_N + 1);
+    for (let i = 0; i <= RHO_N; i++){
+      const rho = RHO_MIN + (RHO_MAX - RHO_MIN) * i / RHO_N;
+      vals[i] = rawOverlapAt(modeKey, rho);
+    }
+    rhoTables[modeKey] = vals;
+  });
+
+  function canonicalRawAt(modeKey, rho){
+    const clamped = Math.max(RHO_MIN, Math.min(RHO_MAX, rho));
+    const f = (clamped - RHO_MIN) / (RHO_MAX - RHO_MIN) * RHO_N;
+    const i0 = Math.floor(f), i1 = Math.min(RHO_N, i0 + 1);
+    const t = f - i0;
+    const table = rhoTables[modeKey];
+    return table[i0] * (1 - t) + table[i1] * t;
+  }
+
+  // Normalized overlap integral (bounded ~[-1,1]) — used internally for the schematic MO
+  // energy-level splitting only; not shown directly to the user (see rawIntegral for that).
+  function S_of(modeKey, rho){
+    return canonicalRawAt(modeKey, rho) / NORM[modeKey];
+  }
+
+  // Unnormalised two-centre overlap integral for the actual basis functions used in this
+  // simulation (e^-Zr for s, ±(x-nx)e^-Zr / y*e^-Zr for p), at the fixed carbon Z. Not
+  // divided by each orbital's own normalization constant (unlike S_of), so its magnitude
+  // differs mode to mode for reasons that are partly just this convention — see
+  // displayIntegral below for what's actually shown to the user.
+  function rawIntegral(modeKey, R_ang_val){
+    const rho = Z_CARBON * R_ang_val / BOHR;
+    return canonicalRawAt(modeKey, rho) / Math.pow(Z_CARBON, Z_POWER[modeKey]);
+  }
+
+  // ---------- state ----------
+  let mode = 'ss';
+  let R_ang = 4.0;
+  let animating = false;
+  let animDir = -1;
+  const ANIM_SPEED = 0.55; // A/s
+  const R_MIN = 0.4, R_MAX = 5.0;
+
+  // Displayed overlap integral: rawIntegral divided by the single largest |rawIntegral|
+  // value found across *all four* modes over the whole separation range — not each mode's
+  // own maximum. Dividing every curve by one shared constant preserves their real relative
+  // magnitudes (unlike S_of, which independently rescales each mode to its own ~1 peak and
+  // so hides how much weaker, e.g., p-p overlap genuinely is at a given R), while still
+  // keeping the numbers in a sane, comparable range instead of raw values as small as 1e-4.
+  let GLOBAL_MAX = 0;
+  Object.keys(MODES).forEach(modeKey => {
+    for (let r = R_MIN; r <= R_MAX + 1e-9; r += 0.01){
+      const v = Math.abs(rawIntegral(modeKey, r));
+      if (v > GLOBAL_MAX) GLOBAL_MAX = v;
+    }
+  });
+  function displayIntegral(modeKey, R_ang_val){
+    return rawIntegral(modeKey, R_ang_val) / GLOBAL_MAX;
+  }
+
+  // ---------- DOM ----------
+  const slider = document.getElementById('separation');
+  const rReadout = document.getElementById('r-readout');
+  const playBtn = document.getElementById('play-btn');
+  const modeLabelEl = document.getElementById('mode-label');
+  const symmetryLabelEl = document.getElementById('symmetry-label');
+  const overlapLabelEl = document.getElementById('overlap-label');
+  const bondFormulaTag = document.getElementById('bond-formula-tag');
+  const antiFormulaTag = document.getElementById('anti-formula-tag');
+  const modeButtons = Array.from(document.querySelectorAll('#mode-group button'));
+
+  slider.value = R_ang;
+  slider.addEventListener('input', () => { R_ang = parseFloat(slider.value); stopAnim(); });
+
+  document.getElementById('preset-far').addEventListener('click', () => setR(R_MAX));
+  document.getElementById('preset-cc').addEventListener('click', () => setR(1.54));
+  document.getElementById('preset-close').addEventListener('click', () => setR(0.7));
+  playBtn.addEventListener('click', () => {
+    animating = !animating;
+    playBtn.classList.toggle('active', animating);
+    playBtn.textContent = animating ? '❚❚ Pause' : '▶ Animate approach';
+  });
+
+  function stopAnim(){
+    animating = false;
+    playBtn.classList.remove('active');
+    playBtn.textContent = '▶ Animate approach';
+  }
+  function setR(v){
+    R_ang = Math.max(R_MIN, Math.min(R_MAX, v));
+    slider.value = R_ang;
+    stopAnim();
+  }
+  function setMode(m){
+    mode = m;
+    modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+    updateModeReadout();
+  }
+  function updateModeReadout(){
+    const def = MODES[mode];
+    modeLabelEl.textContent = def.label;
+    symmetryLabelEl.textContent = def.symDesc;
+    bondFormulaTag.textContent = def.bondFormula;
+    antiFormulaTag.textContent = def.antiFormula;
+  }
+
+  modeButtons.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  updateModeReadout();
+
+  // ---------- canvas setup helper (device-pixel-ratio aware) ----------
+  function setupCanvas(canvas, cssHeight){
+    const dpr = window.devicePixelRatio || 1;
+    const cssWidth = canvas.parentElement.clientWidth - 28;
+    canvas.style.height = cssHeight + 'px';
+    canvas.width = Math.round(cssWidth * dpr);
+    canvas.height = Math.round(cssHeight * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx, w: cssWidth, h: cssHeight };
+  }
+
+  const cBond = document.getElementById('canvas-bond');
+  const cAnti = document.getElementById('canvas-anti');
+  const cMO = document.getElementById('canvas-mo');
+  const cCurve = document.getElementById('canvas-curve');
+
+  // ---------- colour helpers ----------
+  function css(varName){
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
+  function hexToRgb(hex){
+    hex = hex.replace('#','');
+    return [parseInt(hex.slice(0,2),16), parseInt(hex.slice(2,4),16), parseInt(hex.slice(4,6),16)];
+  }
+  // Cached rather than read live on every pixel (this feeds a per-pixel loop),
+  // so it must be refreshed whenever the theme can have changed — see the
+  // refreshPalette() call at the top of drawOrbitalPanel().
+  let CORAL_RGB, BLUE_RGB, PANEL_RGB;
+  function refreshPalette(){
+    CORAL_RGB = hexToRgb(css('--coral'));
+    BLUE_RGB  = hexToRgb(css('--blue'));
+    PANEL_RGB = hexToRgb(css('--panel-2'));
+  }
+  refreshPalette();
+  // Read live (not cached like the RGB triplets above) since it's only ever
+  // used to build a one-off rgba() string, not in a hot per-pixel loop.
+  function rgbaInk(alpha){ return 'rgba(' + css('--ink-rgb') + ',' + alpha + ')'; }
+
+  function fieldColor(t){
+    const mag = Math.min(1, Math.abs(t));
+    const alpha = Math.pow(mag, 0.65) * 0.92;
+    const base = t >= 0 ? CORAL_RGB : BLUE_RGB;
+    return [base[0], base[1], base[2], alpha];
+  }
+
+  // ---------- marching squares ----------
+  function marchingSquares(grid, gw, gh, iso){
+    const segs = [];
+    function interp(v0, v1){ return (iso - v0) / (v1 - v0); }
+    for (let j = 0; j < gh-1; j++){
+      for (let i = 0; i < gw-1; i++){
+        const v00 = grid[j*gw+i],     v10 = grid[j*gw+i+1];
+        const v01 = grid[(j+1)*gw+i], v11 = grid[(j+1)*gw+i+1];
+        let idx = 0;
+        if (v00 > iso) idx |= 1;
+        if (v10 > iso) idx |= 2;
+        if (v11 > iso) idx |= 4;
+        if (v01 > iso) idx |= 8;
+        if (idx === 0 || idx === 15) continue;
+        const pts = {};
+        if ((idx & 1) !== (idx & 2) >> 1) pts.top = [i + interp(v00,v10), j];
+        if ((idx & 2) >> 1 !== (idx & 4) >> 2) pts.right = [i+1, j + interp(v10,v11)];
+        if ((idx & 8) >> 3 !== (idx & 4) >> 2) pts.bottom = [i + interp(v01,v11), j+1];
+        if ((idx & 1) !== (idx & 8) >> 3) pts.left = [i, j + interp(v00,v01)];
+        const edges = [];
+        if (pts.top) edges.push(pts.top);
+        if (pts.right) edges.push(pts.right);
+        if (pts.bottom) edges.push(pts.bottom);
+        if (pts.left) edges.push(pts.left);
+        for (let k = 0; k+1 < edges.length; k += 2){
+          segs.push({x0: edges[k][0], y0: edges[k][1], x1: edges[k+1][0], y1: edges[k+1][1]});
+        }
+      }
+    }
+    return segs;
+  }
+
+  // Native ctx.setLineDash() restarts its dash phase at every subpath (every moveTo), so
+  // stroking marching-squares' output — hundreds of tiny disconnected segments, each its own
+  // subpath — makes every segment start mid-"on" and never reach the "off" gap: the line
+  // renders solid regardless of the dash pattern. Walking the pattern manually, carrying the
+  // phase across segments, is what actually produces a dashed nodal line.
+  function strokeDashedSegs(ctx, segs, toXFn, toYFn, dashArr){
+    const period = dashArr.reduce((a,b) => a+b, 0);
+    let phase = 0;
+    segs.forEach(s => {
+      const x0 = toXFn(s.x0), y0 = toYFn(s.y0), x1 = toXFn(s.x1), y1 = toYFn(s.y1);
+      const dx = x1-x0, dy = y1-y0, segLen = Math.hypot(dx,dy);
+      if (segLen < 1e-6) return;
+      const ux = dx/segLen, uy = dy/segLen;
+      let travelled = 0;
+      while (travelled < segLen - 1e-6){
+        const cyclePos = phase % period;
+        let idx = 0, acc = 0;
+        while (acc + dashArr[idx] <= cyclePos + 1e-9){ acc += dashArr[idx]; idx = (idx+1) % dashArr.length; }
+        const step = Math.min(dashArr[idx] - (cyclePos-acc), segLen - travelled);
+        if (idx % 2 === 0){
+          ctx.beginPath();
+          ctx.moveTo(x0+ux*travelled, y0+uy*travelled);
+          ctx.lineTo(x0+ux*(travelled+step), y0+uy*(travelled+step));
+          ctx.stroke();
+        }
+        travelled += step; phase += step;
+      }
+    });
+  }
+
+  // ---------- orbital panel rendering ----------
+  const GW = 130, GH = 88;
+  const offBond = document.createElement('canvas'); offBond.width = GW; offBond.height = GH;
+  const offAnti = document.createElement('canvas'); offAnti.width = GW; offAnti.height = GH;
+
+  const VIEW_HALF_X = (R_MAX/BOHR)/2 + 2.2;
+  const VIEW_HALF_Y = 4.3;
+
+  function drawOrbitalPanel(canvas, offscreen, sign){
+    refreshPalette();
+    const { ctx, w, h } = setupCanvas(canvas, 260);
+    const Rbohr = R_ang / BOHR;
+    const xMin = -VIEW_HALF_X, xMax = VIEW_HALF_X, yMin = -VIEW_HALF_Y, yMax = VIEW_HALF_Y;
+    const { kindL, kindR } = MODES[mode];
+
+    const grid = new Float32Array(GW*GH);
+    const nxA = -Rbohr/2, nxB = Rbohr/2;
+    let maxAbs = 1e-9;
+    for (let j = 0; j < GH; j++){
+      const y = yMin + (yMax-yMin) * j/(GH-1);
+      for (let i = 0; i < GW; i++){
+        const x = xMin + (xMax-xMin) * i/(GW-1);
+        const vA = orbitalAt(kindL, x, y, nxA, false, Z_CARBON);
+        const vB = orbitalAt(kindR, x, y, nxB, true, Z_CARBON);
+        const val = vA + sign*vB;
+        grid[j*GW+i] = val;
+        if (Math.abs(val) > maxAbs) maxAbs = Math.abs(val);
+      }
+    }
+
+    const octx = offscreen.getContext('2d');
+    const imgData = octx.createImageData(GW, GH);
+    for (let k = 0; k < GW*GH; k++){
+      const t = grid[k] / maxAbs;
+      const [r,g,b,a] = fieldColor(t);
+      const pr = PANEL_RGB;
+      const outR = pr[0]*(1-a) + r*a;
+      const outG = pr[1]*(1-a) + g*a;
+      const outB = pr[2]*(1-a) + b*a;
+      imgData.data[k*4]   = outR;
+      imgData.data[k*4+1] = outG;
+      imgData.data[k*4+2] = outB;
+      imgData.data[k*4+3] = 255;
+    }
+    octx.putImageData(imgData, 0, 0);
+
+    ctx.fillStyle = css('--panel-2');
+    ctx.fillRect(0,0,w,h);
+    ctx.imageSmoothingEnabled = true;
+
+    const scale = Math.min(w/(xMax-xMin), h/(yMax-yMin));
+    const boxW = (xMax-xMin) * scale, boxH = (yMax-yMin) * scale;
+    const offX = (w - boxW)/2, offY = (h - boxH)/2;
+
+    ctx.drawImage(offscreen, offX, offY, boxW, boxH);
+
+    const toPx = (x) => offX + (x - xMin)/(xMax-xMin) * boxW;
+    const toPy = (y) => offY + (y - yMin)/(yMax-yMin) * boxH;
+    const gridToPx = (gi) => toPx(xMin + (xMax-xMin)*gi/(GW-1));
+    const gridToPy = (gj) => toPy(yMin + (yMax-yMin)*gj/(GH-1));
+
+    function drawContours(levelFracs, color, dashed){
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1;
+      if (dashed) ctx.setLineDash([4,3]); else ctx.setLineDash([]);
+      levelFracs.forEach(f => {
+        const segs = marchingSquares(grid, GW, GH, f*maxAbs);
+        ctx.beginPath();
+        segs.forEach(s => {
+          ctx.moveTo(gridToPx(s.x0), gridToPy(s.y0));
+          ctx.lineTo(gridToPx(s.x1), gridToPy(s.y1));
+        });
+        ctx.stroke();
+      });
+    }
+    drawContours([0.15, 0.35, 0.6], rgbaInk(0.30), false);
+    drawContours([-0.15, -0.35, -0.6], rgbaInk(0.30), false);
+
+    // exact nodal surface(s): wherever the combined field crosses zero. This generalizes
+    // correctly to every mode — s-s antibonding has one node at the midplane, p-p pi has a
+    // node along the whole axis (plus another at the midplane when antibonding), etc. —
+    // without needing to special-case each combination's geometry.
+    ctx.strokeStyle = rgbaInk(0.55);
+    ctx.lineWidth = 1.3;
+    const nodeSegs = marchingSquares(grid, GW, GH, 0);
+    strokeDashedSegs(ctx, nodeSegs, gridToPx, gridToPy, [5,4]);
+
+    // internuclear axis
+    ctx.strokeStyle = rgbaInk(0.18);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, toPy(0)); ctx.lineTo(w, toPy(0)); ctx.stroke();
+
+    // nuclei, labelled with element + orbital kind
+    [[nxA, kindL],[nxB, kindR]].forEach(([nx, kind]) => {
+      const px = toPx(nx), py = toPy(0);
+      ctx.beginPath();
+      ctx.arc(px, py, 4, 0, Math.PI*2);
+      ctx.fillStyle = css('--text');
+      ctx.fill();
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillStyle = css('--text-dim');
+      ctx.textAlign = 'center';
+      ctx.fillText('C (' + KIND_LABEL[kind] + ')', px, py - 9);
+    });
+  }
+
+  // ---------- MO diagram ----------
+  // Two-level LCAO secular equation for two non-orthogonal basis orbitals with (possibly
+  // unequal) on-site energies alphaL, alphaR, resonance integral beta and overlap S:
+  //   | alphaL-E    beta-ES  |
+  //   | beta-ES     alphaR-E | = 0
+  // Expanding gives a genuine quadratic in E: (1-S^2)E^2 - (alphaL+alphaR-2*beta*S)*E +
+  // (alphaL*alphaR - beta^2) = 0. When alphaL=alphaR=0 this collapses to the earlier
+  // closed form E_bond=-S/(1+S), E_anti=S/(1-S) (still exactly what ss, p-p-sigma and p-p-pi
+  // use, since both sides of those pairs share an on-site energy) — but sp now has a real,
+  // literature-motivated gap (see ALPHA_GAP_SP above) between its two on-site energies, and
+  // that case needs the full quadratic rather than the degenerate shortcut. Here beta=-S
+  // still (the same Wolfsberg-Helmholz-style proportionality used throughout), and S is
+  // clamped away from +/-1 purely so 1-S^2 can't hit exactly zero. 1-S^2 is always positive
+  // under that clamp, so the quadratic formula's two roots are unambiguously ordered: the
+  // minus root is always the lower (bonding) level, the plus root the upper (antibonding) one.
+  function motLevels(S, alphaL, alphaR){
+    const Sc = Math.max(-0.97, Math.min(0.97, S));
+    const beta = -Sc;
+    const A = 1 - Sc*Sc;
+    const B = alphaL + alphaR - 2*beta*Sc;
+    const C = alphaL*alphaR - beta*beta;
+    const disc = Math.sqrt(Math.max(0, B*B - 4*A*C));
+    return { eBond: (B - disc) / (2*A), eAnti: (B + disc) / (2*A) };
+  }
+
+  // Per-mode axis, recomputed only when the mode changes, and symmetric about zero — the
+  // schematic atomic-orbital reference energy — so that reference always sits dead centre
+  // and bonding/antibonding stabilisation and destabilisation read on the same visual scale.
+  // E_anti = S/(1-S) (and, for p-p sigma, E_bond too, once S goes negative) diverges as the
+  // two atoms approach — genuine physics, not a bug — but fitting the axis to that true
+  // worst case squeezes the split down to a sliver everywhere else, including realistic
+  // bonding separations like the C-C preset. So the half-range here is capped at the 90th
+  // percentile of |level| sampled across the whole separation range, rather than the true
+  // max: it comfortably frames the split across the separations that are actually
+  // interesting to compare, at the cost of clipping only the closest-range spike — which is
+  // still shown, via the off-scale indicator in drawMODiagram, not hidden.
+  let moAxisCache = null, moAxisKey = null;
+  function moAxisFor(modeKey){
+    if (moAxisKey === modeKey) return moAxisCache;
+    const { alphaL, alphaR } = modeAlphas(modeKey);
+    const samples = [];
+    for (let r = R_MIN; r <= R_MAX + 1e-9; r += 0.02){
+      const S = S_of(modeKey, Z_CARBON * r / BOHR);
+      const { eBond, eAnti } = motLevels(S, alphaL, alphaR);
+      samples.push(Math.abs(eBond), Math.abs(eAnti));
+    }
+    samples.sort((a,b) => a-b);
+    // Also guarantee the two (fixed, R-independent) AO reference levels themselves stay
+    // on-scale -- relevant only for sp, where alphaL/alphaR are nonzero.
+    const cap = Math.max(samples[Math.floor(0.90 * (samples.length - 1))], 0.2,
+                          Math.abs(alphaL), Math.abs(alphaR));
+    const M = cap * 1.15;
+    moAxisCache = { yMin: -M, yMax: M };
+    moAxisKey = modeKey;
+    return moAxisCache;
+  }
+
+  function drawMODiagram(){
+    const { ctx, w, h } = setupCanvas(cMO, 300);
+    ctx.clearRect(0,0,w,h);
+
+    const padL = 34, padR = 14, padT = 16, padB = 28;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+    const { yMin: MO_Y_MIN, yMax: MO_Y_MAX } = moAxisFor(mode);
+    const toY = (v) => padT + (MO_Y_MAX - v)/(MO_Y_MAX - MO_Y_MIN) * plotH;
+
+    ctx.strokeStyle = css('--grid-line');
+    ctx.fillStyle = css('--text-dim');
+    ctx.font = '9.5px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    const gridN = 4;
+    for (let i = 0; i <= gridN; i++){
+      const v = MO_Y_MIN + (MO_Y_MAX - MO_Y_MIN) * i / gridN;
+      const y = toY(v);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); ctx.stroke();
+      ctx.fillText(v.toFixed(1), padL - 5, y + 3);
+    }
+    ctx.save();
+    ctx.fillStyle = css('--text-dim');
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.translate(11, padT + plotH/2);
+    ctx.rotate(-Math.PI/2);
+    ctx.textAlign = 'center';
+    ctx.fillText('orbital energy (schematic)', 0, 0);
+    ctx.restore();
+
+    const Rbohr = R_ang / BOHR;
+    const S = S_of(mode, Z_CARBON * Rbohr);
+    const { alphaL, alphaR } = modeAlphas(mode);
+    const { eBond, eAnti } = motLevels(S, alphaL, alphaR);
+
+    const { kindL, kindR } = MODES[mode];
+    const xAOL = padL + plotW*0.06, xAOLend = padL + plotW*0.22;
+    const xAOR = padL + plotW*0.94, xAORstart = padL + plotW*0.78;
+    const xMOL = padL + plotW*0.40, xMOR = padL + plotW*0.60;
+
+    // Each atom's own on-site (alpha) reference level -- equal for every mode except sp,
+    // where the p side sits above the s side (see ALPHA_GAP_SP).
+    const yAOL = toY(Math.max(MO_Y_MIN, Math.min(MO_Y_MAX, alphaL)));
+    const yAOR = toY(Math.max(MO_Y_MIN, Math.min(MO_Y_MAX, alphaR)));
+    const yBond = toY(Math.max(MO_Y_MIN, Math.min(MO_Y_MAX, eBond)));
+    const yAnti = toY(Math.max(MO_Y_MIN, Math.min(MO_Y_MAX, eAnti)));
+
+    ctx.strokeStyle = rgbaInk(0.18);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    [[xAOLend,yAOL,xMOL,yBond],[xAOLend,yAOL,xMOL,yAnti],
+     [xAORstart,yAOR,xMOR,yBond],[xAORstart,yAOR,xMOR,yAnti]].forEach(([x0,y0,x1,y1])=>{
+      ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = css('--text-dim');
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(xAOL, yAOL); ctx.lineTo(xAOLend, yAOL); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xAORstart, yAOR); ctx.lineTo(xAOR, yAOR); ctx.stroke();
+    ctx.fillStyle = css('--text-dim');
+    ctx.font = '10.5px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(KIND_LABEL[kindL] + ' (atom A)', (xAOL+xAOLend)/2, yAOL + (yAOL > h-30 ? -8 : 16));
+    ctx.fillText(KIND_LABEL[kindR] + ' (atom B)', (xAORstart+xAOR)/2, yAOR + (yAOR > h-30 ? -8 : 16));
+
+    const bondColor = eBond <= eAnti ? css('--coral') : css('--peach');
+    const antiColor = eBond <= eAnti ? css('--peach') : css('--coral');
+    ctx.strokeStyle = css('--coral'); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(xMOL, yBond); ctx.lineTo(xMOR, yBond); ctx.stroke();
+    ctx.strokeStyle = css('--peach'); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(xMOL, yAnti); ctx.lineTo(xMOR, yAnti); ctx.stroke();
+
+    ctx.font = '11px -apple-system, sans-serif';
+    ctx.fillStyle = css('--coral');
+    ctx.textAlign = 'center';
+    ctx.fillText('bonding', (xMOL+xMOR)/2, yBond + (yBond > h-30 ? -8 : 16));
+    ctx.fillStyle = css('--peach');
+    ctx.fillText('antibonding', (xMOL+xMOR)/2, yAnti + (yAnti > h-30 ? -8 : 16));
+
+    // Off-scale indicators: the axis ceiling is capped to the 90th percentile of levels
+    // across the separation range (see moAxisFor), so the true value can run past it at
+    // close separations — shown here rather than silently clipped away.
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    if (eAnti > MO_Y_MAX){
+      ctx.fillStyle = css('--peach');
+      ctx.fillText('▲ ' + eAnti.toFixed(2), (xMOL+xMOR)/2, yAnti + 28);
+    }
+    if (eBond > MO_Y_MAX){
+      ctx.fillStyle = css('--coral');
+      ctx.fillText('▲ ' + eBond.toFixed(2), (xMOL+xMOR)/2, yBond + 28);
+    }
+    if (eAnti < MO_Y_MIN){
+      ctx.fillStyle = css('--peach');
+      ctx.fillText('▼ ' + eAnti.toFixed(2), (xMOL+xMOR)/2, yAnti - 20);
+    }
+    if (eBond < MO_Y_MIN){
+      ctx.fillStyle = css('--coral');
+      ctx.fillText('▼ ' + eBond.toFixed(2), (xMOL+xMOR)/2, yBond - 20);
+    }
+
+    if (eBond > eAnti + 0.01){
+      ctx.fillStyle = css('--text-dim');
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.fillText('S(R) < 0 here — the "bonding" combination is', (xMOL+xMOR)/2, h - 18);
+      ctx.fillText('actually higher in energy at this separation', (xMOL+xMOR)/2, h - 6);
+    }
+  }
+
+  // ---------- number formatting ----------
+  // Unnormalised integrals span several orders of magnitude across the R range (and, thanks
+  // to the differing 1/Z^n prefactors in rawIntegral, across modes too) — switch to
+  // superscript scientific notation once a value is too small for fixed-point to read.
+  const SUP_DIGITS = { '0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻','+':'' };
+  function toSup(s){ return String(s).split('').map(c => SUP_DIGITS[c] !== undefined ? SUP_DIGITS[c] : c).join(''); }
+  function formatOverlap(v){
+    const av = Math.abs(v);
+    if (av === 0) return '0.000';
+    if (av < 0.001){
+      const [mantissa, exp] = v.toExponential(2).split('e');
+      return mantissa + '×10' + toSup(exp);
+    }
+    return v.toFixed(4);
+  }
+
+  // ---------- overlap-vs-separation curve ----------
+  // Fixed shared axis: displayIntegral divides every mode by the same GLOBAL_MAX constant,
+  // so all four curves are bounded to the same ~[-1,1] range and can be shown together on
+  // one axis — a fair comparison, unlike plotting raw (unnormalised) values directly.
+  const MODE_COLOR_VAR = { ss:'--text', sp:'--blue', ppsigma:'--coral', pppi:'--peach' };
+  const CURVE_Y_MIN = -1.1, CURVE_Y_MAX = 1.1;
+
+  function drawEnergyCurve(){
+    const { ctx, w, h } = setupCanvas(cCurve, 300);
+    ctx.clearRect(0,0,w,h);
+
+    const padL = 34, padR = 14, padT = 16, padB = 30;
+    const plotW = w - padL - padR, plotH = h - padT - padB;
+
+    const toX = (r) => padL + (r - R_MIN)/(R_MAX - R_MIN) * plotW;
+    const toY = (v) => padT + (CURVE_Y_MAX - v)/(CURVE_Y_MAX - CURVE_Y_MIN) * plotH;
+
+    ctx.strokeStyle = css('--grid-line');
+    ctx.fillStyle = css('--text-dim');
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    [-1, -0.5, 0, 0.5, 1].forEach(v => {
+      const y = toY(v);
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w-padR, y); ctx.stroke();
+      ctx.fillText(v.toFixed(1), padL - 5, y + 3);
+    });
+    ctx.textAlign = 'center';
+    for (let r = R_MIN; r <= R_MAX; r += 1){
+      const x = toX(r);
+      ctx.fillText(r.toFixed(0), x, h - padB + 14);
+    }
+    ctx.fillText('R / Å', padL + plotW/2, h - 4);
+
+    function plotModeCurve(modeKey, color, lineWidth){
+      ctx.strokeStyle = color; ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      let started = false;
+      for (let r = R_MIN; r <= R_MAX + 1e-9; r += 0.02){
+        const v = displayIntegral(modeKey, r);
+        const x = toX(r), y = toY(v);
+        if (!started){ ctx.moveTo(x,y); started = true; } else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    Object.keys(MODES).forEach(modeKey => {
+      if (modeKey === mode) return;
+      plotModeCurve(modeKey, rgbaInk(0.18), 1.3);
+    });
+    plotModeCurve(mode, css(MODE_COLOR_VAR[mode]), 2.6);
+
+    ctx.font = '10px -apple-system, sans-serif';
+    ctx.fillStyle = css(MODE_COLOR_VAR[mode]);
+    ctx.textAlign = 'left';
+    ctx.fillText('— ' + MODES[mode].label + ' (active)', padL + 4, padT + 12);
+    ctx.fillStyle = rgbaInk(0.5);
+    ctx.fillText('— other overlap types, for comparison', padL + 4, padT + 24);
+
+    const xCur = toX(R_ang);
+    ctx.strokeStyle = rgbaInk(0.4);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(xCur, padT); ctx.lineTo(xCur, h-padB); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const vCur = displayIntegral(mode, R_ang);
+    const yCur = toY(Math.max(CURVE_Y_MIN, Math.min(CURVE_Y_MAX, vCur)));
+    ctx.beginPath(); ctx.arc(xCur, yCur, 4, 0, Math.PI*2);
+    ctx.fillStyle = css(MODE_COLOR_VAR[mode]); ctx.fill();
+    ctx.strokeStyle = css('--panel'); ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  // ---------- readouts ----------
+  function updateStats(){
+    rReadout.textContent = R_ang.toFixed(2) + ' Å';
+    overlapLabelEl.textContent = formatOverlap(displayIntegral(mode, R_ang));
+  }
+
+  // ---------- main loop ----------
+  let lastT = performance.now();
+  function frame(now){
+    const dt = Math.min(0.05, (now - lastT)/1000);
+    lastT = now;
+    if (animating){
+      R_ang += animDir * ANIM_SPEED * dt;
+      if (R_ang <= R_MIN){ R_ang = R_MIN; animDir = 1; }
+      if (R_ang >= R_MAX){ R_ang = R_MAX; animDir = -1; }
+      slider.value = R_ang;
+    }
+    drawOrbitalPanel(cBond, offBond, +1);
+    drawOrbitalPanel(cAnti, offAnti, -1);
+    drawMODiagram();
+    drawEnergyCurve();
+    updateStats();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ---------- resize & height reporting ----------
+  function reportHeight(){
+    try{
+      window.parent.postMessage({ type: 'simHeight', height: document.body.scrollHeight }, '*');
+    }catch(e){}
+  }
+  window.addEventListener('resize', reportHeight);
+  window.addEventListener('load', reportHeight);
+  new ResizeObserver(reportHeight).observe(document.body);
+  setInterval(reportHeight, 800);
+
+})();
+</script>
+
+</body>
+</html>
