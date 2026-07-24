@@ -514,7 +514,7 @@
   let curVadded = 0, running = false, rafId = null, lastTs = null;
   let dropPhase = 0;
   let showFullCurve = false, showTitreLines = false;
-  let currentIndicator = 'universal', showIndicatorRange = false;
+  let currentIndicator = 'none', showIndicatorRange = false;
 
   function disableRangeToggle(){
     el.indicatorRangeToggle.disabled = true;
@@ -748,11 +748,17 @@
     actx.fillStyle = 'rgba(0,0,0,0.18)';
     actx.beginPath(); actx.ellipse(w/2, bodyY+6, bodyHalfW*0.92, 4.5, 0, 0, Math.PI*2); actx.fill();
 
-    // liquid fill, clipped to the true flask interior, coloured by pH
+    // liquid fill, clipped to the true flask interior, coloured by pH --
+    // only a small amount sits in the flask (as in a real titration),
+    // not filled up to the neck
+    const liquidFrac = 0.25; // fraction of the neck-to-base height that's filled
+    const flaskLiquidTopY = bodyY - (bodyY-neckY1)*liquidFrac;
     actx.save();
     flaskOutline(); actx.clip();
     actx.fillStyle = flaskColorForPH(pH, currentIndicator);
-    actx.fillRect(w/2-bodyHalfW-2, neckY1, bodyHalfW*2+4, bodyY-neckY1+2);
+    actx.fillRect(w/2-bodyHalfW-2, flaskLiquidTopY, bodyHalfW*2+4, bodyY-flaskLiquidTopY+2);
+    actx.strokeStyle = 'rgba(255,255,255,0.25)'; actx.lineWidth = 1;
+    actx.beginPath(); actx.moveTo(w/2-bodyHalfW-2, flaskLiquidTopY); actx.lineTo(w/2+bodyHalfW+2, flaskLiquidTopY); actx.stroke();
     actx.restore();
 
     // flask outline + flared lip at the neck opening
