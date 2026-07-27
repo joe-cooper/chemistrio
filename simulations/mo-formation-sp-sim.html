@@ -4,158 +4,66 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="../assets/css/theme.css">
+<link rel="stylesheet" href="../assets/css/sim.css">
 <script src="../assets/js/theme.js"></script>
 <title>Molecular Orbital Formation from s and p Orbitals</title>
 <style>
+  /* Local palette: only colours genuinely unique to this sim's orbital-phase
+     diagrams (no theme.css equivalent) stay here. Everything that duplicated
+     theme.css (--bg/--surface/--raised/--border/--text/--muted/--gold) has
+     been removed in favour of the shared tokens. Hand-tuned per theme since
+     canvas fills/strokes read these vars live. */
   :root{
-    --bg: #0d1117;
-    --panel: #141a24;
-    --panel-2: #10151e;
-    --border: #262f3d;
-    --text: #e8e3da;
-    --text-dim: #8b93a3;
-    --ink-rgb: 232,227,218;
-    --coral: #e8735f;
-    --coral-dim: #a8574a;
     --peach: #e3a98c;
-    --peach-dim: #a87d68;
     --blue: #6f8fc9;
-    --blue-dim: #4f6690;
+    --ink-rgb: 232,227,218;
     --grid-line: rgba(232,227,218,0.07);
   }
-  /* Local palette is hand-tuned per theme so canvas fills/strokes (which read
-     these vars live) and the surrounding chrome stay legible in both modes —
-     the dark values above are too washed-out against a white page. */
   :root[data-theme="light"]{
-    --bg: #f4f6f9;
-    --panel: #ffffff;
-    --panel-2: #eef1f5;
-    --border: #d8dee6;
-    --text: #161c26;
-    --text-dim: #5f6b7a;
-    --ink-rgb: 22,28,38;
-    --coral: #c85a44;
-    --coral-dim: #9c4433;
     --peach: #b97a55;
-    --peach-dim: #8f5c3d;
     --blue: #3d5f96;
-    --blue-dim: #2c4570;
+    --ink-rgb: 22,28,38;
     --grid-line: rgba(22,28,38,0.08);
   }
-  *{ box-sizing: border-box; }
-  html,body{
-    margin:0; padding:0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  }
   body{ padding: 18px 20px 60px; }
-  .container { max-width: 980px; margin: 0 auto; }
+  .wrap{ max-width: 980px; }
   h1{
     font-size: 17px; font-weight: 600; letter-spacing: 0.02em;
     margin: 0 0 2px; color: var(--text);
   }
   .subtitle{
-    font-size: 12.5px; color: var(--text-dim); margin: 0 0 16px;
+    font-size: 12.5px; color: var(--muted); margin: 0 0 16px;
   }
   .controls{
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
     margin-bottom: 16px;
     display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
   }
   .slider-block{ flex: 1 1 320px; min-width: 260px; }
   .slider-row{ display:flex; align-items:center; gap:10px; }
-  .slider-row label{ font-size: 12px; color: var(--text-dim); white-space: nowrap; }
-  input[type=range]{
-    flex:1; -webkit-appearance:none; appearance:none;
-    height: 4px; border-radius: 2px;
-    background: linear-gradient(90deg, var(--coral), var(--border));
-    outline:none;
-  }
-  input[type=range]::-webkit-slider-thumb{
-    -webkit-appearance:none; appearance:none;
-    width:15px; height:15px; border-radius:50%;
-    background: var(--coral);
-    border: 2px solid var(--bg);
-    cursor:pointer;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 15%, transparent);
-  }
-  input[type=range]::-moz-range-thumb{
-    width:15px; height:15px; border-radius:50%;
-    background: var(--coral); border: 2px solid var(--bg); cursor:pointer;
-  }
-  .readout{
+  .slider-row label{ font-size: 12px; color: var(--muted); white-space: nowrap; }
+  #r-readout{
     font-variant-numeric: tabular-nums;
-    font-size: 13px; color: var(--coral); font-weight:600; min-width: 72px; text-align:right;
+    font-size: 13px; color: var(--gold); font-weight:600; min-width: 72px; text-align:right;
   }
   .btn-group{ display:flex; gap:8px; flex-wrap:wrap; }
-  button{
-    background: var(--panel-2);
-    border: 1px solid var(--border);
-    color: var(--text);
-    font-size: 12px;
-    padding: 7px 12px;
-    border-radius: 7px;
-    cursor: pointer;
-    transition: border-color .15s, color .15s;
-  }
-  button:hover{ border-color: var(--coral); color: var(--coral); }
-  button.active{ border-color: var(--coral); color: var(--coral); background: color-mix(in srgb, var(--coral) 8%, transparent); }
-  button:disabled{ cursor: default; }
-  button:disabled:hover{ border-color: var(--border); color: var(--text); }
-  button.active:disabled{ border-color: var(--coral-dim); color: var(--coral-dim); background: color-mix(in srgb, var(--coral) 6%, transparent); }
-  .stats{
-    display:flex; gap: 18px; flex-wrap: wrap;
-    font-size: 11.5px; color: var(--text-dim);
-  }
-  .stats b{ color: var(--text); font-variant-numeric: tabular-nums; }
+  .chip-toggle:hover:not(.active):not(:disabled){color:var(--text);border-color:var(--muted-dim);}
+  .chip-toggle:disabled{opacity:.4;cursor:not-allowed;}
 
-  .panel-grid{
+  .card-grid{
     display:grid; grid-template-columns: 1fr 1fr; gap: 16px;
   }
-  @media (max-width: 720px){ .panel-grid{ grid-template-columns: 1fr; } }
-
-  .panel{
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 14px 14px;
-  }
-  .panel-title{
-    font-size: 12px; font-weight:600; color: var(--text);
-    display:flex; justify-content:space-between; align-items:baseline;
-    margin-bottom: 8px;
-  }
-  .panel-title span.tag{
-    font-size: 10.5px; font-weight: 500; color: var(--text-dim);
-  }
-  canvas{ display:block; width:100%; border-radius: 6px; background: var(--panel-2); }
+  @media (max-width: 720px){ .card-grid{ grid-template-columns: 1fr; } }
+  .card-label .tag{ font-size: 10.5px; font-weight: 500; color: var(--muted); }
 
   .legend{
     display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;
-    font-size: 10.5px; color: var(--text-dim);
+    font-size: 10.5px; color: var(--muted);
   }
   .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; }
-
-  .notes{
-    margin-top: 16px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    font-size: 12px;
-    color: var(--text-dim);
-    line-height: 1.55;
-  }
-  .notes b{ color: var(--text); }
-  .notes summary{ cursor:pointer; color: var(--text); font-weight:600; font-size:12.5px; }
 </style>
 </head>
 <body>
-<div class="container">
+<div class="wrap">
 <h1>Molecular Orbital Formation from s and p Orbitals</h1>
 <p class="subtitle">Two atomic orbitals combining by linear combination (LCAO) — compare s–s, s–p and p–p overlap, and σ (head-on) vs π (side-on) symmetry</p>
 
@@ -164,10 +72,10 @@
     <div class="slider-row">
       <label>Overlap</label>
       <div class="btn-group" id="mode-group">
-        <button data-mode="ss" class="active">s + s</button>
-        <button data-mode="sp">s + p (σ)</button>
-        <button data-mode="ppsigma">p + p (σ)</button>
-        <button data-mode="pppi">p + p (π)</button>
+        <button data-mode="ss" class="chip-toggle active">s + s</button>
+        <button data-mode="sp" class="chip-toggle">s + p (σ)</button>
+        <button data-mode="ppsigma" class="chip-toggle">p + p (σ)</button>
+        <button data-mode="pppi" class="chip-toggle">p + p (π)</button>
       </div>
     </div>
   </div>
@@ -176,11 +84,11 @@
 <div class="controls" id="mode-readout-row">
   <div style="font-size:20px; font-weight:700;" id="mode-label">s + s</div>
   <div style="flex:1 1 auto;">
-    <div style="font-size:12px; color:var(--text-dim);">symmetry about the bond axis</div>
+    <div style="font-size:12px; color:var(--muted);">symmetry about the bond axis</div>
     <div style="font-size:13px; font-weight:600;" id="symmetry-label">σ — cylindrically symmetric, no nodal plane containing the axis</div>
   </div>
   <div>
-    <div style="font-size:12px; color:var(--text-dim); text-align:right;">overlap integral (rel. to max over all 4 types)</div>
+    <div style="font-size:12px; color:var(--muted); text-align:right;">overlap integral (rel. to max over all 4 types)</div>
     <div style="font-size:20px; font-weight:700; text-align:right;" id="overlap-label">1.00</div>
   </div>
 </div>
@@ -190,8 +98,8 @@
     <div class="slider-row">
       <label>on-site energy</label>
       <div class="btn-group" id="alpha-group">
-        <button data-alpha="same">Similar energy (e.g. C-H)</button>
-        <button data-alpha="diff" class="active">Different energy (e.g. C-C)</button>
+        <button data-alpha="same" class="chip-toggle">Similar energy (e.g. C-H)</button>
+        <button data-alpha="diff" class="chip-toggle active">Different energy (e.g. C-C)</button>
       </div>
     </div>
   </div>
@@ -206,45 +114,44 @@
     </div>
   </div>
   <div class="btn-group">
-    <button id="preset-far">Far apart</button>
-    <button id="preset-cc">C–C bond length</button>
-    <button id="preset-close">Close</button>
-    <button id="play-btn">▶ Animate approach</button>
+    <button id="preset-far" class="chip-toggle">Far apart</button>
+    <button id="preset-cc" class="chip-toggle">C–C bond length</button>
+    <button id="preset-close" class="chip-toggle">Close</button>
+    <button id="play-btn" class="chip-toggle">▶ Animate approach</button>
   </div>
 </div>
 
-<div class="panel-grid">
-  <div class="panel">
-    <div class="panel-title">Bonding orbital, in phase <span class="tag" id="bond-formula-tag">ψ = s_A + s_B</span></div>
+<div class="card-grid">
+  <div class="card">
+    <div class="card-label">Bonding orbital, in phase <span class="tag" id="bond-formula-tag">ψ = s_A + s_B</span></div>
     <canvas id="canvas-bond" height="260"></canvas>
   </div>
-  <div class="panel">
-    <div class="panel-title">Antibonding orbital, out of phase <span class="tag" id="anti-formula-tag">ψ = s_A − s_B</span></div>
+  <div class="card">
+    <div class="card-label">Antibonding orbital, out of phase <span class="tag" id="anti-formula-tag">ψ = s_A − s_B</span></div>
     <canvas id="canvas-anti" height="260"></canvas>
   </div>
 </div>
 
 <div class="legend">
-  <span><span class="dot" style="background:var(--coral)"></span>positive phase</span>
+  <span><span class="dot" style="background:var(--gold)"></span>positive phase</span>
   <span><span class="dot" style="background:var(--blue)"></span>negative phase</span>
-  <span><span class="dot" style="background:transparent;border:1px dashed var(--text-dim)"></span>nodal surface (ψ = 0)</span>
+  <span><span class="dot" style="background:transparent;border:1px dashed var(--muted)"></span>nodal surface (ψ = 0)</span>
 </div>
 
 <br>
 
-<div class="panel-grid">
-  <div class="panel">
-    <div class="panel-title">MO energy-level diagram <span class="tag">schematic — splitting ∝ overlap S(R)</span></div>
+<div class="card-grid">
+  <div class="card">
+    <div class="card-label">MO energy-level diagram <span class="tag">schematic — splitting ∝ overlap S(R)</span></div>
     <canvas id="canvas-mo" height="300"></canvas>
   </div>
-  <div class="panel">
-    <div class="panel-title">Overlap integral vs separation <span class="tag">∫ψ_Aψ_B dτ, scaled to the max over all four types</span></div>
+  <div class="card">
+    <div class="card-label">Overlap integral vs separation <span class="tag">∫ψ_Aψ_B dτ, scaled to the max over all four types</span></div>
     <canvas id="canvas-curve" height="300"></canvas>
   </div>
 </div>
 
-<div class="notes">
-  <details>
+<details class="note">
     <summary>Model notes &amp; honesty check</summary>
     <p style="margin-top:8px;">
       <b>What changed from the 1s-1s version.</b> The sibling simulation models H₂/He₂-type species exactly (for the one-electron two-centre problem, via closed-form Coulomb/exchange/overlap integrals), including nuclear repulsion, to predict genuine equilibrium bond lengths and well depths. That approach is specific to two 1s orbitals and doesn't generalize cleanly to p orbitals. This version drops nuclear repulsion and quantitative bond energetics entirely and instead focuses purely on <b>orbital shape, phase and overlap symmetry</b> — how s and p orbitals combine, and why σ and π overlap differ.
@@ -274,7 +181,6 @@
       <b>What this model doesn't attempt.</b> No electron filling, bond order, or stable-species prediction is shown here (that machinery, tied to real electron counts and nuclear repulsion, lives in the 1s-1s sibling simulation). There is also no attempt at s–p mixing between different atoms' orbitals of different symmetry-adapted combinations, as happens in real N₂/O₂-type MO diagrams — each mode here is a single, isolated pair of atomic orbitals.
     </p>
   </details>
-</div>
 </div>
 
 <script>
@@ -592,9 +498,9 @@
   // refreshPalette() call at the top of drawOrbitalPanel().
   let CORAL_RGB, BLUE_RGB, PANEL_RGB;
   function refreshPalette(){
-    CORAL_RGB = hexToRgb(css('--coral'));
+    CORAL_RGB = hexToRgb(css('--gold'));
     BLUE_RGB  = hexToRgb(css('--blue'));
-    PANEL_RGB = hexToRgb(css('--panel-2'));
+    PANEL_RGB = hexToRgb(css('--raised'));
   }
   refreshPalette();
   // Read live (not cached like the RGB triplets above) since it's only ever
@@ -716,7 +622,7 @@
     }
     octx.putImageData(imgData, 0, 0);
 
-    ctx.fillStyle = css('--panel-2');
+    ctx.fillStyle = css('--raised');
     ctx.fillRect(0,0,w,h);
     ctx.imageSmoothingEnabled = true;
 
@@ -770,7 +676,7 @@
       ctx.fillStyle = css('--text');
       ctx.fill();
       ctx.font = '10px -apple-system, sans-serif';
-      ctx.fillStyle = css('--text-dim');
+      ctx.fillStyle = css('--muted');
       ctx.textAlign = 'center';
       ctx.fillText('C (' + KIND_LABEL[kind] + ')', px, py - 9);
     });
@@ -843,7 +749,7 @@
     const toY = (v) => padT + (MO_Y_MAX - v)/(MO_Y_MAX - MO_Y_MIN) * plotH;
 
     ctx.strokeStyle = css('--grid-line');
-    ctx.fillStyle = css('--text-dim');
+    ctx.fillStyle = css('--muted');
     ctx.font = '9.5px -apple-system, sans-serif';
     ctx.textAlign = 'right';
     const gridN = 4;
@@ -854,7 +760,7 @@
       ctx.fillText(v.toFixed(1), padL - 5, y + 3);
     }
     ctx.save();
-    ctx.fillStyle = css('--text-dim');
+    ctx.fillStyle = css('--muted');
     ctx.font = '10px -apple-system, sans-serif';
     ctx.translate(11, padT + plotH/2);
     ctx.rotate(-Math.PI/2);
@@ -888,25 +794,25 @@
     });
     ctx.setLineDash([]);
 
-    ctx.strokeStyle = css('--text-dim');
+    ctx.strokeStyle = css('--muted');
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(xAOL, yAOL); ctx.lineTo(xAOLend, yAOL); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(xAORstart, yAOR); ctx.lineTo(xAOR, yAOR); ctx.stroke();
-    ctx.fillStyle = css('--text-dim');
+    ctx.fillStyle = css('--muted');
     ctx.font = '10.5px -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(KIND_LABEL[kindL] + ' (atom A)', (xAOL+xAOLend)/2, yAOL + (yAOL > h-30 ? -8 : 16));
     ctx.fillText(KIND_LABEL[kindR] + ' (atom B)', (xAORstart+xAOR)/2, yAOR + (yAOR > h-30 ? -8 : 16));
 
-    const bondColor = eBond <= eAnti ? css('--coral') : css('--peach');
-    const antiColor = eBond <= eAnti ? css('--peach') : css('--coral');
-    ctx.strokeStyle = css('--coral'); ctx.lineWidth = 3;
+    const bondColor = eBond <= eAnti ? css('--gold') : css('--peach');
+    const antiColor = eBond <= eAnti ? css('--peach') : css('--gold');
+    ctx.strokeStyle = css('--gold'); ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(xMOL, yBond); ctx.lineTo(xMOR, yBond); ctx.stroke();
     ctx.strokeStyle = css('--peach'); ctx.lineWidth = 3;
     ctx.beginPath(); ctx.moveTo(xMOL, yAnti); ctx.lineTo(xMOR, yAnti); ctx.stroke();
 
     ctx.font = '11px -apple-system, sans-serif';
-    ctx.fillStyle = css('--coral');
+    ctx.fillStyle = css('--gold');
     ctx.textAlign = 'center';
     ctx.fillText('bonding', (xMOL+xMOR)/2, yBond + (yBond > h-30 ? -8 : 16));
     ctx.fillStyle = css('--peach');
@@ -922,7 +828,7 @@
       ctx.fillText('▲ ' + eAnti.toFixed(2), (xMOL+xMOR)/2, yAnti + 28);
     }
     if (eBond > MO_Y_MAX){
-      ctx.fillStyle = css('--coral');
+      ctx.fillStyle = css('--gold');
       ctx.fillText('▲ ' + eBond.toFixed(2), (xMOL+xMOR)/2, yBond + 28);
     }
     if (eAnti < MO_Y_MIN){
@@ -930,12 +836,12 @@
       ctx.fillText('▼ ' + eAnti.toFixed(2), (xMOL+xMOR)/2, yAnti - 20);
     }
     if (eBond < MO_Y_MIN){
-      ctx.fillStyle = css('--coral');
+      ctx.fillStyle = css('--gold');
       ctx.fillText('▼ ' + eBond.toFixed(2), (xMOL+xMOR)/2, yBond - 20);
     }
 
     if (eBond > eAnti + 0.01){
-      ctx.fillStyle = css('--text-dim');
+      ctx.fillStyle = css('--muted');
       ctx.font = '10px -apple-system, sans-serif';
       ctx.fillText('S(R) < 0 here — the "bonding" combination is', (xMOL+xMOR)/2, h - 18);
       ctx.fillText('actually higher in energy at this separation', (xMOL+xMOR)/2, h - 6);
@@ -962,7 +868,7 @@
   // Fixed shared axis: displayIntegral divides every mode by the same GLOBAL_MAX constant,
   // so all four curves are bounded to the same ~[-1,1] range and can be shown together on
   // one axis — a fair comparison, unlike plotting raw (unnormalised) values directly.
-  const MODE_COLOR_VAR = { ss:'--text', sp:'--blue', ppsigma:'--coral', pppi:'--peach' };
+  const MODE_COLOR_VAR = { ss:'--text', sp:'--blue', ppsigma:'--gold', pppi:'--peach' };
   const CURVE_Y_MIN = -1.1, CURVE_Y_MAX = 1.1;
 
   function drawEnergyCurve(){
@@ -976,7 +882,7 @@
     const toY = (v) => padT + (CURVE_Y_MAX - v)/(CURVE_Y_MAX - CURVE_Y_MIN) * plotH;
 
     ctx.strokeStyle = css('--grid-line');
-    ctx.fillStyle = css('--text-dim');
+    ctx.fillStyle = css('--muted');
     ctx.font = '10px -apple-system, sans-serif';
     ctx.textAlign = 'right';
     [-1, -0.5, 0, 0.5, 1].forEach(v => {
@@ -1026,7 +932,7 @@
     const yCur = toY(Math.max(CURVE_Y_MIN, Math.min(CURVE_Y_MAX, vCur)));
     ctx.beginPath(); ctx.arc(xCur, yCur, 4, 0, Math.PI*2);
     ctx.fillStyle = css(MODE_COLOR_VAR[mode]); ctx.fill();
-    ctx.strokeStyle = css('--panel'); ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.strokeStyle = css('--surface'); ctx.lineWidth = 1.5; ctx.stroke();
   }
 
   // ---------- readouts ----------
