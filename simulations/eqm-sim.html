@@ -5,34 +5,39 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dynamic Equilibrium — rates, concentrations and Kc</title>
 <link rel="stylesheet" href="../assets/css/theme.css">
-<link rel="stylesheet" href="../assets/css/sim.css">
 <script src="../assets/js/theme.js"></script>
 <style>
-  /* Species/reaction colours are unique to this sim's charts and have no
-     shared-token equivalent; kept local, with a light-theme override block
-     (radius/mono now come from sim.css, so they're no longer redeclared
-     here). Chart series/axis colours are hand-tuned per theme so they stay
-     legible against the canvas background, which follows the page theme
-     (var(--surface)) instead of being pinned dark. */
   :root{
     --sp0:#4d9fff; --sp1:#2dd4bf; --sp2:#ff8a3d; --sp3:#f472b6;
     --fwd:#ffd23f; --rev:#8b80f9; --q:#7ee787;
     --temp:#ff7a59; --dh:#36c2cf;
     --eq:#9be6b4; --eq-dim:#3f6b52; --eq-bg:#10261b;
+    --radius:6px;
+    --mono: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
   }
+  /* Chart series/axis colours are hand-tuned per theme so they stay
+     legible against the canvas background, which now follows the
+     page theme (var(--surface)) instead of being pinned dark. */
   :root[data-theme="light"]{
     --sp0:#2f6fd6; --sp1:#0f9e8c; --sp2:#d9691f; --sp3:#c2418a;
     --fwd:#b8860b; --rev:#6152d6; --q:#2f9e46;
     --eq:#1f7a3d; --eq-dim:#5fa876; --eq-bg:#e6f4ea;
   }
-  body{ font-size:14px; }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text); font-family:var(--font); line-height:1.45;
+    -webkit-font-smoothing:antialiased; padding:16px; font-size:14px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
 
   header{
     display:flex;flex-wrap:wrap;gap:28px;align-items:flex-end;justify-content:flex-start;
     padding-bottom:12px;margin-bottom:14px;border-bottom:1px solid var(--border);
   }
   .eqn-wrap{text-align:left}
-  .eqn-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-dim);margin-bottom:4px}
+  .eqn-label{font-family:var(--font);font-weight:600;font-size:10px;letter-spacing:.02em;color:var(--muted-dim);margin-bottom:4px}
   .eqn{font-family:var(--mono);font-size:clamp(.95rem,2.1vw,1.3rem);font-weight:500;white-space:nowrap}
   .eqn sub{font-size:.62em}
   .eqn .arrow{color:var(--muted);margin:0 .3em}
@@ -42,6 +47,7 @@
 
   .layout{display:flex;flex-direction:column;gap:12px}
 
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
   /* controls: a responsive band of cards across the top — kept compact
      so the graphs below get most of the vertical space. */
   .controls{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;align-items:stretch}
@@ -49,16 +55,11 @@
   @media(max-width:760px){.controls{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:480px){.controls{grid-template-columns:1fr}}
   .block{padding:9px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
-  .block h2{font-family:var(--mono);font-weight:500;font-size:9.5px;letter-spacing:.18em;
-    text-transform:uppercase;color:var(--muted-dim);margin:0 0 7px;display:flex;align-items:center;gap:8px}
+  .block h2{font-family:var(--font);font-weight:600;font-size:9.5px;letter-spacing:.1em;
+    color:var(--muted-dim);margin:0 0 7px;display:flex;align-items:center;gap:8px}
   .block h2 .tag{margin-left:auto;font-size:.58rem;letter-spacing:.1em;color:var(--accent);
     border:1px solid var(--border-soft);background:var(--raised);padding:1px 6px;border-radius:999px;text-transform:none}
 
-  /* One-shot preset-select pills: unlike .chip-toggle (a persistent on/off
-     toggle), clicking one of these fires an action (load a reaction) and
-     the "active" state just marks the last selection, styled as a filled
-     accent pill rather than chip-toggle's gold-outline treatment. Kept
-     local rather than remapped onto .chip-toggle. */
   .chips{display:flex;flex-wrap:wrap;gap:4px}
   .chip{font-family:var(--mono);font-size:.72rem;color:var(--muted);background:var(--raised);
     border:1px solid var(--border);padding:4px 7px;border-radius:6px;cursor:pointer;transition:.12s}
@@ -66,11 +67,6 @@
   .chip:hover{color:var(--text);border-color:var(--muted-dim)}
   .chip.active{color:var(--bg);background:var(--accent);border-color:var(--accent);font-weight:600}
 
-  /* .ctrl is kept local rather than remapped onto .slider-row/.slider-head:
-     every instance here wraps something .slider-row doesn't account for —
-     a colour dot next to the label (temperature/ΔH/init-conc sliders), or
-     a select+step-buttons row with no slider at all (Disturb amount/
-     pressure). */
   .ctrl{margin-bottom:6px}
   .ctrl:last-child{margin-bottom:0}
   .ctrl .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:3px;gap:8px}
@@ -78,16 +74,13 @@
   .ctrl label .dot{width:7px;height:7px;border-radius:3px;flex:none}
   .ctrl label sub{font-size:.66em}
   .ctrl .val{font-family:var(--mono);font-size:.72rem;color:var(--muted)}
-  /* Base track/appearance/outline now come from sim.css. This sim colour-
-     codes each slider's thumb to its species/property via an inline
-     --thumb custom property (falling back to --accent), so only the
-     colour + this page's slightly smaller thumb size are overridden here,
-     matching the scoped-override pattern used for rates-collision-sim's
-     per-species sliders. */
-  input[type=range]::-webkit-slider-thumb{width:13px;height:13px;margin-top:-5px;
-    background:var(--thumb,var(--accent));box-shadow:0 0 0 1px var(--thumb,var(--accent))}
-  input[type=range]::-moz-range-thumb{width:13px;height:13px;
-    background:var(--thumb,var(--accent));box-shadow:0 0 0 1px var(--thumb,var(--accent))}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:3px;
+    background:var(--border);border-radius:99px;outline:none;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:13px;height:13px;
+    border-radius:50%;background:var(--thumb,var(--accent));border:2px solid var(--bg);
+    box-shadow:0 0 0 1px var(--thumb,var(--accent));cursor:pointer}
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border-radius:50%;background:var(--thumb,var(--accent));
+    border:2px solid var(--bg);box-shadow:0 0 0 1px var(--thumb,var(--accent));cursor:pointer}
   input[type=range]:disabled{opacity:.4;cursor:not-allowed}
   .hint{font-size:.68rem;color:var(--muted-dim);margin-top:5px;line-height:1.35}
 
@@ -95,30 +88,27 @@
   .kbox .keq{font-family:var(--mono);color:var(--muted);font-size:.8rem}
   .kbox .kval{font-family:var(--mono);font-weight:600;font-size:1.15rem;color:var(--accent);margin-left:auto}
 
-  /* Run/reset buttons + the icon-sized disturb/pressure buttons are
-     considerably smaller than sim.css's default .btn (this is a compact
-     toolbar, not a full-width control row), so size is overridden locally
-     while colour/semantics come from .btn-run/.btn-ghost. */
-  /* sim.css's .btn-run assumes a roomier control row (min-width:96px);
-     this card is much narrower, so that's relaxed back to fit two buttons
-     side by side. */
-  .ctl-run{gap:6px;margin-left:0}
-  .ctl-run .btn-run{min-width:0}
-  .btn{flex:1;font-size:12px;padding:7px 8px}
+  .transport{display:flex;gap:6px}
+  .btn{flex:1;font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.04em;padding:7px 8px;border-radius:4px;
+    cursor:pointer;transition:background .15s,border-color .15s,color .15s;background:var(--raised);color:var(--text);border:1px solid var(--border)}
+  .btn:hover{border-color:var(--muted-dim)}
+  .btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+  .btn.primary:hover{background:var(--gold)}
   .btn.icon{flex:none;width:32px;padding:7px 0;font-size:14px;line-height:1}
-  .chip:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .speed{display:flex;align-items:center;gap:9px;margin-top:7px}
   .speed span{font-size:.72rem;color:var(--muted);white-space:nowrap}
 
   .disturb{display:flex;gap:6px;align-items:stretch}
-  .disturb select{flex:1;font-size:.78rem;border-radius:6px;padding:6px 8px}
+  select{flex:1;font-family:var(--mono);font-size:.78rem;color:var(--text);background:var(--raised);
+    border:1px solid var(--border);border-radius:6px;padding:6px 8px;cursor:pointer}
   select:disabled{opacity:.45}
 
   .readout{display:grid;grid-template-columns:1fr 1fr;gap:5px}
   .stat{padding:1px 0}
-  .stat .k{font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-dim);display:flex;align-items:center;gap:5px}
+  .stat .k{font-size:.6rem;letter-spacing:.02em;color:var(--muted-dim);display:flex;align-items:center;gap:5px}
   .stat .k .dot{width:7px;height:7px;border-radius:2px;flex:none}
-  .stat .v{font-size:.9rem}
+  .stat .v{font-family:var(--mono);font-size:.9rem;font-weight:500;margin-top:1px}
   .status{grid-column:1/-1;text-align:center;font-size:.72rem;font-family:var(--mono);padding:6px;
     border-radius:6px;border:1px dashed var(--border);color:var(--muted);transition:.2s}
   .status.eq{color:var(--eq);border-color:var(--eq-dim);border-style:solid;background:var(--eq-bg)}
@@ -127,22 +117,19 @@
   @media(max-width:1000px){.graphs{grid-template-columns:1fr}}
   .gcard{padding:9px 12px 6px}
   .ghead{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:3px}
-  .gtitle{font-family:var(--mono);font-weight:500;font-size:10px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--muted-dim);line-height:1.3}
+  .gtitle{font-family:var(--font);font-weight:600;font-size:10px;letter-spacing:.02em;
+    color:var(--muted-dim);line-height:1.3}
   .gtitle .sub{display:block;font-family:var(--font);font-weight:400;font-size:.7rem;
     letter-spacing:normal;text-transform:none;color:var(--muted);margin-top:3px}
-  .gcard .card-label .sub .expr{font-family:var(--mono);color:var(--q)}
-  .gcard .card-label .sub .expr sub{font-size:.7em} .gcard .card-label .sub .expr sup{font-size:.7em}
+  .gtitle .sub .expr{font-family:var(--mono);color:var(--q)}
+  .gtitle .sub .expr sub{font-size:.7em} .gtitle .sub .expr sup{font-size:.7em}
   .legend{display:flex;flex-wrap:wrap;gap:9px;padding-top:1px}
   .legend .item{display:flex;align-items:center;gap:5px;font-size:.72rem;color:var(--muted);font-family:var(--mono)}
   .legend .swatch{width:14px;height:3px;border-radius:99px;flex:none}
   .legend .swatch.dash{background:repeating-linear-gradient(90deg,currentColor 0 4px,transparent 4px 7px)!important;height:0;border-top:2px dashed}
   .legend .item sub{font-size:.7em}
   .canvas-host{position:relative;width:100%}
-  /* sim.css's canvas defaults to var(--raised); this sim's charts sit
-     directly on a .gcard (var(--surface)) and are meant to blend with it,
-     so background is overridden back to var(--surface) here. */
-  canvas{touch-action:none;background:var(--surface)}
+  canvas{display:block;width:100%;height:auto;touch-action:none;border-radius:3px;background:var(--surface)}
   .cursor-readout{position:absolute;top:6px;pointer-events:none;transform:translateX(-50%);
     font-family:var(--mono);font-size:.68rem;background:var(--raised);border:1px solid var(--border);
     border-radius:7px;padding:5px 8px;white-space:nowrap;opacity:0;transition:opacity .1s;z-index:3}
@@ -172,13 +159,13 @@
   <div class="layout">
     <!-- ============ CONTROLS (top band) ============ -->
     <div class="controls">
-      <div class="card">
-        <h2 class="card-label">Preset</h2>
+      <div class="block">
+        <h2>Preset</h2>
         <div class="chips" id="presets"></div>
       </div>
 
-      <div class="card">
-        <h2 class="card-label"><span>Temperature &amp; K<sub>c</sub></span></h2>
+      <div class="block">
+        <h2><span>Temperature &amp; K<sub>c</sub></span></h2>
         <div class="ctrl">
           <div class="row"><label><span class="dot" style="background:var(--temp)"></span>T</label><span class="val" id="tVal">350 K</span></div>
           <input type="range" id="temp" min="250" max="550" step="5" value="350" style="--thumb:var(--temp)">
@@ -190,59 +177,59 @@
         <div class="kbox"><div class="keq">K<sub>c</sub></div><div class="kval" id="kVal">2.80</div></div>
       </div>
 
-      <div class="card">
-        <h2 class="card-label">Starting amounts</h2>
+      <div class="block">
+        <h2>Starting amounts</h2>
         <div id="initConc"></div>
       </div>
 
-      <div class="card">
-        <h2 class="card-label">Run</h2>
-        <div class="ctl-run">
-          <button class="btn btn-run" id="playBtn">Play</button>
-          <button class="btn btn-ghost" id="resetBtn">Reset</button>
+      <div class="block">
+        <h2>Run</h2>
+        <div class="transport">
+          <button class="btn primary" id="playBtn">Play</button>
+          <button class="btn" id="resetBtn">Reset</button>
         </div>
         <div class="speed"><span>Speed</span><input type="range" id="speed" min="0.25" max="4" step="0.25" value="1"><span class="val" id="speedVal" style="font-family:var(--mono)">1.0×</span></div>
         <div class="hint">Space to play/pause · R to reset</div>
       </div>
 
-      <div class="card">
-        <h2 class="card-label">Disturb</h2>
+      <div class="block">
+        <h2>Disturb</h2>
         <div class="ctrl">
           <div class="row"><label>Amount</label></div>
           <div class="disturb">
             <select id="disturbSpecies"></select>
-            <button class="btn btn-ghost icon" id="disturbSubBtn" title="Remove 0.5 mol dm⁻³">&minus;</button>
-            <button class="btn btn-ghost icon" id="disturbAddBtn" title="Add 0.5 mol dm⁻³">+</button>
+            <button class="btn icon" id="disturbSubBtn" title="Remove 0.5 mol dm⁻³">&minus;</button>
+            <button class="btn icon" id="disturbAddBtn" title="Add 0.5 mol dm⁻³">+</button>
           </div>
         </div>
         <div class="ctrl">
           <div class="row"><label>Pressure</label><span class="val" id="pressureVal">1.00×</span></div>
           <div class="disturb">
-            <button class="btn btn-ghost" id="expandBtn" title="Increase volume, lowering pressure">Expand</button>
-            <button class="btn btn-ghost" id="compressBtn" title="Decrease volume, raising pressure">Compress</button>
+            <button class="btn" id="expandBtn" title="Increase volume, lowering pressure">Expand</button>
+            <button class="btn" id="compressBtn" title="Decrease volume, raising pressure">Compress</button>
           </div>
         </div>
       </div>
 
-      <div class="card">
-        <h2 class="card-label">Live values</h2>
-        <div class="stats" id="readout"></div>
+      <div class="block">
+        <h2>Live values</h2>
+        <div class="readout" id="readout"></div>
       </div>
     </div>
 
     <!-- ============ GRAPHS ============ -->
     <div class="graphs">
-      <div class="card gcard">
+      <div class="panel gcard">
         <div class="ghead">
-          <div class="card-label">Concentration vs time<span class="sub">Amounts level off at equilibrium</span></div>
+          <div class="gtitle">Concentration vs time<span class="sub">Amounts level off at equilibrium</span></div>
         </div>
         <div class="legend" id="legendConc" style="margin-bottom:2px"></div>
         <div class="canvas-host" id="hostConc"><canvas id="cConc"></canvas><div class="cursor-readout" id="roConc"></div></div>
       </div>
 
-      <div class="card gcard">
+      <div class="panel gcard">
         <div class="ghead">
-          <div class="card-label">Rate vs time<span class="sub">Forward and reverse rates become equal</span></div>
+          <div class="gtitle">Rate vs time<span class="sub">Forward and reverse rates become equal</span></div>
         </div>
         <div class="legend" style="margin-bottom:2px">
           <div class="item"><span class="swatch" style="background:var(--fwd)"></span>forward</div>
@@ -251,9 +238,9 @@
         <div class="canvas-host" id="hostRate"><canvas id="cRate"></canvas><div class="cursor-readout" id="roRate"></div></div>
       </div>
 
-      <div class="card gcard">
+      <div class="panel gcard">
         <div class="ghead">
-          <div class="card-label">The K<sub>c</sub> expression vs time<span class="sub">Rises or falls onto the K<sub>c</sub> line as the system reaches equilibrium</span></div>
+          <div class="gtitle">The K<sub>c</sub> expression vs time<span class="sub">Rises or falls onto the K<sub>c</sub> line as the system reaches equilibrium</span></div>
           <div class="legend">
             <div class="item" style="color:var(--q)"><span class="swatch" style="background:var(--q)"></span><span>Q<sub>c</sub> (current)</span></div>
             <div class="item" style="color:var(--accent)"><span class="swatch dash"></span><span>K<sub>c</sub> = k<sub>f</sub>/k<sub>r</sub></span></div>
@@ -477,7 +464,7 @@ function curXMax(){
 
 function drawAxes(ctx,dims,xMax,yMax,yLabel){
   const{w,h}=dims;const x0=PAD.l,y0=h-PAD.b,x1=w-PAD.r,y1=PAD.t;
-  ctx.clearRect(0,0,w,h);ctx.font='10px '+getCSS("--mono");ctx.textBaseline="middle";
+  ctx.clearRect(0,0,w,h);ctx.font='10px "IBM Plex Mono",monospace';ctx.textBaseline="middle";
   ctx.strokeStyle=getCSS("--border");ctx.fillStyle=getCSS("--muted-dim");ctx.lineWidth=1;
   for(let i=0;i<=5;i++){const yy=y0-(y0-y1)*i/5;ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x1,yy);ctx.stroke();
     ctx.textAlign="right";ctx.fillText((yMax*i/5).toFixed(2),x0-7,yy);}
@@ -498,7 +485,7 @@ function plot(ctx,box,xs,ys,xMax,yMax,color,w,clampTop,alpha){
 }
 function eqMarker(ctx,box,xMax){
   if(!eqEvents.length)return;const{x0,y0,x1,y1}=box;
-  ctx.save();ctx.font='9px '+getCSS("--mono");
+  ctx.save();ctx.font='9px "IBM Plex Mono",monospace';
   eqEvents.forEach((ev,i)=>{
     const px=x0+(x1-x0)*(xMax>0?ev.t/xMax:0);if(px>x1+1||px<x0-1)return;
     ctx.setLineDash([4,4]);ctx.strokeStyle=getCSS("--eq-dim");ctx.lineWidth=1;
@@ -542,7 +529,7 @@ function draw(){
   const yK=bK.y0-(bK.y0-bK.y1)*(kLine/qMax);
   ctxK.save();ctxK.setLineDash([6,5]);ctxK.strokeStyle=getCSS("--accent");ctxK.lineWidth=1.5;
   ctxK.beginPath();ctxK.moveTo(bK.x0,yK);ctxK.lineTo(bK.x1,yK);ctxK.stroke();ctxK.setLineDash([]);
-  ctxK.fillStyle=getCSS("--accent");ctxK.font='10px '+getCSS("--mono");ctxK.textBaseline="bottom";
+  ctxK.fillStyle=getCSS("--accent");ctxK.font='10px "IBM Plex Mono",monospace';ctxK.textBaseline="bottom";
   fillSubscript(ctxK,"K","c"," = "+kLine.toFixed(2),bK.x1,yK-3);ctxK.restore();
   plot(ctxK,bK,hist.t,hist.q,xMax,qMax,getCSS("--q"),2.4,true);
 

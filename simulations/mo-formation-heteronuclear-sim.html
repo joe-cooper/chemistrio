@@ -4,43 +4,71 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="../assets/css/theme.css">
-<link rel="stylesheet" href="../assets/css/sim.css">
 <script src="../assets/js/theme.js"></script>
 <title>Molecular Orbital Diagram: Period 2 Heteronuclear Diatomics</title>
 <style>
-  /* Local palette: only colours genuinely unique to this sim's orbital-phase
-     diagrams (no theme.css equivalent) stay here. Everything that duplicated
-     theme.css (--bg/--surface/--raised/--border/--text/--muted/--gold) has
-     been removed in favour of the shared tokens. Hand-tuned per theme since
-     canvas fills/strokes read these vars live. */
   :root{
-    --peach: #e3a98c;
-    --blue: #6f8fc9;
+    --bg: #0d1117;
+    --panel: #141a24;
+    --panel-2: #10151e;
+    --border: #262f3d;
+    --text: #e8e3da;
+    --text-dim: #8b93a3;
     --ink-rgb: 232,227,218;
+    --coral: #e8735f;
+    --coral-dim: #a8574a;
+    --peach: #e3a98c;
+    --peach-dim: #a87d68;
+    --blue: #6f8fc9;
+    --blue-dim: #4f6690;
     --grid-line: rgba(232,227,218,0.07);
   }
+  /* Local palette is hand-tuned per theme so canvas fills/strokes (which read
+     these vars live) and the surrounding chrome stay legible in both modes —
+     the dark values above are too washed-out against a white page. */
   :root[data-theme="light"]{
-    --peach: #b97a55;
-    --blue: #3d5f96;
+    --bg: #f4f6f9;
+    --panel: #ffffff;
+    --panel-2: #eef1f5;
+    --border: #d8dee6;
+    --text: #161c26;
+    --text-dim: #5f6b7a;
     --ink-rgb: 22,28,38;
+    --coral: #c85a44;
+    --coral-dim: #9c4433;
+    --peach: #b97a55;
+    --peach-dim: #8f5c3d;
+    --blue: #3d5f96;
+    --blue-dim: #2c4570;
     --grid-line: rgba(22,28,38,0.08);
   }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
   body{ padding: 18px 20px 60px; }
-  .wrap{ max-width: 980px; }
+  .container { max-width: 980px; margin: 0 auto; }
   h1{
     font-size: 17px; font-weight: 600; letter-spacing: 0.02em;
     margin: 0 0 2px; color: var(--text);
   }
   .subtitle{
-    font-size: 12.5px; color: var(--muted); margin: 0 0 16px;
+    font-size: 12.5px; color: var(--text-dim); margin: 0 0 16px;
   }
   .controls{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
     margin-bottom: 16px;
     display: flex; flex-wrap: wrap; align-items: center; gap: 16px;
   }
   .slider-block{ flex: 1 1 320px; min-width: 260px; }
   .slider-row{ display:flex; align-items:center; gap:10px; flex-wrap: wrap; }
-  .slider-row label{ font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 52px; }
+  .slider-row label{ font-size: 12px; color: var(--text-dim); white-space: nowrap; min-width: 52px; }
   .btn-group{ display:flex; gap:8px; flex-wrap:wrap; }
   button{
     background: var(--panel-2);
@@ -53,46 +81,71 @@
     transition: border-color .15s, color .15s;
   }
   button:hover{ border-color: var(--coral); color: var(--coral); }
+  button:disabled{ opacity: 0.45; cursor: not-allowed; }
+  button:disabled:hover{ border-color: var(--border); color: var(--text); }
   button.active{ border-color: var(--coral); color: var(--coral); background: color-mix(in srgb, var(--coral) 8%, transparent); }
   button.active.b-side{ border-color: var(--blue); color: var(--blue); background: color-mix(in srgb, var(--blue) 10%, transparent); }
   #swap-btn{ font-size: 14px; padding: 6px 10px; }
 
-  .card-grid{
+  .panel-grid{
     display:grid; grid-template-columns: 1fr 1fr; gap: 16px;
   }
-  .card-grid-mo{ grid-template-columns: 1.4fr 1fr; }
+  .panel-grid-mo{ grid-template-columns: 1.4fr 1fr; }
   @media (max-width: 720px){
-    .card-grid{ grid-template-columns: 1fr; }
-    .card-grid-mo{ grid-template-columns: 1fr; }
+    .panel-grid{ grid-template-columns: 1fr; }
+    .panel-grid-mo{ grid-template-columns: 1fr; }
   }
 
-  .card-label{ flex-wrap: wrap; gap: 4px 10px; }
-  .card-label .tag{
-    font-size: 10.5px; font-weight: 500; color: var(--muted);
+  .panel{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px 14px;
   }
-  canvas{ cursor: default; }
+  .panel-title{
+    font-size: 12px; font-weight:600; color: var(--text);
+    display:flex; justify-content:space-between; align-items:baseline; flex-wrap: wrap; gap: 4px 10px;
+    margin-bottom: 8px;
+  }
+  .panel-title span.tag{
+    font-size: 10.5px; font-weight: 500; color: var(--text-dim);
+  }
+  canvas{ display:block; width:100%; border-radius: 6px; background: var(--panel-2); cursor: default; }
 
   .legend{
     display:flex; gap:14px; flex-wrap:wrap; margin-top:8px;
-    font-size: 10.5px; color: var(--muted);
+    font-size: 10.5px; color: var(--text-dim);
   }
   .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; }
 
-  .polarity-note{
+  .notes{
+    margin-top: 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.55;
+  }
+  .notes b{ color: var(--text); }
+  .notes summary{ cursor:pointer; color: var(--text); font-weight:600; font-size:12.5px; }
+  .caveat{
     font-size: 11px; color: var(--peach); margin-top: 6px;
   }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="container">
 <h1>Molecular Orbital Diagram: Period 2 Heteronuclear Diatomics</h1>
-<p class="subtitle">Pick any two period-2 elements (Li–F) to see the full valence MO diagram for that pair — real, unequal atomic energies pull each molecular orbital toward whichever atom it's closer to in energy, so the diagram (and the orbital shapes) genuinely polarise. Click any level to see that orbital's shape.</p>
+<p class="subtitle">Pick any two elements — period-2 Li–F, or hydrogen — to see the full valence MO diagram for that pair. Real, unequal atomic energies pull each molecular orbital toward whichever atom it's closer to in energy, so the diagram (and the orbital shapes) genuinely polarise. Hydrogen has only a 1s orbital, and Li/Be's empty, high-energy 2p is excluded here too, so any pair involving H, Li or Be collapses to a smaller diagram — see the model notes below. Click any level to see that orbital's shape.</p>
 
 <div class="controls">
   <div class="slider-block" style="flex:1 1 100%;">
     <div class="slider-row">
       <label>Atom A</label>
       <div class="btn-group" id="atomA-group">
+        <button data-el="H">H</button>
         <button data-el="Li">Li</button>
         <button data-el="Be">Be</button>
         <button data-el="B">B</button>
@@ -101,11 +154,12 @@
         <button data-el="O">O</button>
         <button data-el="F">F</button>
       </div>
-      <button class="chip-toggle" id="swap-btn" title="Swap Atom A and Atom B">⇄</button>
+      <button id="swap-btn" title="Swap Atom A and Atom B">⇄</button>
     </div>
     <div class="slider-row" style="margin-top:8px;">
       <label>Atom B</label>
       <div class="btn-group" id="atomB-group">
+        <button data-el="H">H</button>
         <button data-el="Li">Li</button>
         <button data-el="Be">Be</button>
         <button data-el="B">B</button>
@@ -121,19 +175,19 @@
 <div class="controls" id="species-readout-row">
   <div style="font-size:20px; font-weight:700;" id="species-label">C–O</div>
   <div style="flex:2 1 220px;">
-    <div style="font-size:12px; color:var(--muted);">valence electron configuration</div>
+    <div style="font-size:12px; color:var(--text-dim);">valence electron configuration</div>
     <div style="font-size:13px; font-weight:600;" id="config-label">—</div>
   </div>
   <div>
-    <div style="font-size:12px; color:var(--muted); text-align:right;">bond order</div>
+    <div style="font-size:12px; color:var(--text-dim); text-align:right;">bond order</div>
     <div style="font-size:20px; font-weight:700; text-align:right;" id="bondorder-label">3</div>
   </div>
   <div>
-    <div style="font-size:12px; color:var(--muted); text-align:right;">magnetism</div>
+    <div style="font-size:12px; color:var(--text-dim); text-align:right;">magnetism</div>
     <div style="font-size:13px; font-weight:600; text-align:right;" id="magnetism-label">diamagnetic</div>
   </div>
   <div>
-    <div style="font-size:12px; color:var(--muted); text-align:right;">bond length</div>
+    <div style="font-size:12px; color:var(--text-dim); text-align:right;">bond length</div>
     <div style="font-size:13px; font-weight:600; text-align:right;" id="bondlength-label">—</div>
   </div>
 </div>
@@ -141,43 +195,45 @@
 <div class="controls">
   <div class="slider-row">
     <label>s–p mixing</label>
-    <button class="chip-toggle active" id="mixing-toggle">ON</button>
+    <button id="mixing-toggle" class="active">ON</button>
   </div>
-  <div style="flex:2 1 320px; font-size:12px; color:var(--muted);" id="mixing-desc"></div>
+  <div style="flex:2 1 320px; font-size:12px; color:var(--text-dim);" id="mixing-desc"></div>
 </div>
-<div id="polarity-note" class="polarity-note" style="margin:-10px 0 16px;"></div>
+<div id="polarity-note" class="caveat" style="margin:-10px 0 16px;"></div>
 
 <div class="panel-grid panel-grid-mo">
   <div class="panel">
-    <div class="panel-title">MO energy-level diagram <span class="tag">click a level to see its shape — valence 2s/2p only</span></div>
+    <div class="panel-title">MO energy-level diagram <span class="tag">click a level to see its shape — valence 2s/2p only (1s for H; 2s only for Li/Be)</span></div>
     <canvas id="canvas-mo" height="440"></canvas>
   </div>
-  <div class="card">
-    <div class="card-label">Selected orbital: <span id="orbital-level-label">σ(2s)</span> <span class="tag" id="orbital-formula-tag">ψ = …</span></div>
+  <div class="panel">
+    <div class="panel-title">Selected orbital: <span id="orbital-level-label">σ(2s)</span> <span class="tag" id="orbital-formula-tag">ψ = …</span></div>
     <canvas id="canvas-orbital" height="440"></canvas>
-    <div style="font-size:11px; color:var(--muted); margin-top:6px;" id="orbital-note"></div>
+    <div style="font-size:11px; color:var(--text-dim); margin-top:6px;" id="orbital-note"></div>
   </div>
 </div>
 
 <div class="legend">
-  <span><span class="dot" style="background:var(--gold)"></span>bonding MO</span>
+  <span><span class="dot" style="background:var(--coral)"></span>bonding MO</span>
   <span><span class="dot" style="background:var(--peach)"></span>antibonding MO</span>
+  <span><span class="dot" style="background:var(--text-dim)"></span>non-bonding MO (pairs involving H, Li or Be)</span>
   <span><span class="dot" style="background:transparent;border:1px dashed var(--text-dim)"></span>nodal surface (ψ = 0)</span>
   <span>↑ ↓ electrons, filled by the Aufbau principle + Hund's rule</span>
   <span><span class="dot" style="background:transparent;border:1px dashed var(--blue)"></span>extra σ(2s)–σ(2p) / σ*(2s)–σ*(2p) interaction (s–p mixing, when on)</span>
   <span>correlation-line strength ∝ how much of that MO sits on that atom</span>
 </div>
 
-<details class="note">
+<div class="notes">
+  <details>
     <summary>Model notes &amp; honesty check</summary>
     <p style="margin-top:8px;">
       <b>What this adds on top of the homonuclear sibling.</b> That simulation fixes both atoms to be the same element, so every bonding/antibonding pair is an exactly-equal 50/50 mix of the two atomic orbitals. Here Atom A and Atom B are independent — their 2s and 2p atomic energies (and orbital sizes) are generally different, so the secular equation is the more general, non-degenerate case: each molecular orbital ends up weighted <i>unequally</i> toward whichever atom's atomic orbital sits closer to it in energy. That's the real, chemically important content of a heteronuclear MO diagram — it's what "the bonding electrons sit closer to the more electronegative atom" actually means in orbital language — and it's why the orbital-shape panel and the correlation-line weights below are genuinely asymmetric rather than mirror images.
     </p>
     <p>
-      <b>Same atomic data as the homonuclear sibling, per atom instead of per molecule.</b> Each element's 2s/2p orbitals share one Slater exponent ζ = Z<sub>eff</sub>/2 (Slater's rules don't distinguish 2s from 2p): ζ = 0.65 (Li), 0.975 (Be), 1.3 (B), 1.625 (C), 1.95 (N), 2.275 (O), 2.6 (F). The atomic reference energies (eV) are the same real valence-orbital ionization energies used there — Gray's <i>Electrons and Chemical Bonding</i> (1964) spectroscopic VOIE table for B–F, with Li/Be's unmeasurable 2p values extrapolated from the near-perfectly-linear Z<sub>eff</sub> trend across the row. These numbers don't change when an atom is paired with a different partner — only the overlap integral and the resulting MO energies do.
+      <b>Same atomic data as the homonuclear sibling, per atom instead of per molecule.</b> Each element's occupied valence orbitals share one Slater exponent ζ = Z<sub>eff</sub>/2 (Slater's rules don't distinguish 2s from 2p): ζ = 0.65 (Li), 0.975 (Be), 1.3 (B), 1.625 (C), 1.95 (N), 2.275 (O), 2.6 (F). The atomic reference energies (eV) are the same real valence-orbital ionization energies used there — Gray's <i>Electrons and Chemical Bonding</i> (1964) spectroscopic VOIE table for B–F. Hydrogen doesn't fit this per-row formula at all (there's no core to shield it and no 2p to speak of) — it uses the textbook n=1 result directly, ζ = Z<sub>eff</sub>/n = 1/1 = 1, with its 1s ionization energy at the exact hydrogen-atom value, −13.6 eV. Li and Be have no 2p energy listed at all: unlike B–F, where 2p is occupied in the ground state, Li's and Be's 2p is empty and sits well above their 2s, so it's excluded here rather than guessed at — see the note on hydrogen and empty-2p atoms below. These numbers don't change when an atom is paired with a different partner — only the overlap integral and the resulting MO energies do.
     </p>
     <p>
-      <b>Bond lengths: real data for 21 of 28 pairs, an estimate for the rest.</b> All 7 homonuclear lengths and 14 of the 21 heteronuclear pairs use real experimental equilibrium bond lengths (NIST CCCBDB): Li–O 1.688 Å, Li–F 1.564 Å, Be–O 1.331 Å, Be–F 1.361 Å, B–C 1.491 Å, B–N 1.325 Å, B–O 1.205 Å, B–F 1.267 Å, C–N 1.172 Å, C–O 1.128 Å, C–F 1.276 Å, N–O 1.154 Å, N–F 1.317 Å, O–F 1.354 Å. The remaining 7 pairs (Li–Be, Li–B, Li–C, Li–N, Be–B, Be–C, Be–N) aren't well-characterised experimentally — some barely exist outside a handful of computational-chemistry papers — so those fall back to the Schomaker–Stevenson estimate d = r<sub>A</sub> + r<sub>B</sub> − 0.09|χ<sub>A</sub> − χ<sub>B</sub>| (Å), using standard Pauling single-bond covalent radii and electronegativities. <b>Marked with * in the bond-length readout.</b> Checked against the 14 known pairs, this estimate is typically only 0.03–0.05 Å off for near-single-bond pairs (O–F, Be–F) but can run 0.15–0.22 Å too long for pairs with real multiple-bond character it has no way to anticipate (C–O, B–O, B–N) — worth keeping in mind for the estimated pairs too.
+      <b>Bond lengths: real data for 29 of 36 pairs, an estimate for the rest.</b> All 8 homonuclear lengths (Li–Li … F–F, plus H–H 0.741 Å), all 8 hydrogen–heavy pairs (gas-phase diatomic hydrides, Huber &amp; Herzberg / NIST CCCBDB: Li–H 1.596 Å, Be–H 1.343 Å, B–H 1.232 Å, C–H 1.120 Å, N–H 1.036 Å, O–H 0.970 Å, F–H 0.917 Å), and 14 of the 21 period-2 heteronuclear pairs use real experimental equilibrium bond lengths (NIST CCCBDB): Li–O 1.688 Å, Li–F 1.564 Å, Be–O 1.331 Å, Be–F 1.361 Å, B–C 1.491 Å, B–N 1.325 Å, B–O 1.205 Å, B–F 1.267 Å, C–N 1.172 Å, C–O 1.128 Å, C–F 1.276 Å, N–O 1.154 Å, N–F 1.317 Å, O–F 1.354 Å. The remaining 7 pairs (Li–Be, Li–B, Li–C, Li–N, Be–B, Be–C, Be–N) aren't well-characterised experimentally — some barely exist outside a handful of computational-chemistry papers — so those fall back to the Schomaker–Stevenson estimate d = r<sub>A</sub> + r<sub>B</sub> − 0.09|χ<sub>A</sub> − χ<sub>B</sub>| (Å), using standard Pauling single-bond covalent radii and electronegativities. <b>Marked with * in the bond-length readout.</b> Checked against the known pairs, this estimate is typically only 0.03–0.05 Å off for near-single-bond pairs (O–F, Be–F) but can run 0.15–0.22 Å too long for pairs with real multiple-bond character it has no way to anticipate (C–O, B–O, B–N) — worth keeping in mind for the estimated pairs too.
     </p>
     <p>
       <b>The secular equation, generalised to unequal atoms.</b> For two atomic orbitals with different ionization energies H<sub>ii</sub> (Atom A) and H<sub>jj</sub> (Atom B) and real overlap S, the non-orthogonal 2×2 secular determinant |H<sub>ii</sub>−E, H<sub>ij</sub>−ES; H<sub>ij</sub>−ES, H<sub>jj</sub>−E| = 0 gives a quadratic in E rather than the simple ±-form the homonuclear sibling uses (that form is the special case A=B of this one — sanity-checked directly: picking the same element twice here reproduces its numbers exactly). H<sub>ij</sub> is still the standard Wolfsberg–Helmholz estimate, generalised as H<sub>ij</sub> = K·S·(H<sub>ii</sub>+H<sub>jj</sub>)/2 (K=1.75). Solving the quadratic gives both the bonding/antibonding energies <i>and</i>, for the first time in this family of simulations, real LCAO coefficients c<sub>A</sub> ≠ c<sub>B</sub> — the actual polarisation of each MO. This is done independently for the σ(2s), σ(2p) and π(2p) pairs, exactly as in the homonuclear sibling.
@@ -186,15 +242,19 @@
       <b>Reading the coefficients.</b> The formula tag above the orbital panel shows the real c<sub>A</sub>, c<sub>B</sub> for whatever level is selected. As a rule, a bonding MO's energy sits closer to whichever atom's atomic orbital was already lower (more stable), and the coefficient reflects that — e.g. for C–O, σ(2s) comes out roughly 92% oxygen / 8% carbon (O's 2s is far more stable than C's), while σ*(2s) flips the other way, roughly 90% carbon. This is the same physical content as the "the more electronegative atom keeps more of the bonding electron density" rule taught with dot-and-cross diagrams, just derived rather than asserted. The correlation lines in the diagram fade in proportion to |c|² on each side, so a glance at line strength shows which atom a given MO really belongs to.
     </p>
     <p>
-      <b>s–p mixing, generalised.</b> σ(2s) and σ(2p) still share σ symmetry and so can mix beyond their own independent bonding/antibonding pairs (and separately, so can σ*(2s)/σ*(2p)) — modelled the same avoided-crossing way as the homonuclear sibling, with the coupling V built from the average of the two (generally unequal, for a heteronuclear pair) 2s–2p cross overlaps and the average of all four atomic references. As there, only the <i>energy</i> of σ(2s)/σ(2p) responds to the toggle — the shape panel always shows the pure, unmixed combination for whichever level is selected.
+      <b>s–p mixing, generalised.</b> σ(2s) and σ(2p) still share σ symmetry and so can mix beyond their own independent bonding/antibonding pairs (and separately, so can σ*(2s)/σ*(2p)) — modelled the same avoided-crossing way as the homonuclear sibling, with the coupling V built from the average of the two (generally unequal, for a heteronuclear pair) 2s–2p cross overlaps and the average of all four atomic references. As there, only the <i>energy</i> of σ(2s)/σ(2p) responds to the toggle — the shape panel always shows the pure, unmixed combination for whichever level is selected. This only applies when both atoms have a real, modelled 2p (i.e. both are B–F) — whenever H, Li or Be is involved there's no second σ combination left for σ(2s) to mix with, so the toggle is disabled (see the note on light atoms below).
     </p>
     <p>
-      <b>An honest limitation: bond order over-counts for very mismatched pairs.</b> The bond-order formula — (bonding electrons − antibonding electrons)/2 — assumes the "bonding" combination is genuinely stabilised by overlap. For a pair with a very large electronegativity gap (Li–F, Li–O, Be–F, Be–O), the atomic energies are so far apart that overlap barely perturbs either orbital: the "bonding" fluorine/oxygen 2p combinations end up looking almost exactly like isolated F or O lone pairs, not real shared bonding density, yet the simple count still labels all of them bonding. LiF comes out bond order 4 here, which overstates the real, essentially single, mostly-ionic Li–F bond — a genuine failure mode of this simplified model for strongly polar pairs, not a bug specific to LiF. The page flags this directly when the electronegativity gap is large (see the note under the mixing toggle).
+      <b>Light atoms (H, Li, Be): a genuinely smaller diagram, not just another element.</b> Every other atom here contributes four valence AOs (2s + three 2p); H, Li and Be each contribute exactly one (H's real 1s; Li's and Be's real 2s, with their empty, high-lying 2p excluded — see the ATOMS comment in the model source and the entry above on why). So any pair including one of these three only ever has 2 or 5 AOs on the table, not 8 — it isn't a minor variation on the six-level picture above, it's a different-sized secular problem. Two light atoms together (H<sub>2</sub>, Li<sub>2</sub>, Be<sub>2</sub>, LiBe, LiH, BeH, …) are the simple case: a single σ(s)/σ*(s) pair, solved with the exact same machinery as σ(2s) above — and it's a genuine sanity check that this reproduces real, known chemistry: H<sub>2</sub> comes out bond order 1 diamagnetic, Li<sub>2</sub> bond order 1 diamagnetic, and Be<sub>2</sub> bond order <i>0</i> — the standard simple-MO-theory answer for why Be<sub>2</sub> is essentially unbound (real Be<sub>2</sub> is only very weakly bound, by effects this simplified model doesn't capture). A light atom paired with a real 2p atom (B–F) is the more interesting case: with only 5 AOs total, there are only 5 MOs, not 6. The light atom's s orbital has no partner of matching (π) symmetry at all, so the heavy atom's two perpendicular 2p orbitals stay untouched, non-bonding lone pairs (labelled "2p (n.b.)", drawn in a third, neutral colour). Of the heavy atom's two remaining σ-symmetric orbitals, this model always lets the light atom's s orbital bond with the <i>bond-axis 2p</i> — forming a real σ(2p+s)/σ*(2p+s) pair — while the heavy atom's 2s is left untouched as a non-bonding lone pair ("2s (n.b.)"). That choice is deliberate, not arbitrary: for B, C, N, O and F, 2p sits far closer in energy to a light atom's valence s than 2s does (e.g. O 2p ≈ −15.9 eV vs H 1s = −13.6 eV, a 2.3 eV gap, against O 2s ≈ −32.4 eV, an 18.8 eV gap; Li 2s ≈ −5.5 eV sits closer still) — the same real physics behind why HF's and H<sub>2</sub>O's lowest valence MO is usually described as "mostly a fluorine/oxygen 2s lone pair," and why LiF/BeO are close to simple, mostly-ionic single bonds rather than the over-counted multiple bonds an earlier version of this model produced (see below). Because non-bonding levels aren't genuinely stabilised or destabilised by overlap, they're excluded from the bond-order count entirely (unlike the ordinary bonding/antibonding pairs above) — so HF and LiF, for instance, both come out bond order 1 as expected, not inflated by uninvolved lone pairs. One casualty of this simplification: s–p mixing (see below) has no second σ combination left to act on whenever a light atom is involved, so the toggle is disabled for those pairs.
     </p>
     <p>
-      <b>Filling: Aufbau + Hund's rule, same as always.</b> All v<sub>A</sub>+v<sub>B</sub> valence electrons fill the six levels lowest-energy-first, two per orbital, with the doubly-degenerate π pair filled singly before pairing. Try C–N or N–O: both come out bond order 2.5 with one unpaired electron, matching their real identity as well-known odd-electron radicals (CN and NO).
+      <b>A limitation this fixed, and the one it doesn't.</b> An earlier version of this page modelled Li's and Be's empty 2p as a real bonding partner, the same way B–F's occupied 2p is treated. That let bond order over-count badly for the most mismatched pairs — LiF came out bond order 4, wildly overstating its real, essentially single, mostly-ionic bond — because the "bonding" fluorine/lithium 2p combination it computed was barely perturbed by overlap and looked almost exactly like an isolated fluorine lone pair, yet the simple count still labelled it bonding. Excluding Li/Be's unoccupied 2p (per the note above) resolves this for every Li/Be pair, and none of the remaining pairs here (all between B and F, whose electronegativity gaps top out around 2.0) get close to the ΔEN that triggered it. The general failure mode — overlap-insensitive "bonding" orbitals still counting fully towards bond order — remains a real limitation of this simplified model in principle, just not one any pair on this page currently exercises.
+    </p>
+    <p>
+      <b>Filling: Aufbau + Hund's rule, same as always.</b> All v<sub>A</sub>+v<sub>B</sub> valence electrons fill whichever levels exist for the current pair — six for two real-2p atoms, five if one is H/Li/Be, two if both are — lowest-energy-first, two per orbital, with the doubly-degenerate π pair filled singly before pairing. Try C–N or N–O: both come out bond order 2.5 with one unpaired electron, matching their real identity as well-known odd-electron radicals (CN and NO). Try H–O or H–C: both come out bond order 1 with one unpaired electron too, matching the real OH and CH radicals.
     </p>
   </details>
+</div>
 </div>
 
 <script>
@@ -204,17 +264,29 @@
   const BOHR = 0.529177; // Å per bohr
 
   // ---------- per-atom data (identical convention to the homonuclear sibling) ----------
+  // Three atoms have e2p:null and are treated as having no valence 2p orbital at all,
+  // just a single valence s orbital (stored in the e2s field so everything flows through
+  // the existing 's'-kind machinery unchanged; e2p must never be read for these three):
+  //   - H:  physically has no 2p at all (n=1 shell). Its s orbital is a real 1s, with the
+  //     exact ζ=Zeff/n=1/1=1 for an isolated 1s electron, not the period-2 formula below.
+  //   - Li, Be: do have a real 2p, but it's empty and far higher in energy in the ground
+  //     state (Li 1s²2s¹, Be 1s²2s²) — unlike B–F, where 2p is occupied and does real
+  //     bonding work. Modelling that empty, high-lying 2p as a bonding partner anyway is
+  //     what let the old version of this page over-count Li–F/Li–O/Be–F/Be–O bond orders
+  //     (see the model notes); excluding it here is the more honest simplification, and it
+  //     collapses Li/Be into the same "light atom, one valence s orbital" treatment as H.
   function slaterZeta(v){ return 0.325 * (v + 1); }
   const ATOMS = {
-    Li:{ symbol:'Li', v:1, e2s:-5.46,  e2p:-4.73,  covR:1.34, en:0.98 },
-    Be:{ symbol:'Be', v:2, e2s:-9.30,  e2p:-6.43,  covR:0.90, en:1.57 },
+    H: { symbol:'H',  v:1, e2s:-13.6,  e2p:null, covR:0.31, en:2.20, zeta:1.0 },
+    Li:{ symbol:'Li', v:1, e2s:-5.46,  e2p:null, covR:1.34, en:0.98 },
+    Be:{ symbol:'Be', v:2, e2s:-9.30,  e2p:null, covR:0.90, en:1.57 },
     B: { symbol:'B',  v:3, e2s:-14.01, e2p:-8.31,  covR:0.82, en:2.04 },
     C: { symbol:'C',  v:4, e2s:-19.47, e2p:-10.66, covR:0.77, en:2.55 },
     N: { symbol:'N',  v:5, e2s:-25.54, e2p:-13.14, covR:0.75, en:3.04 },
     O: { symbol:'O',  v:6, e2s:-32.36, e2p:-15.87, covR:0.73, en:3.44 },
     F: { symbol:'F',  v:7, e2s:-46.37, e2p:-18.72, covR:0.71, en:3.98 }
   };
-  Object.keys(ATOMS).forEach(k => { ATOMS[k].zeta = slaterZeta(ATOMS[k].v); });
+  Object.keys(ATOMS).forEach(k => { if (k !== 'H') ATOMS[k].zeta = slaterZeta(ATOMS[k].v); });
 
   // Real experimental equilibrium bond lengths (Å), NIST CCCBDB — see honesty notes.
   const REAL_BOND = {
@@ -224,7 +296,11 @@
     'B-C':1.491, 'B-N':1.325, 'B-O':1.205, 'B-F':1.267,
     'C-N':1.172, 'C-O':1.128, 'C-F':1.276,
     'N-O':1.154, 'N-F':1.317,
-    'O-F':1.354
+    'O-F':1.354,
+    // Gas-phase diatomic hydrides (Huber & Herzberg / NIST CCCBDB) — all real, none estimated.
+    'H-H':0.741,
+    'H-Li':1.5957, 'H-Be':1.343, 'H-B':1.2324, 'H-C':1.1198,
+    'H-N':1.0362, 'H-O':0.9697, 'H-F':0.9168
   };
   function bondLength(keyA, keyB){
     const k1 = keyA+'-'+keyB, k2 = keyB+'-'+keyA;
@@ -248,9 +324,26 @@
     pi2p:        { kind:'ppi',    bonding:true,  cap:4, degenerate:true,  label:'π(2p)',
                    symDesc:'π — one nodal plane containing the bond axis (side-on 2p overlap).' },
     pi2pStar:    { kind:'ppi',    bonding:false, cap:4, degenerate:true,  label:'π*(2p)',
-                   symDesc:'π — one nodal plane containing the bond axis (side-on 2p overlap).' }
+                   symDesc:'π — one nodal plane containing the bond axis (side-on 2p overlap).' },
+    // ---- levels for pairs where one or both atoms are "light" (H, Li or Be — see the
+    // ATOMS comment on e2p:null). Labels here are just fallbacks; computeMO always sets a
+    // dynamic level.label (1s vs 2s aware) that takes priority — see levelLabel().
+    nb2s:        { kind:'s', bonding:false, nonbonding:true, cap:2, degenerate:false, label:'2s (n.b.)',
+                   symDesc:'Non-bonding — the light atom has no orbital of matching symmetry left to combine with this one, so it stays essentially atomic (a lone pair).' },
+    sigmaSH:     { kind:'psigma', bonding:true,  cap:2, degenerate:false, label:'σ(2p+s)',
+                   symDesc:'σ — the heavy atom’s bond-axis 2p lobe overlapping head-on with the light atom’s spherical valence s orbital.' },
+    sigmaSHStar: { kind:'psigma', bonding:false, cap:2, degenerate:false, label:'σ*(2p+s)',
+                   symDesc:'σ — the heavy atom’s bond-axis 2p lobe overlapping head-on with the light atom’s spherical valence s orbital.' },
+    nbPi:        { kind:'ppi', bonding:false, nonbonding:true, cap:4, degenerate:true, label:'2p (n.b.)',
+                   symDesc:'Non-bonding — the light atom has no p orbital in this model, so these two perpendicular 2p orbitals stay atomic lone pairs.' }
   };
   const KIND_LABEL = { s:'2s', psigma:'2pσ', ppi:'2pπ' };
+  // 's'-kind is shared between a heavy atom's 2s and hydrogen's 1s (same spherical
+  // functional form) — the display label has to disambiguate per atom, not per kind.
+  function kindDisplayLabel(kind, atomKey){ return atomKey === 'H' ? '1s' : KIND_LABEL[kind]; }
+  // Some levels (light-atom pairs) carry a computed, 1s/2s-aware label on the level object
+  // itself, set in computeMO — it always wins over LEVEL_META's generic static fallback.
+  function levelLabel(id, level){ return (level && level.label) || LEVEL_META[id].label; }
 
   // ---------- Aufbau + Hund's rule filling ----------
   function fillElectrons(nElectrons, order){
@@ -274,6 +367,25 @@
   function unpairedInLevel(meta, n){
     if (meta.degenerate) return n<=2 ? n : 4-n;
     return n===1 ? 1 : 0;
+  }
+  // Non-bonding levels (only possible when hydrogen is involved — see computeMO) count toward
+  // neither bonding nor antibonding electrons: they're lone pairs sitting on one atom, not a
+  // stabilised/destabilised combination, so they shouldn't shift the bond-order count either way.
+  function tallyBondOrder(order, occ){
+    let bondingE=0, antibondingE=0, unpaired=0;
+    order.forEach(id => {
+      const n = occ[id], meta = LEVEL_META[id];
+      if (meta.nonbonding){ /* excluded from both sums */ }
+      else if (meta.bonding) bondingE += n; else antibondingE += n;
+      unpaired += unpairedInLevel(meta, n);
+    });
+    return { bondOrder:(bondingE-antibondingE)/2, unpaired };
+  }
+  function tagKinds(levels){
+    Object.keys(levels).forEach(id => {
+      if (levels[id].kindA == null) levels[id].kindA = LEVEL_META[id].kind;
+      if (levels[id].kindB == null) levels[id].kindB = LEVEL_META[id].kind;
+    });
   }
 
   // ---------- atomic-orbital amplitude (unnormalized), evaluated in the z=0 plane ----------
@@ -355,7 +467,76 @@
     const ZA = A.zeta, ZB = B.zeta;
     const bl = bondLength(keyA, keyB);
     const R = bl.value / BOHR;
+    // Light atoms (H, Li, Be) have no modeled 2p — see the ATOMS comment above — so any
+    // pair including one behaves as a smaller secular problem than the full 8-AO case.
+    const noPA = A.e2p == null, noPB = B.e2p == null;
+    // Display label for an atom's lone valence-s orbital: hydrogen's is a real 1s;
+    // Li/Be's is a real 2s (they simply have no *modeled* 2p to pair it with).
+    function sShellLabel(key){ return key === 'H' ? '1s' : '2s'; }
 
+    // ---- neither atom has a modeled 2p: a single s+s bonding/antibonding pair, nothing
+    // else exists (this is H2, Li2, Be2, LiBe, LiH, BeH, or any mix of the three) ----
+    if (noPA && noPB){
+      const NsA=selfNorm('s',ZA), NsB=selfNorm('s',ZB);
+      const Sss = rawOverlap('s','s',R,ZA,ZB)/Math.sqrt(NsA*NsB);
+      const sChan = solveChannel(A.e2s, B.e2s, Sss);
+      const shellA = sShellLabel(keyA), shellB = sShellLabel(keyB);
+      const shellLabel = shellA === shellB ? shellA : (shellA + '+' + shellB);
+      const levels = {
+        sigma2s:     { E:sChan.Elow,  cA:sChan.low.cA,  cB:sChan.low.cB, label:'σ('+shellLabel+')' },
+        sigma2sStar: { E:sChan.Ehigh, cA:sChan.high.cA, cB:sChan.high.cB, label:'σ*('+shellLabel+')' }
+      };
+      tagKinds(levels);
+      const order = Object.keys(levels).sort((a,b) => levels[a].E-levels[b].E);
+      const occ = fillElectrons(A.v+B.v, order);
+      const { bondOrder, unpaired } = tallyBondOrder(order, occ);
+      return { keyA, keyB, A, B, ZA, ZB, bondLength:bl, levels, order, occ, bondOrder, unpaired };
+    }
+
+    // ---- exactly one atom has no modeled 2p (H, Li or Be paired with B/C/N/O/F): the
+    // usual 8-AO/6-level picture collapses to 5 AOs/5 levels. The heavy atom's 2s and its
+    // two perpendicular 2p orbitals have no partner on the light atom's side to combine
+    // with, so they stay non-bonding (essentially atomic lone pairs); only the heavy
+    // atom's bond-axis 2p forms a real σ/σ* pair with the light atom's lone valence s
+    // orbital (chosen over 2s as the bonding partner because the heavy atom's 2p is
+    // almost always the closer energy match — e.g. O 2p ≈ −15.9 eV vs H 1s = −13.6 eV, a
+    // 2.3 eV gap, versus O 2s ≈ −32.4 eV, an 18.8 eV gap — mirroring the real,
+    // mostly-2s-lone-pair-plus-2p-bonding picture of HF/OH/NH/CH, and equally the
+    // near-single-bond, mostly-ionic picture of LiF/BeO once Li/Be's 2p is out of play).
+    if (noPA || noPB){
+      const heavyIsA = noPB;
+      const heavy = heavyIsA ? A : B, light = heavyIsA ? B : A;
+      const lightKey = heavyIsA ? keyB : keyA;
+      const Zheavy = heavy.zeta, Zlight = light.zeta;
+
+      const NpHeavy = selfNorm('psigma', Zheavy), NsLight = selfNorm('s', Zlight);
+      const rawSpsL = heavyIsA
+        ? rawOverlap('psigma','s',R,Zheavy,Zlight)
+        : rawOverlap('s','psigma',R,Zlight,Zheavy);
+      const SpsL = rawSpsL/Math.sqrt(NpHeavy*NsLight);
+
+      const Hii = heavyIsA ? heavy.e2p : light.e2s;
+      const Hjj = heavyIsA ? light.e2s : heavy.e2p;
+      const sChan = solveChannel(Hii, Hjj, SpsL);
+
+      const lightShell = sShellLabel(lightKey);
+      const levels = {
+        nb2s:        { E: heavy.e2s, cA: heavyIsA?1:0, cB: heavyIsA?0:1 },
+        sigmaSH:     { E:sChan.Elow,  cA:sChan.low.cA,  cB:sChan.low.cB, label:'σ(2p+'+lightShell+')' },
+        sigmaSHStar: { E:sChan.Ehigh, cA:sChan.high.cA, cB:sChan.high.cB, label:'σ*(2p+'+lightShell+')' },
+        nbPi:        { E: heavy.e2p, cA: heavyIsA?1:0, cB: heavyIsA?0:1 }
+      };
+      tagKinds(levels);
+      levels.sigmaSH.kindA = levels.sigmaSHStar.kindA = heavyIsA ? 'psigma' : 's';
+      levels.sigmaSH.kindB = levels.sigmaSHStar.kindB = heavyIsA ? 's' : 'psigma';
+
+      const order = Object.keys(levels).sort((a,b) => levels[a].E-levels[b].E);
+      const occ = fillElectrons(A.v+B.v, order);
+      const { bondOrder, unpaired } = tallyBondOrder(order, occ);
+      return { keyA, keyB, A, B, ZA, ZB, bondLength:bl, levels, order, occ, bondOrder, unpaired };
+    }
+
+    // ---- both atoms are period-2 heavies: the full 2s/2p treatment ----
     const NsA=selfNorm('s',ZA), NsB=selfNorm('s',ZB);
     const NpA=selfNorm('psigma',ZA), NpB=selfNorm('psigma',ZB);
     const NpiA=selfNorm('ppi',ZA), NpiB=selfNorm('ppi',ZB);
@@ -391,16 +572,10 @@
     }
 
     const levels = { sigma2s, sigma2sStar, sigma2p, sigma2pStar, pi2p, pi2pStar };
+    tagKinds(levels);
     const order = Object.keys(levels).sort((a,b) => levels[a].E-levels[b].E);
     const occ = fillElectrons(A.v+B.v, order);
-
-    let bondingE=0, antibondingE=0, unpaired=0;
-    order.forEach(id => {
-      const n = occ[id];
-      if (LEVEL_META[id].bonding) bondingE += n; else antibondingE += n;
-      unpaired += unpairedInLevel(LEVEL_META[id], n);
-    });
-    const bondOrder = (bondingE-antibondingE)/2;
+    const { bondOrder, unpaired } = tallyBondOrder(order, occ);
 
     return { keyA, keyB, A, B, ZA, ZB, bondLength:bl, levels, order, occ, bondOrder, unpaired };
   }
@@ -413,6 +588,7 @@
 
   function defaultMixing(keyA, keyB){
     const A = ATOMS[keyA], B = ATOMS[keyB];
+    if (A.e2p == null || B.e2p == null) return false; // no second σ combination to mix with
     const avgGap = ((A.e2p-A.e2s) + (B.e2p-B.e2s)) / 2;
     return avgGap < 14;
   }
@@ -460,10 +636,15 @@
     const tmp = atomAKey; atomAKey = atomBKey; atomBKey = tmp;
     syncAtomButtons(); recompute(); render();
   });
-  mixingToggle.addEventListener('click', () => { mixing = !mixing; updateMixingButton(); recompute(); render(); });
+  mixingToggle.addEventListener('click', () => {
+    if (mixingToggle.disabled) return;
+    mixing = !mixing; updateMixingButton(); recompute(); render();
+  });
   function updateMixingButton(){
-    mixingToggle.classList.toggle('active', mixing);
-    mixingToggle.textContent = mixing ? 'ON' : 'OFF';
+    const noP = ATOMS[atomAKey].e2p == null || ATOMS[atomBKey].e2p == null;
+    mixingToggle.disabled = noP;
+    mixingToggle.classList.toggle('active', mixing && !noP);
+    mixingToggle.textContent = noP ? 'N/A' : (mixing ? 'ON' : 'OFF');
   }
   syncAtomButtons();
   updateMixingButton();
@@ -492,9 +673,9 @@
   // refreshPalette() call at the top of drawOrbitalPanel().
   let CORAL_RGB, BLUE_RGB, PANEL_RGB;
   function refreshPalette(){
-    CORAL_RGB = hexToRgb(css('--gold'));
+    CORAL_RGB = hexToRgb(css('--coral'));
     BLUE_RGB  = hexToRgb(css('--blue'));
-    PANEL_RGB = hexToRgb(css('--raised'));
+    PANEL_RGB = hexToRgb(css('--panel-2'));
   }
   refreshPalette();
   // Read live (not cached like the RGB triplets above) since it's only ever
@@ -559,8 +740,8 @@
       const y = yMin + (yMax-yMin)*j/(GH-1);
       for (let i=0;i<GW;i++){
         const x = xMin + (xMax-xMin)*i/(GW-1);
-        const vA = orbitalAt(meta.kind, x, y, nxA, mo.ZA, false);
-        const vB = orbitalAt(meta.kind, x, y, nxB, mo.ZB, true);
+        const vA = orbitalAt(level.kindA, x, y, nxA, mo.ZA, false);
+        const vB = orbitalAt(level.kindB, x, y, nxB, mo.ZB, true);
         const val = level.cA*vA + level.cB*vB;
         grid[j*GW+i] = val;
         if (Math.abs(val) > maxAbs) maxAbs = Math.abs(val);
@@ -580,7 +761,7 @@
     }
     octx.putImageData(imgData, 0, 0);
 
-    ctx.fillStyle = css('--raised'); ctx.fillRect(0,0,w,h);
+    ctx.fillStyle = css('--panel-2'); ctx.fillRect(0,0,w,h);
     ctx.imageSmoothingEnabled = true;
 
     const scale = Math.min(w/(xMax-xMin), h/(yMax-yMin));
@@ -615,14 +796,14 @@
     ctx.strokeStyle = rgbaInk(0.18); ctx.lineWidth=1;
     ctx.beginPath(); ctx.moveTo(0, toPy(0)); ctx.lineTo(w, toPy(0)); ctx.stroke();
 
-    [[nxA, mo.A.symbol],[nxB, mo.B.symbol]].forEach(([nx,symbol]) => {
+    [[nxA, mo.A.symbol, level.kindA, mo.keyA],[nxB, mo.B.symbol, level.kindB, mo.keyB]].forEach(([nx,symbol,kind,key]) => {
       const px = toPx(nx), py = toPy(0);
       ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fillStyle = css('--text'); ctx.fill();
       ctx.font = '10px -apple-system, sans-serif'; ctx.fillStyle = css('--text-dim'); ctx.textAlign='center';
-      ctx.fillText(symbol + ' (' + KIND_LABEL[meta.kind] + ')', px, py-9);
+      ctx.fillText(symbol + ' (' + kindDisplayLabel(kind, key) + ')', px, py-9);
     });
 
-    orbitalLevelLabelEl.textContent = meta.label;
+    orbitalLevelLabelEl.textContent = levelLabel(selectedLevel, level);
     orbitalFormulaTag.textContent = formulaString(level, meta);
     const dominant = Math.abs(level.cA) >= Math.abs(level.cB) ? mo.A.symbol : mo.B.symbol;
     orbitalNoteEl.textContent = meta.symDesc + ' Weighted mostly toward ' + dominant + '.' + (meta.degenerate
@@ -631,10 +812,11 @@
   }
 
   function formulaString(level, meta){
-    const kindLabel = KIND_LABEL[meta.kind];
+    const kindLabelA = kindDisplayLabel(level.kindA, mo.keyA);
+    const kindLabelB = kindDisplayLabel(level.kindB, mo.keyB);
     const bSign = level.cB < 0 ? '−' : '+';
-    return 'ψ = ' + level.cA.toFixed(2) + '·' + kindLabel + '(' + mo.A.symbol + ') ' +
-           bSign + ' ' + Math.abs(level.cB).toFixed(2) + '·' + kindLabel + '(' + mo.B.symbol + ')';
+    return 'ψ = ' + level.cA.toFixed(2) + '·' + kindLabelA + '(' + mo.A.symbol + ') ' +
+           bSign + ' ' + Math.abs(level.cB).toFixed(2) + '·' + kindLabelB + '(' + mo.B.symbol + ')';
   }
 
   // ---------- MO energy-level diagram ----------
@@ -656,7 +838,12 @@
     const order = mo.order, levels = mo.levels, occ = mo.occ;
     const A = mo.A, B = mo.B;
 
-    const allE = order.map(id => levels[id].E).concat([A.e2s, A.e2p, B.e2s, B.e2p]);
+    // Hydrogen has no 2p reference energy at all (e2p is null) — only fold in the AO
+    // references that actually exist.
+    const refEnergies = [A.e2s, B.e2s];
+    if (A.e2p != null) refEnergies.push(A.e2p);
+    if (B.e2p != null) refEnergies.push(B.e2p);
+    const allE = order.map(id => levels[id].E).concat(refEnergies);
     const eMin = Math.min(...allE), eMax = Math.max(...allE);
     const ePad = (eMax-eMin)*0.10;
     const axisMin = eMin-ePad, axisMax = eMax+ePad;
@@ -665,7 +852,7 @@
     const plotW = w-padL-padR, plotH = h-padT-padB;
     const toY = (e) => padT + (axisMax-e)/(axisMax-axisMin) * plotH;
 
-    ctx.strokeStyle = css('--grid-line'); ctx.fillStyle = css('--muted');
+    ctx.strokeStyle = css('--grid-line'); ctx.fillStyle = css('--text-dim');
     ctx.font = '9.5px -apple-system, sans-serif'; ctx.textAlign = 'right';
     const step = niceStep(axisMax-axisMin);
     for (let v = Math.ceil(axisMin/step)*step; v <= axisMax; v += step){
@@ -675,7 +862,7 @@
     }
 
     ctx.save();
-    ctx.fillStyle = css('--muted'); ctx.font = '10px -apple-system, sans-serif';
+    ctx.fillStyle = css('--text-dim'); ctx.font = '10px -apple-system, sans-serif';
     ctx.translate(11, padT+plotH/2); ctx.rotate(-Math.PI/2); ctx.textAlign='center';
     ctx.fillText('orbital energy / eV', 0, 0);
     ctx.restore();
@@ -702,7 +889,7 @@
     // labels are, with a short leader line back to the real line if nudged.
     function drawAOLines(cx, y, count, anchorSide){
       const segs = centeredSegments(cx, count, AO_GAP);
-      ctx.strokeStyle = css('--muted'); ctx.lineWidth = 1.5;
+      ctx.strokeStyle = css('--text-dim'); ctx.lineWidth = 1.5;
       segs.forEach(s => { ctx.beginPath(); ctx.moveTo(s.x0,y); ctx.lineTo(s.x1,y); ctx.stroke(); });
       return anchorSide==='right' ? segs[segs.length-1].x1 : segs[0].x0;
     }
@@ -715,24 +902,37 @@
     }
     function drawAOLabel(cx, y, labelY, label){
       if (Math.abs(labelY-y) > 1){
-        ctx.strokeStyle = css('--muted'); ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
+        ctx.strokeStyle = css('--text-dim'); ctx.globalAlpha = 0.5; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(cx, y); ctx.lineTo(cx, labelY+10); ctx.stroke();
         ctx.globalAlpha = 1;
       }
-      ctx.fillStyle = css('--muted'); ctx.font = '10.5px -apple-system, sans-serif'; ctx.textAlign='center';
+      ctx.fillStyle = css('--text-dim'); ctx.font = '10.5px -apple-system, sans-serif'; ctx.textAlign='center';
       ctx.fillText(label, cx, labelY+16);
     }
-    const yA2s = toY(A.e2s), yA2p = toY(A.e2p), yB2s = toY(B.e2s), yB2p = toY(B.e2p);
-    const anchorA2s = drawAOLines(AOL_CX, yA2s, 1, 'right');
-    const anchorA2p = drawAOLines(AOL_CX, yA2p, 3, 'right');
-    const anchorB2s = drawAOLines(AOR_CX, yB2s, 1, 'left');
-    const anchorB2p = drawAOLines(AOR_CX, yB2p, 3, 'left');
-    const [labelA2s, labelA2p] = declutterPair(yA2s, yA2p, 22);
-    const [labelB2s, labelB2p] = declutterPair(yB2s, yB2p, 22);
-    drawAOLabel(AOL_CX, yA2s, labelA2s, A.symbol+' 2s');
-    drawAOLabel(AOL_CX, yA2p, labelA2p, A.symbol+' 2p');
-    drawAOLabel(AOR_CX, yB2s, labelB2s, B.symbol+' 2s');
-    drawAOLabel(AOR_CX, yB2p, labelB2p, B.symbol+' 2p');
+    // A light atom (H, Li or Be — no modeled 2p) contributes a single valence-s AO, not a
+    // 2s/2p pair — draw one reference line and point both the "s-side" and "p-side"
+    // anchors used downstream at it, so correlation and mixing lines naturally land on
+    // that one orbital regardless of which MO-kind they're keyed to.
+    function drawAtomSide(cx, key, atom, anchorSide){
+      if (atom.e2p == null){
+        const yS = toY(atom.e2s);
+        const anchor = drawAOLines(cx, yS, 1, anchorSide);
+        const shellLabel = key === 'H' ? '1s' : '2s';
+        drawAOLabel(cx, yS, yS, atom.symbol+' '+shellLabel);
+        return { y2s:yS, y2p:yS, anchor2s:anchor, anchor2p:anchor };
+      }
+      const y2s = toY(atom.e2s), y2p = toY(atom.e2p);
+      const anchor2s = drawAOLines(cx, y2s, 1, anchorSide);
+      const anchor2p = drawAOLines(cx, y2p, 3, anchorSide);
+      const [labelS, labelP] = declutterPair(y2s, y2p, 22);
+      drawAOLabel(cx, y2s, labelS, atom.symbol+' 2s');
+      drawAOLabel(cx, y2p, labelP, atom.symbol+' 2p');
+      return { y2s, y2p, anchor2s, anchor2p };
+    }
+    const sideA = drawAtomSide(AOL_CX, mo.keyA, A, 'right');
+    const sideB = drawAtomSide(AOR_CX, mo.keyB, B, 'left');
+    const yA2s = sideA.y2s, yA2p = sideA.y2p, anchorA2s = sideA.anchor2s, anchorA2p = sideA.anchor2p;
+    const yB2s = sideB.y2s, yB2p = sideB.y2p, anchorB2s = sideB.anchor2s, anchorB2p = sideB.anchor2p;
 
     // Correlation lines fade/thicken with |c|^2 on that side — a direct visual read of how
     // much of each MO actually sits on Atom A vs Atom B.
@@ -747,8 +947,9 @@
       const segs = levelSegments(meta);
       const leftEdge = Math.min(...segs.map(s=>s.x0)), rightEdge = Math.max(...segs.map(s=>s.x1));
       const { wA, wB } = weightPair(level);
-      const yAOa = meta.kind==='s' ? yA2s : yA2p, anchorA = meta.kind==='s' ? anchorA2s : anchorA2p;
-      const yAOb = meta.kind==='s' ? yB2s : yB2p, anchorB = meta.kind==='s' ? anchorB2s : anchorB2p;
+      const kindA = level.kindA || meta.kind, kindB = level.kindB || meta.kind;
+      const yAOa = kindA==='s' ? yA2s : yA2p, anchorA = kindA==='s' ? anchorA2s : anchorA2p;
+      const yAOb = kindB==='s' ? yB2s : yB2p, anchorB = kindB==='s' ? anchorB2s : anchorB2p;
       ctx.strokeStyle = rgbaInk((0.10+0.55*wA).toFixed(3));
       ctx.beginPath(); ctx.moveTo(anchorA,yAOa); ctx.lineTo(leftEdge,y); ctx.stroke();
       ctx.strokeStyle = rgbaInk((0.10+0.55*wB).toFixed(3));
@@ -758,7 +959,7 @@
 
     // s-p mixing: extra correlation lines from the 2s AO to sigma(2p) [or sigma*(2p)] and
     // vice versa, on both atoms, shown only when mixing is on.
-    if (mixing){
+    if (mixing && levels.sigma2s && levels.sigma2p){
       function drawMixingLines(idS, idP){
         const yS = toY(levels[idS].E), yP = toY(levels[idP].E);
         const segS = levelSegments(LEVEL_META[idS]), segP = levelSegments(LEVEL_META[idP]);
@@ -790,8 +991,9 @@
 
     rows.forEach(({ id, meta, y, segs, leftEdge, rightEdge, labelY }) => {
       const n = occ[id]||0;
-      const color = meta.bonding ? css('--coral') : css('--peach');
+      const color = meta.nonbonding ? css('--text-dim') : (meta.bonding ? css('--coral') : css('--peach'));
       const isSelected = id === selectedLevel;
+      const label = levelLabel(id, levels[id]);
 
       segs.forEach(seg => {
         ctx.strokeStyle = color; ctx.lineWidth = isSelected?3:2;
@@ -809,8 +1011,8 @@
         ctx.globalAlpha = 1;
       }
       ctx.fillStyle = color; ctx.font = '11px -apple-system, sans-serif'; ctx.textAlign='left';
-      ctx.fillText(meta.label, rightEdge+8, labelY+4);
-      const labelWidth = ctx.measureText(meta.label).width;
+      ctx.fillText(label, rightEdge+8, labelY+4);
+      const labelWidth = ctx.measureText(label).width;
 
       const boxes = subOccupancy(n, meta.degenerate);
       ctx.font = 'bold 18px -apple-system, sans-serif'; ctx.textAlign='center';
@@ -857,22 +1059,33 @@
     const A = mo.A, B = mo.B;
     speciesLabelEl.textContent = A.symbol + '–' + B.symbol;
     configLabelEl.textContent = mo.order.filter(id => mo.occ[id]>0)
-      .map(id => LEVEL_META[id].label + toSup(mo.occ[id])).join('  ');
+      .map(id => levelLabel(id, mo.levels[id]) + toSup(mo.occ[id])).join('  ');
     bondOrderLabelEl.textContent = String(mo.bondOrder);
     magnetismLabelEl.textContent = mo.unpaired>0
       ? 'paramagnetic (' + mo.unpaired + ' unpaired e⁻)'
       : 'diamagnetic';
     bondLengthLabelEl.textContent = mo.bondLength.value.toFixed(3) + ' Å' + (mo.bondLength.estimated ? ' *' : '');
 
-    const gapA = A.e2p - A.e2s, gapB = B.e2p - B.e2s, avgGap = (gapA+gapB)/2;
-    mixingDescEl.textContent = mixing
-      ? 'π(2p) sits below σ(2p) here (avg. ΔE(2s,2p) = ' + avgGap.toFixed(1) + ' eV — small enough for real mixing between the 2s and 2p atomic levels).'
-      : 'σ(2p) sits below π(2p) here (avg. ΔE(2s,2p) = ' + avgGap.toFixed(1) + ' eV — large enough that mixing has little effect).';
+    const noPA = A.e2p == null, noPB = B.e2p == null;
+    if (noPA || noPB){
+      mixingDescEl.textContent = 's–p mixing isn’t modeled here: at least one atom has no modeled 2p orbital (hydrogen has none at all; Li/Be’s is empty and far higher in energy in the ground state, so it’s excluded), leaving no second σ-symmetric combination to mix with.';
+    } else {
+      const gapA = A.e2p - A.e2s, gapB = B.e2p - B.e2s, avgGap = (gapA+gapB)/2;
+      mixingDescEl.textContent = mixing
+        ? 'π(2p) sits below σ(2p) here (avg. ΔE(2s,2p) = ' + avgGap.toFixed(1) + ' eV — small enough for real mixing between the 2s and 2p atomic levels).'
+        : 'σ(2p) sits below π(2p) here (avg. ΔE(2s,2p) = ' + avgGap.toFixed(1) + ' eV — large enough that mixing has little effect).';
+    }
 
     const dEN = Math.abs(A.en - B.en);
     const moreEN = A.en >= B.en ? A.symbol : B.symbol;
     if (atomAKey === atomBKey){
       polarityNoteEl.textContent = 'Same element on both sides — this reduces exactly to the homonuclear case (equal coefficients, no polarisation).';
+    } else if (noPA && noPB){
+      polarityNoteEl.textContent = 'Neither atom has a modeled 2p orbital here, so this is a simple two-orbital σ/σ* problem — the same shape as the homonuclear case, just for two different elements (ΔEN ≈ ' + dEN.toFixed(2) + ', more electronegative: ' + moreEN + ').';
+    } else if (noPA || noPB){
+      const heavySym = noPA ? B.symbol : A.symbol;
+      const lightSym = noPA ? A.symbol : B.symbol;
+      polarityNoteEl.textContent = heavySym + '’s 2s and its two perpendicular 2p orbitals have no partner on ' + lightSym + ', so they stay non-bonding lone pairs — only ' + heavySym + '’s bond-axis 2p forms a real σ/σ* pair with ' + lightSym + '’s lone valence s orbital (ΔEN ≈ ' + dEN.toFixed(2) + ', more electronegative: ' + moreEN + ').';
     } else if (dEN > 2.0){
       polarityNoteEl.textContent = 'Large electronegativity difference (ΔEN ≈ ' + dEN.toFixed(2) + ', more electronegative: ' + moreEN + ') — the bond-order count above likely overstates real bonding here; see "an honest limitation" in the model notes.';
     } else {

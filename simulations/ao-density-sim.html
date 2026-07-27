@@ -5,16 +5,75 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Atomic Orbital Density</title>
 <link rel="stylesheet" href="../assets/css/theme.css">
-<link rel="stylesheet" href="../assets/css/sim.css">
 <script src="../assets/js/theme.js"></script>
 <style>
   :root { --canvas-bg: #05070c; }
 
-  .controls { margin-bottom: 10px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  #orbitalSelect { min-width: 160px; }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    padding: 16px;
+  }
 
-  .btn { display: inline-flex; align-items: center; gap: 6px; }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  /* ── Controls ── */
+  .controls {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  select {
+    font: inherit; font-size: 0.88rem;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 7px 10px; cursor: pointer; min-width: 160px;
+  }
+  select:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: inherit; font-size: 0.88rem; font-weight: 500;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 7px 12px; cursor: pointer; white-space: nowrap;
+    transition: background .12s, border-color .12s, color .12s;
+  }
+  .btn:hover {
+    background: var(--raised);
+    color: var(--gold);
+    border-color: var(--accent);
+  }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .slider-wrap {
+    display: flex; align-items: center; gap: 8px;
+    flex: 1 1 190px; min-width: 190px;
+  }
+  .slider-wrap label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+  .slider-wrap .val  { font-size: 0.82rem; font-weight: 500; min-width: 36px; }
+
+  input[type=range] {
+    flex: 1; min-width: 60px; -webkit-appearance: none; appearance: none;
+    height: 3px; background: var(--border); border-radius: 2px;
+    outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--text); border: 2px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--border); cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--text); border: 2px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--border); cursor: pointer;
+  }
 
   .axes-toggle {
     display: flex; align-items: center; gap: 6px;
@@ -69,7 +128,7 @@
   .slice-canvas-wrap canvas { width: 100%; height: 100%; display: block; }
   .slice-label {
     text-align: center; font-size: 0.78rem;
-    color: var(--muted); margin: 4px 0 0;
+    color: var(--muted); margin-top: 4px;
   }
 
   .sr-only {
@@ -89,7 +148,6 @@
 
   <!-- ── Controls ── -->
   <div class="controls">
-   <div class="ctl-row">
 
     <select id="orbitalSelect" aria-label="Select orbital">
       <optgroup label="s orbitals">
@@ -110,14 +168,38 @@
       </optgroup>
     </select>
 
-    <div class="slider-row">
-      <div class="slider-head"><label class="ctl-label" for="speed">Speed</label><span class="val" id="speedOut">12</span></div>
+    <!-- Play / Pause -->
+    <button class="btn" id="playBtn" aria-label="Pause">
+      <svg id="playIcon" width="14" height="14" viewBox="0 0 14 14"
+           fill="currentColor" aria-hidden="true">
+        <!-- pause bars (default) -->
+        <rect x="2"   y="2" width="3.5" height="10" rx="1"/>
+        <rect x="8.5" y="2" width="3.5" height="10" rx="1"/>
+      </svg>
+      <span id="playLabel">Pause</span>
+    </button>
+
+    <!-- Reset -->
+    <button class="btn" id="resetBtn" aria-label="Reset">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+           stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M1 7a6 6 0 1 0 1.2-3.6"/>
+        <polyline points="1,2 1,7 6,7"/>
+      </svg>
+      Reset
+    </button>
+
+    <div class="slider-wrap">
+      <label for="speed">Speed</label>
       <input type="range" id="speed" min="1" max="50" step="1" value="12">
+      <span class="val" id="speedOut">12</span>
     </div>
 
-    <div class="slider-row">
-      <div class="slider-head"><label class="ctl-label" for="opacity">Opacity</label><span class="val" id="opacityOut">22%</span></div>
+    <div class="slider-wrap">
+      <label for="opacity">Opacity</label>
       <input type="range" id="opacity" min="5" max="60" step="1" value="22">
+      <span class="val" id="opacityOut">22%</span>
     </div>
 
     <label class="axes-toggle" for="axesToggle">
@@ -125,31 +207,6 @@
       Show axes
     </label>
 
-    <div class="ctl-run">
-      <!-- Play / Pause -->
-      <button class="btn btn-run" id="playBtn" aria-label="Pause">
-        <svg id="playIcon" width="14" height="14" viewBox="0 0 14 14"
-             fill="currentColor" aria-hidden="true">
-          <!-- pause bars (default) -->
-          <rect x="2"   y="2" width="3.5" height="10" rx="1"/>
-          <rect x="8.5" y="2" width="3.5" height="10" rx="1"/>
-        </svg>
-        <span id="playLabel">Pause</span>
-      </button>
-
-      <!-- Reset -->
-      <button class="btn btn-ghost" id="resetBtn" aria-label="Reset">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
-             stroke="currentColor" stroke-width="1.8"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M1 7a6 6 0 1 0 1.2-3.6"/>
-          <polyline points="1,2 1,7 6,7"/>
-        </svg>
-        Reset
-      </button>
-    </div>
-
-   </div>
   </div>
 
   <!-- ── Legend ── -->

@@ -5,20 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Maxwell–Boltzmann Emergence</title>
 <link rel="stylesheet" href="../assets/css/theme.css">
-<link rel="stylesheet" href="../assets/css/sim.css">
 <script src="../assets/js/theme.js"></script>
 <style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font);
+    -webkit-font-smoothing:antialiased;
+    padding:16px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
   /* ---------- main layout ---------- */
-  /* sim.css only supplies the <=860px .stage override, not a base rule,
-     so this sim's 2-column grid still needs to be declared locally. */
   .stage{
     display:grid;
     grid-template-columns:minmax(0,1fr) minmax(0,1.18fr);
     gap:14px;
     margin-bottom:14px;
   }
+  @media(max-width:860px){.stage{grid-template-columns:1fr;}}
 
-  .card-label{font-size:13px;color:var(--muted);margin-bottom:10px;}
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:12px;
+    position:relative;
+  }
+  .card-label{
+    font-size:13px;font-weight:600;
+    color:var(--muted);
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:10px;
+  }
   .card-label .right{color:var(--muted-dim);font-weight:400;font-size:12px;}
   .toggles{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
   .curve-toggle{
@@ -59,37 +80,41 @@
   #actToggle:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
   #actToggle .pct{font-variant-numeric:tabular-nums;}
 
-  /* sim.css's shared canvas rule paints a --raised background; this sim's
-     canvases either fully repaint themselves every frame (#box) or want
-     to show the card's own surface through empty plot area (#hist), so
-     that shared background is cancelled back to transparent here. */
-  canvas{background:transparent;}
+  canvas{display:block;width:100%;height:auto;border-radius:3px;}
   #box{background:#05070c;}
   #hist{height:100%;}
 
+  /* ---------- readout column ---------- */
+  .readout{display:flex;flex-direction:column;}
+  .hist-wrap{flex:1;min-height:0;}
+
   .stats{
-    grid-template-columns:repeat(5,1fr);
+    display:grid;grid-template-columns:repeat(5,1fr);
+    gap:1px;background:var(--border-soft);
+    border:1px solid var(--border-soft);border-radius:4px;overflow:hidden;
     margin-top:10px;
   }
-  .stat{padding:8px 10px;}
-  .stat .k{font-size:11.5px;}
+  .stat{background:var(--raised);padding:8px 10px;}
+  .stat .k{
+    font-size:11.5px;color:var(--muted-dim);
+    display:block;margin-bottom:4px;
+  }
   .stat .v{
-    font-family:var(--font);
     font-variant-numeric:tabular-nums;
-    font-size:17px;font-weight:600;line-height:1;
+    font-size:17px;font-weight:600;
+    color:var(--text);line-height:1;
   }
   .stat .v small{font-size:10px;color:var(--muted);font-weight:400;margin-left:2px;}
   .stat.accent .v{color:var(--accent);}
   @media(max-width:520px){.stats{grid-template-columns:repeat(2,1fr);}}
 
   /* ---------- controls ---------- */
-  /* this sim lays its controls out as a CSS grid (not the shared
-     .ctl-row flex pattern), so the grid itself stays local. */
   .controls{
+    background:var(--surface);border:1px solid var(--border);border-radius:6px;
+    padding:14px 16px;
     display:grid;
     grid-template-columns:auto auto 1fr 1fr auto;
     gap:18px 22px;align-items:center;
-    padding:14px 16px;
   }
   @media(max-width:860px){
     .controls{grid-template-columns:1fr 1fr;gap:14px;}
@@ -97,9 +122,12 @@
   }
   @media(max-width:460px){.controls{grid-template-columns:1fr;}}
 
-  .ctl-label{font-size:12px;margin-bottom:8px;display:block;}
+  .ctl-label{
+    font-size:12px;font-weight:600;color:var(--muted-dim);
+    margin-bottom:8px;display:block;
+  }
 
-  /* mode buttons -- segmented group, no shared equivalent */
+  /* mode buttons */
   .mode-btns{display:flex;gap:8px;flex-wrap:wrap;}
   .mode-btns button{
     font-family:var(--font);font-size:13px;font-weight:500;
@@ -111,18 +139,37 @@
   .mode-btns button:hover:not([aria-pressed="true"]){color:var(--text);border-color:var(--muted-dim);}
 
   /* sliders */
+  .slider-row{display:flex;flex-direction:column;}
+  .slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
   .slider-head .ctl-label{margin:0;}
-  .slider-head .val{font-family:var(--font);font-variant-numeric:tabular-nums;}
+  .slider-head .val{font-variant-numeric:tabular-nums;font-size:13px;font-weight:500;color:var(--text);}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:3px;
+    background:var(--border);border-radius:2px;outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--text);border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--border);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:var(--text);
+    border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border);cursor:pointer;
+  }
   input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--accent);}
   input[type=range]:disabled{opacity:.4;cursor:not-allowed;}
 
-  .ctl-run{align-items:flex-end;height:100%;}
+  .ctl-run{display:flex;gap:10px;align-items:flex-end;height:100%;}
   .btn{
     font-family:var(--font);font-size:13.5px;font-weight:600;
-    padding:9px 16px;
+    cursor:pointer;border-radius:4px;
+    padding:9px 16px;transition:background .15s,border-color .15s,color .15s;
   }
   .btn-run{background:var(--accent);color:#0d1117;border:1px solid var(--accent);min-width:100px;}
   .btn-run:hover{background:var(--gold);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:var(--muted-dim);}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
 </style>
 </head>
@@ -155,7 +202,7 @@
           </button>
         </div>
       </div>
-      <div class="graph-wrap">
+      <div class="hist-wrap">
         <canvas id="hist" width="1100" height="640" aria-label="Live histogram of particle speeds with Maxwell-Boltzmann curve"></canvas>
       </div>
       <div class="stats">

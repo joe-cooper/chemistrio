@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="../assets/css/theme.css">
-<link rel="stylesheet" href="../assets/css/sim.css">
 <script src="../assets/js/theme.js"></script>
 <!-- <title>Phase Transitions — A Molecular Dynamics Simulation</title> -->
 <style>
@@ -12,9 +11,16 @@
     --solid-c: #4a5a8a;
     --liquid-c: #3d8a82;
     --gas-c: #c2622f;
+    font-family: var(--font);
   }
-  body { padding: 28px 20px 60px; }
-  .wrap { max-width: 980px; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    padding: 28px 20px 60px;
+  }
+  .container { max-width: 980px; margin: 0 auto; }
   h1 {
     font-family: Georgia, "Times New Roman", serif;
     font-weight: 500;
@@ -35,10 +41,17 @@
     gap: 22px;
   }
   .canvas-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
     position: relative;
     min-width: 0;
   }
   #simCanvas {
+    display: block;
+    width: 100%;
+    height: auto;
     aspect-ratio: 45 / 32;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -52,8 +65,7 @@
     border-radius: 20px;
     font-size: 0.78rem;
     font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    letter-spacing: 0.02em;
     color: #fff;
     background: var(--solid-c);
     transition: background 0.4s ease;
@@ -86,8 +98,7 @@
   }
   .panel-box h2 {
     font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.02em;
     color: var(--muted);
     margin: 0 0 12px;
     font-weight: 600;
@@ -105,6 +116,7 @@
   .temp-readout {
     display: flex;
     justify-content: space-between;
+    margin-top: 6px;
     font-size: 0.82rem;
     color: var(--muted);
   }
@@ -113,15 +125,39 @@
     gap: 10px;
     margin-top: 14px;
   }
-  .button-row .btn { flex: 1; }
-  .note ul { font-size: 12.5px; line-height: 1.6; padding-left: 20px; color: var(--muted); }
+  button {
+    flex: 1;
+    padding: 9px 10px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    color: var(--accent);
+    border-radius: 6px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:hover { background: color-mix(in srgb, var(--accent) 24%, var(--surface)); }
+  button.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  button.primary:hover { background: var(--gold); }
+  details.explainer summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
+  details.explainer p {
+    font-size: 0.86rem;
+    line-height: 1.55;
+    color: var(--text);
+  }
+  details.explainer ul { font-size: 0.86rem; line-height: 1.55; padding-left: 20px; }
   .hc-box { padding-bottom: 18px; }
   .hc-subtitle { font-size: 0.78rem; font-weight: 400; color: var(--muted); text-transform: none; letter-spacing: 0; }
-  #hcCanvas { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; }
+  #hcCanvas { display: block; width: 100%; height: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; }
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="container">
   <!-- <h1>Phase Transitions</h1> -->
   <!-- <p class="subtitle"> -->
     <!-- A 2D molecular dynamics simulation of a Lennard-Jones cluster. Particles interact through a
@@ -131,7 +167,7 @@
   </p> -->
 
   <div class="main-layout">
-    <div class="card canvas-panel">
+    <div class="canvas-panel">
       <canvas id="simCanvas" width="630" height="448"></canvas>
       <div id="stateBadge" class="state-badge">Solid</div>
       <div class="legend-row">
@@ -143,65 +179,57 @@
     </div>
 
     <div class="controls-panel">
-      <div class="card">
-        <div class="card-label"><span>Temperature</span></div>
-        <div class="slider-row">
-          <div class="slider-head"><span class="ctl-label">Target temperature</span></div>
-          <input type="range" id="tempSlider" min="0.02" max="3.0" step="0.01" value="0.05">
-          <div class="temp-readout">
-            <span id="tempStarReadout">T* = 0.05</span>
-            <span id="tempKReadout">≈ 6 K (argon-like)</span>
-          </div>
+      <div class="panel-box">
+        <h2>Temperature</h2>
+        <label class="slider-label">
+          <span>Target temperature</span>
+        </label>
+        <input type="range" id="tempSlider" min="0.02" max="3.0" step="0.01" value="0.05">
+        <div class="temp-readout">
+          <span id="tempStarReadout">T* = 0.05</span>
+          <span id="tempKReadout">≈ 6 K (argon-like)</span>
         </div>
         <div class="button-row">
-          <button id="playPause" class="btn btn-run">Pause</button>
-          <button id="resetBtn" class="btn btn-ghost">Reset to Solid</button>
+          <button id="playPause" class="primary">Pause</button>
+          <button id="resetBtn">Reset to Solid</button>
         </div>
         <div class="button-row">
-          <button id="sweepBtn" class="btn btn-ghost">Start Temperature Sweep</button>
+          <button id="sweepBtn">Start Temperature Sweep</button>
         </div>
       </div>
 
-      <div class="card">
-        <div class="card-label"><span>Particles &amp; interactions</span></div>
-        <div class="slider-row">
-          <div class="slider-head"><span class="ctl-label">Particle count</span></div>
-          <input type="range" id="countSlider" min="4" max="14" step="1" value="10">
-          <div class="temp-readout">
-            <span id="countReadout">100 particles</span>
-            <span>applies on release</span>
-          </div>
+      <div class="panel-box">
+        <h2>Particles &amp; interactions</h2>
+        <label class="slider-label"><span>Particle count</span></label>
+        <input type="range" id="countSlider" min="4" max="14" step="1" value="10">
+        <div class="temp-readout">
+          <span id="countReadout">100 particles</span>
+          <span>applies on release</span>
         </div>
 
-        <div class="slider-row" style="margin-top:14px;">
-          <div class="slider-head"><span class="ctl-label">Interaction strength (ε)</span></div>
-          <input type="range" id="epsSlider" min="0.3" max="2.5" step="0.05" value="1.0">
-          <div class="temp-readout">
-            <span id="epsReadout">ε = 1.00</span>
-            <span id="epsHint">argon-like</span>
-          </div>
+        <label class="slider-label" style="margin-top:14px;"><span>Interaction strength (ε)</span></label>
+        <input type="range" id="epsSlider" min="0.3" max="2.5" step="0.05" value="1.0">
+        <div class="temp-readout">
+          <span id="epsReadout">ε = 1.00</span>
+          <span id="epsHint">argon-like</span>
         </div>
 
-        <div class="slider-row" style="margin-top:14px;">
-          <div class="slider-head"><span class="ctl-label">Gravity</span></div>
-          <input type="range" id="gravitySlider" min="0" max="0.15" step="0.005" value="0.045">
-          <div class="temp-readout">
-            <span id="gravityReadout">g = 0.045</span>
-            <span id="gravityHint">Earth-like</span>
-          </div>
+        <label class="slider-label" style="margin-top:14px;"><span>Gravity</span></label>
+        <input type="range" id="gravitySlider" min="0" max="0.15" step="0.005" value="0.045">
+        <div class="temp-readout">
+          <span id="gravityReadout">g = 0.045</span>
+          <span id="gravityHint">Earth-like</span>
         </div>
 
-        <div class="slider-row" style="margin-top:14px;">
-          <div class="slider-head"><span class="ctl-label">Cohesion</span></div>
-          <input type="range" id="cohesionSlider" min="0" max="0.05" step="0.002" value="0.02">
-          <div class="temp-readout">
-            <span id="cohesionReadout">κ = 0.020</span>
-            <span id="cohesionHint">helps re-solidify</span>
-          </div>
+        <label class="slider-label" style="margin-top:14px;"><span>Cohesion</span></label>
+        <input type="range" id="cohesionSlider" min="0" max="0.05" step="0.002" value="0.02">
+        <div class="temp-readout">
+          <span id="cohesionReadout">κ = 0.020</span>
+          <span id="cohesionHint">helps re-solidify</span>
         </div>
       </div>
 
-      <!-- <details class="note">
+      <!-- <details class="explainer panel-box">
         <summary>How this simulation works</summary>
         <p>
           Every pair of particles interacts through the Lennard-Jones potential
@@ -269,12 +297,12 @@
   </div>
 </div>
 
-<div class="wrap" style="margin-top:22px;">
-  <div class="card hc-box">
-    <div class="card-label">
-      <span>Heating curve</span>
+<div class="container" style="margin-top:22px;">
+  <div class="panel-box hc-box">
+    <h2 style="display:flex;align-items:baseline;gap:8px;">
+      Heating curve
       <span id="hcSubtitle" class="hc-subtitle">— press Start Temperature Sweep to record</span>
-    </div>
+    </h2>
     <canvas id="hcCanvas" width="940" height="200"></canvas>
   </div>
 </div>
@@ -946,7 +974,7 @@
   function stopSweep(finalTinst) {
     sweeping = false;
     sweepBtn.textContent = "Start Temperature Sweep";
-    sweepBtn.classList.remove("btn-run"); sweepBtn.classList.add("btn-ghost");
+    sweepBtn.classList.remove("primary");
     tempSlider.disabled = false;
     // Hand off smoothly to the Berendsen thermostat: target whatever T the system
     // has actually reached so there's no sudden jolt on returning to interactive mode.
@@ -982,11 +1010,11 @@
       tempSlider.disabled = true;
       sweeping = true;
       sweepBtn.textContent = "Stop Sweep";
-      sweepBtn.classList.remove("btn-ghost"); sweepBtn.classList.add("btn-run");
+      sweepBtn.classList.add("primary");
       if (!running) { // auto-play if paused
         running = true;
         playPauseBtn.textContent = "Pause";
-        playPauseBtn.classList.remove("btn-ghost"); playPauseBtn.classList.add("btn-run");
+        playPauseBtn.classList.add("primary");
       }
       drawHeatingCurve();
     }
@@ -1037,8 +1065,7 @@
   playPauseBtn.addEventListener("click", () => {
     running = !running;
     playPauseBtn.textContent = running ? "Pause" : "Play";
-    playPauseBtn.classList.toggle("btn-run", running);
-    playPauseBtn.classList.toggle("btn-ghost", !running);
+    playPauseBtn.classList.toggle("primary", running);
   });
 
   resetBtn.addEventListener("click", () => {
@@ -1060,7 +1087,7 @@
     // would not advance them — the user would see a frozen lattice and think nothing happened.)
     running = true;
     playPauseBtn.textContent = "Pause";
-    playPauseBtn.classList.remove("btn-ghost"); playPauseBtn.classList.add("btn-run");
+    playPauseBtn.classList.add("primary");
     hcData = [];
     hcStart = null;
     hcSubtitle.textContent = "— press Start Temperature Sweep to record";
