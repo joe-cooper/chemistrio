@@ -46,8 +46,23 @@
     font-size: 13px; color: var(--gold); font-weight:600; min-width: 72px; text-align:right;
   }
   .btn-group{ display:flex; gap:8px; flex-wrap:wrap; }
-  .chip-toggle:hover:not(.active):not(:disabled){color:var(--text);border-color:var(--muted-dim);}
-  .chip-toggle:disabled{opacity:.4;cursor:not-allowed;}
+  button{
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  button:hover{ border-color: var(--coral); color: var(--coral); }
+  button.active{ border-color: var(--coral); color: var(--coral); background: color-mix(in srgb, var(--coral) 8%, transparent); }
+  .stats{
+    display:flex; gap: 18px; flex-wrap: wrap;
+    font-size: 11.5px; color: var(--text-dim);
+  }
+  .stats b{ color: var(--text); font-variant-numeric: tabular-nums; }
 
   .card-grid{
     display:grid; grid-template-columns: 1fr 1fr; gap: 16px;
@@ -90,18 +105,6 @@
   <div>
     <div style="font-size:12px; color:var(--muted); text-align:right;">overlap integral (rel. to max over all 4 types)</div>
     <div style="font-size:20px; font-weight:700; text-align:right;" id="overlap-label">1.00</div>
-  </div>
-</div>
-
-<div class="controls" id="alpha-toggle-row">
-  <div class="slider-block">
-    <div class="slider-row">
-      <label>on-site energy</label>
-      <div class="btn-group" id="alpha-group">
-        <button data-alpha="same" class="chip-toggle">Similar energy (e.g. C-H)</button>
-        <button data-alpha="diff" class="chip-toggle active">Different energy (e.g. C-C)</button>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -214,12 +217,8 @@
   // three modes pair same-kind orbitals (s-s, or p-p at the same n), so there's no analogous
   // splitting to model there.
   const ALPHA_GAP_SP = 0.8;
-  // Toggled by the "s/p on-site energy" control (sp mode only): 'diff' keeps the realistic,
-  // screened gap above; 'same' treats s and p as hydrogenically degenerate (alphaL=alphaR=0),
-  // matching the naive same-shell assumption the notes above call out as physically wrong.
-  let spAlphaMode = 'diff';
   function modeAlphas(modeKey){
-    if (modeKey === 'sp' && spAlphaMode === 'diff') return { alphaL: -ALPHA_GAP_SP/2, alphaR: ALPHA_GAP_SP/2 };
+    if (modeKey === 'sp') return { alphaL: -ALPHA_GAP_SP/2, alphaR: ALPHA_GAP_SP/2 };
     return { alphaL: 0, alphaR: 0 };
   }
 
@@ -396,8 +395,6 @@
   const bondFormulaTag = document.getElementById('bond-formula-tag');
   const antiFormulaTag = document.getElementById('anti-formula-tag');
   const modeButtons = Array.from(document.querySelectorAll('#mode-group button'));
-  const alphaToggleRow = document.getElementById('alpha-toggle-row');
-  const alphaButtons = Array.from(document.querySelectorAll('#alpha-group button'));
 
   slider.value = R_ang;
   slider.addEventListener('input', () => { R_ang = parseFloat(slider.value); stopAnim(); });
@@ -421,34 +418,9 @@
     slider.value = R_ang;
     stopAnim();
   }
-  const sameAlphaBtn = alphaButtons.find(b => b.dataset.alpha === 'same');
-  const diffAlphaBtn = alphaButtons.find(b => b.dataset.alpha === 'diff');
-
-  // Only s+p pairs two *different* kinds of orbital on the two atoms, so only that mode has
-  // a meaningful choice between giving them the same or different on-site energy (see
-  // modeAlphas/ALPHA_GAP_SP). s-s and p-p pair the same orbital kind on both atoms, where
-  // "different energy" has no defensible meaning here -- so those modes lock the toggle to
-  // a single, disabled "same energy" pill rather than hiding the control outright.
-  function updateAlphaControls(){
-    alphaToggleRow.style.display = '';
-    if (mode === 'sp'){
-      diffAlphaBtn.style.display = '';
-      sameAlphaBtn.disabled = false;
-      diffAlphaBtn.disabled = false;
-      sameAlphaBtn.textContent = 'Similar energy (e.g. C-H)';
-      sameAlphaBtn.classList.toggle('active', spAlphaMode === 'same');
-      diffAlphaBtn.classList.toggle('active', spAlphaMode === 'diff');
-    } else {
-      diffAlphaBtn.style.display = 'none';
-      sameAlphaBtn.disabled = true;
-      sameAlphaBtn.classList.add('active');
-      sameAlphaBtn.textContent = mode === 'ss' ? 'Same energy (e.g. H-H)' : 'Same energy (e.g. C-C)';
-    }
-  }
   function setMode(m){
     mode = m;
     modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === m));
-    updateAlphaControls();
     updateModeReadout();
   }
   function updateModeReadout(){
@@ -460,13 +432,7 @@
   }
 
   modeButtons.forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
-  alphaButtons.forEach(b => b.addEventListener('click', () => {
-    if (b.disabled) return;
-    spAlphaMode = b.dataset.alpha;
-    updateAlphaControls();
-    moAxisKey = null; // force the MO diagram's cached axis range to recompute
-  }));
-  setMode(mode);
+  updateModeReadout();
 
   // ---------- canvas setup helper (device-pixel-ratio aware) ----------
   function setupCanvas(canvas, cssHeight){

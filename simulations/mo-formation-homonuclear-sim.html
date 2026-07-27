@@ -66,21 +66,20 @@
 <body>
 <div class="wrap">
 <h1>Molecular Orbital Diagram: Period 2 Homonuclear Diatomics</h1>
-<p class="subtitle">Valence atomic orbitals combining to form a full set of molecular orbitals — pick a diatomic from H₂ to F₂ (or the idealized "Model" diatomic), toggle s–p mixing (Period 2 species with an occupied 2p), and click any level in the diagram to see that orbital's shape</p>
+<p class="subtitle">Valence 2s and 2p atomic orbitals combining to form a full set of molecular orbitals — pick a diatomic from Li₂ to F₂ (or the idealized "Model" diatomic), toggle s–p mixing, and click any level in the diagram to see that orbital's shape</p>
 
 <div class="controls">
   <div class="slider-block">
     <div class="slider-row">
       <label>Diatomic</label>
       <div class="btn-group" id="species-group">
-        <button class="chip-toggle" data-sp="H2">H₂</button>
-        <button class="chip-toggle" data-sp="Li2">Li₂</button>
-        <button class="chip-toggle" data-sp="Be2">Be₂</button>
-        <button class="chip-toggle" data-sp="B2">B₂</button>
-        <button class="chip-toggle" data-sp="C2">C₂</button>
-        <button class="chip-toggle active" data-sp="N2">N₂</button>
-        <button class="chip-toggle" data-sp="O2">O₂</button>
-        <button class="chip-toggle" data-sp="F2">F₂</button>
+        <button data-sp="Li2">Li₂</button>
+        <button data-sp="Be2">Be₂</button>
+        <button data-sp="B2">B₂</button>
+        <button data-sp="C2">C₂</button>
+        <button data-sp="N2" class="active">N₂</button>
+        <button data-sp="O2">O₂</button>
+        <button data-sp="F2">F₂</button>
         <div class="group-sep"></div>
         <button class="chip-toggle model-btn" data-sp="Model" title="Hypothetical generic diatomic — illustrates the idealized textbook MO ordering rather than a real element's measured data">Model</button>
       </div>
@@ -105,16 +104,16 @@
 </div>
 
 <div class="controls">
-  <div class="slider-row" id="mixing-row">
+  <div class="slider-row">
     <label>s–p mixing</label>
     <button class="chip-toggle active" id="mixing-toggle">ON</button>
   </div>
   <div style="flex:2 1 320px; font-size:12px; color:var(--muted);" id="mixing-desc"></div>
 </div>
 
-<div class="card-grid card-grid-mo">
-  <div class="card">
-    <div class="card-label">MO energy-level diagram <span class="tag">click a level to see its shape — valence orbitals only</span></div>
+<div class="panel-grid panel-grid-mo">
+  <div class="panel">
+    <div class="panel-title">MO energy-level diagram <span class="tag">click a level to see its shape — valence 2s/2p only</span></div>
     <canvas id="canvas-mo" height="440"></canvas>
   </div>
   <div class="card">
@@ -141,13 +140,10 @@
       <b>Core electrons are omitted on purpose.</b> Only the four MOs built from 2s and 2p are shown; the two 1s-derived core MOs (σ1s, σ*1s) aren't drawn at all. They sit far below the valence set, are essentially non-bonding in character (the core doesn't overlap meaningfully at any real bond length), and their filled bonding/antibonding pair cancels exactly in the bond-order sum — so leaving them out changes nothing about bond order or magnetism, which is the standard convention for these diagrams.
     </p>
     <p>
-      <b>The shape panel now draws a real 2s radial node.</b> A true 2s orbital's radial part changes sign partway out from the nucleus (proportional to (1−ζr)·e<sup>−ζr</sup>, versus 1s's plain e<sup>−ζr</sup> with no such node) — the contour plot for σ(2s)/σ*(2s) now shows this honestly, as a small nodal circle around each nucleus in addition to the larger bonding/antibonding node between them, for every species except H₂ (whose "2s" really is a 1s and correctly stays nodeless). This is a display-only correction, though: the energy ladder's overlap integral (S, feeding the secular equation and the s–p mixing coupling V) deliberately keeps the older nodeless approximation, because swapping in the nodal version changes S enough — particularly at the longer bond lengths of Li₂/Be₂/B₂ — to break the K<sub>MIX</sub> calibration and flip B₂'s magnetism prediction wrong (checked directly). Redoing that calibration properly is a bigger job than fixing the picture, so for now the shape you see and the energy you read are computed from two different (but both individually standard) levels of approximation for the same orbital — a real, acknowledged mismatch rather than a hidden one.
+      <b>Orbital exponents (ζ), one per element.</b> Each element's 2s/2p orbitals share a single Slater exponent ζ = Z<sub>eff</sub>/2, with Z<sub>eff</sub> = Z − [0.85 × 2 for the two 1s core electrons + 0.35 × (v−1) for the other v−1 valence 2s/2p electrons]. This is the same convention (and, for carbon, the same value ζ=1.625) used in the sibling s/p-overlap simulation — Slater's rules don't distinguish 2s from 2p, so one exponent stands in for both, which is a real simplification: accurate SCF calculations give 2p a noticeably larger exponent (more contracted) than 2s for the same atom. The resulting values run ζ = 0.65 (Li) → 0.975 (Be) → 1.3 (B) → 1.625 (C) → 1.95 (N) → 2.275 (O) → 2.6 (F), growing steadily as the nuclear charge increases across the row.
     </p>
     <p>
-      <b>Orbital exponents (ζ), one per element.</b> Each period-2 element's 2s/2p orbitals share a single Slater exponent ζ = Z<sub>eff</sub>/2, with Z<sub>eff</sub> = Z − [0.85 × 2 for the two 1s core electrons + 0.35 × (v−1) for the other v−1 valence 2s/2p electrons]. This is the same convention (and, for carbon, the same value ζ=1.625) used in the sibling s/p-overlap simulation — Slater's rules don't distinguish 2s from 2p, so one exponent stands in for both, which is a real simplification: accurate SCF calculations give 2p a noticeably larger exponent (more contracted) than 2s for the same atom. The resulting values run ζ = 0.65 (Li) → 0.975 (Be) → 1.3 (B) → 1.625 (C) → 1.95 (N) → 2.275 (O) → 2.6 (F), growing steadily as the nuclear charge increases across the row. H₂ isn't on this ladder at all — Slater's screening constants only apply once there's a core to screen, so its 1s exponent is the exact, unscreened ζ=Z<sub>eff</sub>/n=1/1=1.
-    </p>
-    <p>
-      <b>Real bond lengths.</b> Each molecule's nuclei are drawn at its actual experimental bond length (H₂ 0.741 Å, Li₂ 2.673 Å, Be₂ 2.45 Å, B₂ 1.590 Å, C₂ 1.243 Å, N₂ 1.098 Å, O₂ 1.208 Å, F₂ 1.412 Å) — used both for the orbital-shape panel and (new) to compute the genuine overlap integrals behind the energy ladder below.
+      <b>Real bond lengths.</b> Each molecule's nuclei are drawn at its actual experimental bond length (Li₂ 2.673 Å, Be₂ 2.45 Å, B₂ 1.590 Å, C₂ 1.243 Å, N₂ 1.098 Å, O₂ 1.208 Å, F₂ 1.412 Å) — used both for the orbital-shape panel and (new) to compute the genuine overlap integrals behind the energy ladder below.
     </p>
     <p>
       <b>Real AO energies, and why the 2s-2p gap widens so sharply across the row.</b> The two atomic reference lines are real valence-orbital ionization energies (eV), not placeholders: 2s and 2p for B through F come from Gray's <i>Electrons and Chemical Bonding</i> (1964) — the standard spectroscopically-derived VOIE table (Li 2s −5.46; Be 2s −9.30; B −14.01/−8.31; C −19.47/−10.66; N −25.54/−13.14; O −32.36/−15.87; F −46.37/−18.72). Li and Be have no occupied 2p electron to measure, so their 2p values are estimated: across B–F, the effective nuclear charge felt by a 2p electron (back-solved from each energy via E=−13.6×(Z<sub>eff</sub>/2)²) rises in an almost perfectly straight line with atomic number — extending that line to Li/Be and converting back gives 2p ≈ −4.7 eV (Li) and −6.4 eV (Be). The result is a 2s–2p gap that grows from just 0.7 eV at Li₂ to 27.6 eV at F₂ — the real effect (not a hand-tuned schematic) that the s–p mixing model below depends on.
@@ -163,12 +159,6 @@
     </p>
     <p>
       <b>Filling: Aufbau + Hund's rule, and why the toggle matters most for B₂ and C₂.</b> Electrons fill the six valence levels lowest-energy-first, two per orbital, with the two doubly-degenerate π levels filled singly (Hund's rule) before any pairing. Bond order is (bonding electrons − antibonding electrons)/2. For most of the row, σ(2p) and π(2p) end up <i>either both empty or both completely full</i> regardless of which one fills first, so the mixing toggle changes nothing observable (try O₂ or F₂ with mixing switched on anyway — same bond order, same magnetism). The exception is exactly when the electron count lands <i>between</i> the two: B₂ (2 electrons split across the doubly-degenerate π pair, one unpaired each way → predicted paramagnetic, matching experiment) and C₂ (4 electrons exactly fill the π pair → predicted diamagnetic, matching experiment). Switch mixing off for either and the ordering flips which level fills first, silently getting the magnetism wrong while leaving the bond order unchanged — a genuinely important, non-cosmetic difference, not just a relabelling.
-    </p>
-    <p>
-      <b>H₂ has no 2p at all, so it's not really a "period 2" diagram — it's included anyway as the simplest possible reference point.</b> Its σ<sub>g</sub>(1s)/σ<sub>u</sub>*(1s) pair is pushed through the exact same secular-equation and overlap-integral machinery as everything else, just fed hydrogen's own real numbers: e2s here is actually the 1s ionization energy (−13.6 eV, the exact hydrogen ground-state energy — no VOIE estimate needed), the Slater exponent ζ=1 is exact (a lone 1s electron feels the full nuclear charge, no core to screen), and the bond length is the real 0.741 Å H–H distance. Two valence electrons fill σ(1s) completely, giving bond order 1 and zero unpaired electrons — the textbook H₂ picture, with no 2p, no π levels, and no s–p mixing to speak of (the toggle is hidden for this reason).
-    </p>
-    <p>
-      <b>Li₂ and Be₂ drop σ(2p)/π(2p) from the diagram entirely, not just leave them unfilled.</b> Neither element has any 2p valence electrons, so those levels are never populated and can't affect bond order or magnetism — same logic as omitting the 1s core (below), just one row up. Showing four empty levels that never matter would only clutter what is, for these two molecules, really just a σ(2s)/σ*(2s) picture; the s–p mixing toggle is hidden for the same reason it's hidden for H₂ — there's no 2p left for 2s to mix with. (Their 2s/2p atomic reference energies and overlap integrals are still computed exactly as before, purely so the σ(2s)/σ*(2s) energies plotted are the genuine full calculation, not a re-derived special case.)
     </p>
     <p>
       <b>Be₂ is included even though its predicted bond order is zero.</b> σ(2s) and σ*(2s) are both completely filled with nothing left over, so simple MO theory predicts no net bond at all. Be₂ is in fact only very weakly bound in reality (a few kJ/mol, confirmed spectroscopically), via dispersion-type effects this simple valence-bond-order picture doesn't capture — its inclusion here is deliberately honest about that mismatch, not a bug.
@@ -207,20 +197,8 @@
   // across the row (0.7 eV for Li2 up to 27.6 eV for F2) — the real effect the mixing model
   // below depends on.
   const SPECIES = [
-    // H2 is the one entry not built from 2s/2p at all: it's placed through the exact same
-    // secular-equation/overlap-integral pipeline as everything else, just fed hydrogen's own
-    // real numbers — e2s here is actually the 1s ionization energy (-13.6 eV, the exact
-    // hydrogen ground-state energy, no estimate needed), zeta=1 is the exact Slater value for
-    // a lone 1s electron (Zeff=Z=1, no core to screen, zeta=Zeff/n with n=1), and the bond
-    // length is the real experimental H-H distance. show2p / aoLabel tell the display code
-    // (not the physics) to render this as sigma(1s)/sigma*(1s) with no 2p at all — see
-    // aoLabelFor/displayLevel below.
-    { key:'H2',  symbol:'H',  name:'H₂',  v:1, bond:0.741, e2s:-13.6,  e2p:-13.6,  mixDefault:false, show2p:false, zeta:1.0, aoLabel:'1s' },
-    // Li2/Be2 have no 2p valence electrons at all, so sigma(2p)/pi(2p) are never populated and
-    // don't affect bond order or magnetism (same reasoning as omitting the 1s core below) —
-    // show2p:false drops them from the diagram entirely rather than drawing empty levels.
-    { key:'Li2', symbol:'Li', name:'Li₂', v:1, bond:2.673, e2s:-5.46,  e2p:-4.73,  mixDefault:false, show2p:false },
-    { key:'Be2', symbol:'Be', name:'Be₂', v:2, bond:2.45,  e2s:-9.30,  e2p:-6.43,  mixDefault:false, show2p:false },
+    { key:'Li2', symbol:'Li', name:'Li₂', v:1, bond:2.673, e2s:-5.46,  e2p:-4.73,  mixDefault:true },
+    { key:'Be2', symbol:'Be', name:'Be₂', v:2, bond:2.45,  e2s:-9.30,  e2p:-6.43,  mixDefault:true },
     { key:'B2',  symbol:'B',  name:'B₂',  v:3, bond:1.590, e2s:-14.01, e2p:-8.31,  mixDefault:true },
     { key:'C2',  symbol:'C',  name:'C₂',  v:4, bond:1.243, e2s:-19.47, e2p:-10.66, mixDefault:true },
     { key:'N2',  symbol:'N',  name:'N₂',  v:5, bond:1.098, e2s:-25.54, e2p:-13.14, mixDefault:true },
@@ -240,29 +218,9 @@
     // baggage. See the honesty notes below for the exact parameter choices.
     { key:'Model', symbol:'A', name:'A₂ (model)', v:4, bond:1.40, e2s:-17.0, e2p:-9.5, mixDefault:true }
   ];
-  // H2 supplies its own exact zeta (see the SPECIES entry above) since slaterZeta() is the
-  // period-2 Zeff/n=2 formula and doesn't apply to a bare 1s electron with no core to screen.
-  SPECIES.forEach(s => { if (s.zeta === undefined) s.zeta = slaterZeta(s.v); });
+  SPECIES.forEach(s => { s.zeta = slaterZeta(s.v); });
   const SPECIES_BY_KEY = {};
   SPECIES.forEach(s => { SPECIES_BY_KEY[s.key] = s; });
-
-  // Species without an occupied 2p (H2, Li2, Be2) render their s-type level as "1s"/"2s" via
-  // aoLabel rather than the hardcoded '2s' baked into LEVEL_DEFS; displayLevel() below patches
-  // a level's display strings (label/labelHTML/formula/symDesc/ao) to match, leaving the
-  // physics fields (kind/sign/bonding/cap/degenerate) untouched.
-  function aoLabelFor(species){ return species.aoLabel || '2s'; }
-  function displayLevel(id, species){
-    const level = LEVEL_DEFS[id];
-    const aoLabel = aoLabelFor(species);
-    if (level.ao !== '2s' || aoLabel === '2s') return level;
-    return Object.assign({}, level, {
-      label: level.label.replace('2s', aoLabel),
-      labelHTML: level.labelHTML.replace('2s', aoLabel),
-      formula: level.formula.replace(/2s/g, aoLabel),
-      symDesc: level.symDesc.replace(/2s/g, aoLabel),
-      ao: aoLabel
-    });
-  }
 
   // ---------- MO level definitions ----------
   // Each level is one LCAO combination of a single atomic-orbital kind, +/- in phase. Sigma(2p)
@@ -301,6 +259,8 @@
                    formula:'ψ = 2p_A(⊥) − 2p_B(⊥)',
                    symDesc:'π — one nodal plane containing the bond axis (side-on 2p overlap).' }
   };
+  const KIND_LABEL = { s:'2s', psigma:'2p', ppi:'2p' };
+
   // ---------- Aufbau + Hund's rule filling ----------
   function fillElectrons(nElectrons, speciesKey, mixing){
     const order = getOrder(speciesKey, mixing);
@@ -330,25 +290,14 @@
   }
 
   // ---------- atomic-orbital amplitude (unnormalized), evaluated in the z=0 plane ----------
-  // Used only to paint the shape panel — see the note by K_MIX below for why the energy-ladder
-  // calculation (rawOverlap/selfNorm) deliberately keeps a plainer 's' and doesn't share this.
-  //
-  // 'psigma' is the lobe aligned with the bond axis (the lobe facing the partner atom defined
-  // positive on both nuclei); 'ppi' is the in-plane lobe perpendicular to the axis (same
-  // lab-frame sign on both atoms, no flip). Both already carry the exact hydrogenic 2p radial
-  // form (proportional to r*exp(-zeta r), with zeta = Zeff/n folding in the n=2 decay rate).
-  //
-  // 's' covers both a genuine 1s (H2 only) and a genuine 2s (every other species): the
-  // hydrogenic radial part is (1 - zeta r)*exp(-zeta r) for 2s — a real sign change at
-  // r=1/zeta, the textbook 2s radial node — versus plain exp(-zeta r) for 1s, which has no
-  // node at all. sHasNode selects which; species without an occupied 2p (H2) pass false here
-  // via aoLabelFor, everyone else (including Li2/Be2, whose 2s is real even though their 2p is
-  // hidden from the diagram) passes true.
-  function sRadialFactor(r, Z, sHasNode){ return sHasNode ? (1 - Z*r) : 1; }
-  function orbitalAt(kind, x, y, nx, isRight, Z, sHasNode){
+  // Same convention as the sibling s/p-overlap simulation: 's' is spherical; 'psigma' is the
+  // lobe aligned with the bond axis (the lobe facing the partner atom defined positive on both
+  // nuclei); 'ppi' is the in-plane lobe perpendicular to the axis (same lab-frame sign on both
+  // atoms, no flip).
+  function orbitalAt(kind, x, y, nx, isRight, Z){
     const r = Math.hypot(x - nx, y);
     const decay = Math.exp(-Z * r);
-    if (kind === 's') return sRadialFactor(r, Z, sHasNode) * decay;
+    if (kind === 's') return decay;
     if (kind === 'psigma') return (isRight ? -(x - nx) : (x - nx)) * decay;
     if (kind === 'ppi') return y * decay;
   }
@@ -366,9 +315,6 @@
     return sum;
   }
   const INT_NX = 80, INT_NR = 60;
-  // Deliberately still nodeless for 's' here, even though orbitalAt() (used only for the shape
-  // panel) now draws the real 2s radial node — see the note by K_MIX below for why the two are
-  // allowed to diverge.
   function rawOverlap(kindL, kindR, R, Z){
     const nxA=-R/2, nxB=R/2;
     const pad = 10/Z; // integration radius scaled to always cover the orbital's decay tail
@@ -428,17 +374,6 @@
   // in this row, so exactly where it and pi*(2p) sit relative to each other never affects
   // filling — only Li2's internal ordering shifts (sigma*(2s) moves below sigma(2p)), and Li2
   // only has 2 valence electrons, so nothing filled is affected there either.
-  //
-  // Why the overlap integrals below still use a nodeless 's', even though the shape panel
-  // (orbitalAt, above) draws 2s with its real radial node: this K_MIX was calibrated once
-  // against the standard single-zeta nodeless overlap S, and it reproduces the textbook
-  // ordering flips (checked directly, e.g. B2/C2's magnetism). Swapping in a nodal S changes
-  // its value enough, especially at longer bond lengths (Li2, Be2, B2), to break that
-  // calibration outright (verified: it flips B2 into the wrong bond order/magnetism).
-  // Modelling the node in the overlap integral itself would need its own re-derivation and
-  // re-calibration of K_MIX — a bigger change than "draw the real orbital shape" — so for now
-  // only the visual shape panel reflects the genuine 2s node; the energy ladder still uses the
-  // same textbook-level approximation as before.
   const K_MIX = 0.5;
 
   // Precomputed once at load (7 species x 2 mixing states): the six real MO energies (eV)
@@ -468,10 +403,7 @@
     [false, true].forEach(mix => {
       let sigma2sBond = s2s.bond, sigma2pBond = s2p0.bond;
       let sigma2sAnti = s2s.anti, sigma2pAnti = s2p0.anti;
-      // Species with show2p:false (H2, Li2, Be2) never mix — sigma2p there is a dummy value
-      // (H2 has no real 2p at all; Li2/Be2's is simply hidden), so letting it perturb
-      // sigma(2s)/sigma*(2s) here would corrupt the one pair that's actually displayed.
-      if (mix && sp.show2p !== false){
+      if (mix){
         const g = avoidedCrossing(s2s.bond, s2p0.bond);
         sigma2sBond = g.low; sigma2pBond = g.high;
         const u = avoidedCrossing(s2s.anti, s2p0.anti);
@@ -485,33 +417,21 @@
     });
   });
 
-  // Level ids in ascending-energy (Aufbau) order for a given species+mixing state — this
-  // falls straight out of the real computed numbers instead of a hardcoded swap table. Species
-  // with show2p:false (H2, Li2, Be2) only ever expose the two 2s-derived levels: H2 has no 2p
-  // to include, and Li2/Be2's is unoccupied and hidden from the diagram entirely (see the
-  // SPECIES comments) rather than drawn as empty levels.
+  // Six level ids in ascending-energy (Aufbau) order for a given species+mixing state — this
+  // now falls straight out of the real computed numbers instead of a hardcoded swap table.
   function getOrder(speciesKey, mixing){
-    const species = SPECIES_BY_KEY[speciesKey];
     const e = LEVEL_ENERGIES[speciesKey][mixing];
-    let keys = Object.keys(e);
-    if (species.show2p === false) keys = keys.filter(id => id==='sigma2s' || id==='sigma2sStar');
-    return keys.sort((a,b) => e[a]-e[b]);
+    return Object.keys(e).sort((a,b) => e[a]-e[b]);
   }
 
   // ---------- state ----------
   let speciesKey = 'N2';
   let mixing = SPECIES_BY_KEY[speciesKey].mixDefault;
   let selectedLevel = 'sigma2s';
-  // Picks the HOMO for the current species+mixing state — used at init AND whenever the
-  // species changes, since species with show2p:false only expose 2 of the 6 level ids and a
-  // selectedLevel left over from a full 6-level species would otherwise point at a level the
-  // new diagram doesn't draw (and can't be clicked back onto).
-  function selectHOMO(){
+  (function initSelection(){
     const { order, occ } = fillElectrons(SPECIES_BY_KEY[speciesKey].v*2, speciesKey, mixing);
-    selectedLevel = order[0];
     for (let i=order.length-1;i>=0;i--){ if (occ[order[i]]>0){ selectedLevel = order[i]; break; } }
-  }
-  selectHOMO();
+  })();
 
   // ---------- DOM ----------
   const speciesButtons = Array.from(document.querySelectorAll('#species-group button'));
@@ -525,13 +445,10 @@
   const orbitalFormulaTag = document.getElementById('orbital-formula-tag');
   const orbitalNoteEl = document.getElementById('orbital-note');
 
-  const mixingRow = document.getElementById('mixing-row');
-
   speciesButtons.forEach(b => b.addEventListener('click', () => {
     speciesKey = b.dataset.sp;
     speciesButtons.forEach(x => x.classList.toggle('active', x===b));
     mixing = SPECIES_BY_KEY[speciesKey].mixDefault;
-    selectHOMO();
     updateMixingButton();
     render();
   }));
@@ -539,11 +456,6 @@
   function updateMixingButton(){
     mixingToggle.classList.toggle('active', mixing);
     mixingToggle.textContent = mixing ? 'ON' : 'OFF';
-    // s-p mixing only has meaning when sigma(2p) is actually part of the diagram; for H2/Li2/Be2
-    // (show2p:false) hide the whole control rather than leave a toggle that visibly does nothing.
-    const show2p = SPECIES_BY_KEY[speciesKey].show2p !== false;
-    mixingRow.style.display = show2p ? '' : 'none';
-    mixingDescEl.style.display = show2p ? '' : 'none';
   }
   updateMixingButton();
 
@@ -655,12 +567,11 @@
     refreshPalette();
     const { ctx, w, h } = setupCanvas(cOrbital, 440);
     const species = SPECIES_BY_KEY[speciesKey];
-    const level = displayLevel(selectedLevel, species);
+    const level = LEVEL_DEFS[selectedLevel];
     const Rbohr = species.bond / BOHR;
     const VIEW_HALF_X = Rbohr/2 + 2.6, VIEW_HALF_Y = 4.6;
     const xMin=-VIEW_HALF_X, xMax=VIEW_HALF_X, yMin=-VIEW_HALF_Y, yMax=VIEW_HALF_Y;
 
-    const sHasNode = aoLabelFor(species) !== '1s';
     const grid = new Float32Array(GW*GH);
     const nxA = -Rbohr/2, nxB = Rbohr/2;
     let maxAbs = 1e-9;
@@ -668,8 +579,8 @@
       const y = yMin + (yMax-yMin)*j/(GH-1);
       for (let i=0;i<GW;i++){
         const x = xMin + (xMax-xMin)*i/(GW-1);
-        const vA = orbitalAt(level.kind, x, y, nxA, false, species.zeta, sHasNode);
-        const vB = orbitalAt(level.kind, x, y, nxB, true, species.zeta, sHasNode);
+        const vA = orbitalAt(level.kind, x, y, nxA, false, species.zeta);
+        const vB = orbitalAt(level.kind, x, y, nxB, true, species.zeta);
         const val = vA + level.sign*vB;
         grid[j*GW+i] = val;
         if (Math.abs(val) > maxAbs) maxAbs = Math.abs(val);
@@ -724,8 +635,8 @@
     [nxA, nxB].forEach((nx) => {
       const px = toPx(nx), py = toPy(0);
       ctx.beginPath(); ctx.arc(px,py,4,0,Math.PI*2); ctx.fillStyle = css('--text'); ctx.fill();
-      ctx.font = '10px -apple-system, sans-serif'; ctx.fillStyle = css('--muted'); ctx.textAlign='center';
-      ctx.fillText(species.symbol + ' (' + level.ao + ')', px, py-9);
+      ctx.font = '10px -apple-system, sans-serif'; ctx.fillStyle = css('--text-dim'); ctx.textAlign='center';
+      ctx.fillText(species.symbol + ' (' + KIND_LABEL[level.kind] + ')', px, py-9);
     });
 
     orbitalLevelLabelEl.innerHTML = level.labelHTML;
@@ -783,9 +694,7 @@
 
     // Real energy axis (eV), auto-ranged per species+mixing state so each molecule's own
     // spread of levels — anywhere from a few eV wide (Li2) to 30+ eV (F2) — fills the panel.
-    // species.e2p is a physically meaningless placeholder for show2p:false species (H2 has no
-    // real 2p at all), so it's excluded from the range there rather than distorting the axis.
-    const allE = order.map(id => eLevels[id]).concat(species.show2p===false ? [species.e2s] : [species.e2s, species.e2p]);
+    const allE = order.map(id => eLevels[id]).concat([species.e2s, species.e2p]);
     const eMin = Math.min(...allE), eMax = Math.max(...allE);
     const ePad = (eMax-eMin)*0.10;
     const axisMin = eMin-ePad, axisMax = eMax+ePad;
@@ -845,10 +754,8 @@
       ctx.fillText(label, AOR_CX, y+16);
       return { anchorL: leftSegs[leftSegs.length-1].x1, anchorR: rightSegs[0].x0 };
     }
-    const ao2s = drawAOLine(yAO2s, species.symbol+' '+aoLabelFor(species), 1);
-    // Species with show2p:false (H2, Li2, Be2) never have a level referencing the 2p AO (see
-    // getOrder), so its reference line is skipped entirely rather than drawn unused.
-    const ao2p = species.show2p===false ? null : drawAOLine(yAO2p, species.symbol+' 2p', 3);
+    const ao2s = drawAOLine(yAO2s, species.symbol+' 2s', 1);
+    const ao2p = drawAOLine(yAO2p, species.symbol+' 2p', 3);
 
     ctx.strokeStyle = rgbaInk(0.15); ctx.setLineDash([3,3]); ctx.lineWidth = 1;
     order.forEach(id => {
@@ -870,7 +777,7 @@
     // appear when mixing is on, in a different colour, to visually distinguish "this is the
     // extra interaction causing the reordering" from the ordinary same-orbital correlation
     // lines drawn above.
-    if (mixing && species.show2p !== false){
+    if (mixing){
       function drawMixingLines(idS, idP){
         const yS = toY(eLevels[idS]), yP = toY(eLevels[idP]);
         const segS = levelSegments(LEVEL_DEFS[idS]), segP = levelSegments(LEVEL_DEFS[idP]);
@@ -893,7 +800,7 @@
     // by true y and push any label that would overlap the previous one further down, then
     // connect each nudged label back to its real line with a short leader.
     const rows = order.map(id => {
-      const level = displayLevel(id, species);
+      const level = LEVEL_DEFS[id];
       const y = toY(eLevels[id]);
       const segs = levelSegments(level);
       const leftEdge = Math.min(...segs.map(s=>s.x0)), rightEdge = Math.max(...segs.map(s=>s.x1));
@@ -991,17 +898,15 @@
 
     speciesLabelEl.textContent = species.name;
     configLabelEl.innerHTML = order.filter(id => occ[id]>0)
-      .map(id => displayLevel(id, species).labelHTML + toSup(occ[id])).join('  ');
+      .map(id => LEVEL_DEFS[id].labelHTML + toSup(occ[id])).join('  ');
     bondOrderLabelEl.textContent = String(bondOrder);
     magnetismLabelEl.textContent = unpaired>0
       ? 'paramagnetic (' + unpaired + ' unpaired e⁻)'
       : 'diamagnetic';
-    if (species.show2p !== false){
-      const gap = species.e2p - species.e2s;
-      mixingDescEl.textContent = mixing
-        ? 'π(2p) sits below σ(2p) here (ΔE(2s,2p) = ' + gap.toFixed(1) + ' eV — small enough for real mixing between the 2s and 2p atomic levels).'
-        : 'σ(2p) sits below π(2p) here (ΔE(2s,2p) = ' + gap.toFixed(1) + ' eV — large enough that mixing has little effect).';
-    }
+    const gap = species.e2p - species.e2s;
+    mixingDescEl.textContent = mixing
+      ? 'π(2p) sits below σ(2p) here (ΔE(2s,2p) = ' + gap.toFixed(1) + ' eV — small enough for real mixing between the 2s and 2p atomic levels).'
+      : 'σ(2p) sits below π(2p) here (ΔE(2s,2p) = ' + gap.toFixed(1) + ' eV — large enough that mixing has little effect).';
   }
 
   // ---------- render ----------
