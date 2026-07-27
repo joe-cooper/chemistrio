@@ -1,6 +1,8 @@
 ## Teaching Notes
 
-This simulation shows the complete valence molecular-orbital (MO) diagram for a period-2 homonuclear diatomic — all the MOs built from 2s and 2p atomic orbitals at once, filled with the correct number of electrons for whichever molecule you pick, from Li₂ to F₂. It's a companion to the 1s-1s and s/p-overlap simulations, but trades their single-orbital-pair focus (and, in the s/p-overlap case, its potential-energy curve) for the full picture used to predict bond order and magnetism.
+This simulation shows the complete valence molecular-orbital (MO) diagram for a homonuclear diatomic — all the MOs built from its valence atomic orbitals at once, filled with the correct number of electrons for whichever molecule you pick, from H₂ through the period-2 row up to F₂. It's a companion to the 1s-1s and s/p-overlap simulations, but trades their single-orbital-pair focus (and, in the s/p-overlap case, its potential-energy curve) for the full picture used to predict bond order and magnetism.
+
+H₂ is the simplest case: just σ(1s)/σ*(1s), no 2p, no mixing. Li₂ and Be₂ have real 2s/2p atomic orbitals but no 2p valence electrons, so σ(2p)/π(2p) are dropped from their diagrams entirely rather than shown empty — B₂ through F₂ are where the full six-level 2s/2p diagram (and the s–p mixing toggle) actually applies.
 
 ## Building the diagram
 

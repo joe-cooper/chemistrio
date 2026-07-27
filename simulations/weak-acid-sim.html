@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weak Acid pH — Approximation vs Exact</title>
+<link rel="stylesheet" href="../assets/css/theme.css">
+<link rel="stylesheet" href="../assets/css/sim.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  .tagline{max-width:440px;}
+  .stage{display:grid;grid-template-columns:minmax(230px,300px) 1fr;gap:14px;margin-bottom:14px;}
+
+  .valid-badge{
+    display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+    padding:3px 8px;border-radius:99px;margin-top:2px;
+  }
+  .valid-badge.ok{background:rgba(90,180,120,.15);color:#5ab478;}
+  .valid-badge.warn{background:rgba(224,98,90,.15);color:#e0625a;}
+
+  .legend{display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--muted);flex-wrap:wrap;}
+  .ldot{width:10px;height:2.5px;border-radius:2px;display:inline-block;margin-right:5px;vertical-align:middle;}
+  .ldot.dash{background-image:linear-gradient(to right, currentColor 60%, transparent 40%);background-size:6px 2.5px;background-color:transparent!important;}
+
+  .stats{grid-template-columns:repeat(4,1fr);}
+  .stat .v{font-size:14.5px;line-height:1.2;}
+  @media(max-width:560px){.stats{grid-template-columns:repeat(2,1fr);}}
+
+  .select-block{min-width:230px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <!-- <h1>Weak acid pH — approximation vs exact</h1> -->
+  </header>
+
+  <div class="stage">
+    <div class="left-col">
+      <div class="card recipe-card">
+        <div class="card-label"><span>Current solution</span></div>
+        <div class="row"><span class="k">Acid</span><span class="v" id="rAcid">—</span></div>
+        <div class="row"><span class="k">Ka</span><span class="v" id="rKa">—</span></div>
+        <div class="row"><span class="k">pKa</span><span class="v" id="rPka">—</span></div>
+        <div class="row"><span class="k">[HA]₀</span><span class="v" id="rC0">—</span></div>
+        <div class="row"><span class="k">pH — approximation</span><span class="v" id="rPHapprox">—</span></div>
+        <div class="row"><span class="k">pH — exact</span><span class="v accent" id="rPHexact">—</span></div>
+        <div class="row"><span class="k">% dissociated (exact)</span><span class="v" id="rAlpha">—</span></div>
+        <div class="row"><span class="k">Approximation</span><span class="v"><span class="valid-badge" id="rValid">—</span></span></div>
+      </div>
+    </div>
+
+    <div class="card readout">
+      <div class="card-label">
+        <span>pH vs initial concentration [HA]₀ (log scale), at the current pKa</span>
+      </div>
+      <div class="graph-wrap"><canvas id="graph" aria-label="pH against log of initial weak acid concentration, comparing the simplifying approximation with the exact charge-balance solution"></canvas></div>
+      <div class="legend">
+        <span><span class="ldot dash" style="color:var(--muted-dim)"></span>Approximation: [H⁺]=[A⁻], [HA]=[HA]₀</span>
+        <span><span class="ldot" style="background:var(--accent)"></span>Exact (full charge balance)</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="k">[H⁺] approx</span><span class="v" id="sHapprox">—</span></div>
+        <div class="stat accent"><span class="k">[H⁺] exact</span><span class="v" id="sHexact">—</span></div>
+        <div class="stat"><span class="k">Difference in pH</span><span class="v" id="sDpH">—</span></div>
+        <div class="stat"><span class="k">Difference in [H⁺]</span><span class="v" id="sDH">—</span></div>
+      </div>
+      <div class="headline" id="headline"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl-row">
+      <div class="select-block">
+        <span class="ctl-label">Preset acid</span>
+        <select id="presetSelect"></select>
+      </div>
+      <div class="slider-row">
+        <div class="slider-head"><span class="ctl-label">pKa</span><span class="val" id="pkaVal">4.76</span></div>
+        <input type="range" id="pkaSlider" min="0" max="14" step="0.05" value="4.76">
+      </div>
+      <div class="slider-row">
+        <div class="slider-head"><span class="ctl-label">[HA]₀</span><span class="val" id="c0Val">0.100 mol dm⁻³</span></div>
+        <input type="range" id="c0Slider" min="-5" max="0" step="0.01" value="-1">
+      </div>
+    </div>
+  </div>
+
+  <details class="note">
+    <summary>Model notes &amp; assumptions</summary>
+    <p><b>The approximation.</b> The usual A-level shortcut for a weak acid HA assumes that (i) the only source of H⁺ is the acid's own dissociation, so [H⁺] = [A⁻], and (ii) so little of the acid dissociates that its concentration is barely changed, so [HA] ≈ [HA]₀. Substituting both into K<sub>a</sub> = [H⁺][A⁻]/[HA] gives K<sub>a</sub> ≈ [H⁺]²/[HA]₀, so [H⁺] = √(K<sub>a</sub>[HA]₀) and pH = ½(pK<sub>a</sub> − log[HA]₀).</p>
+    <p><b>The exact model.</b> No such assumptions are made. A single charge-balance equation, [H⁺] − [OH⁻] − [HA]₀·K<sub>a</sub>/(K<sub>a</sub>+[H⁺]) = 0, is solved numerically for pH at every concentration shown. This uses the real mass balance [HA]+[A⁻] = [HA]₀ (so [HA] is allowed to drop below [HA]₀ as dissociation proceeds) and includes water's own autoionisation ([H⁺] − [OH⁻] rather than just [H⁺]), so it stays correct even when the acid is extremely weak or extremely dilute and water's own contribution to [H⁺] is no longer negligible.</p>
+    <p><b>Where the approximation breaks down.</b> Two things push the two curves apart: a large K<sub>a</sub> relative to [HA]₀ (so a large fraction of the acid actually dissociates, breaking [HA]≈[HA]₀), and very low [HA]₀ (so [H⁺] from the acid becomes comparable to the ~10⁻⁷ mol dm⁻³ that water itself supplies, breaking [H⁺]=[A⁻]). The traditional rule of thumb is that the approximation is reasonable once [HA]₀/K<sub>a</sub> ≳ 400 (dissociation below about 5%) — the "% dissociated" and badge in the solution panel track this directly. Try dragging [HA]₀ down at a fixed pKa and watch the two curves diverge as this ratio falls, or push pKa low (a strong-ish weak acid) and watch the same divergence appear at higher concentrations.</p>
+    <p><b>Constants used (25 °C).</b> K<sub>w</sub> = 1.0×10⁻¹⁴. Preset K<sub>a</sub> values: methanoic acid 1.78×10⁻⁴ (pK<sub>a</sub> 3.75), ethanoic acid 1.74×10⁻⁵ (pK<sub>a</sub> 4.76), benzoic acid 6.28×10⁻⁵ (pK<sub>a</sub> 4.20), HCN 6.2×10⁻¹⁰ (pK<sub>a</sub> 9.21), phenol 1.0×10⁻¹⁰ (pK<sub>a</sub> 10.0).</p>
+    <p><b>Simplifications.</b> Activity coefficients are ignored (concentrations stand in for activities); temperature fixed at 25 °C; only monoprotic weak acids are modelled.</p>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const KW = 1e-14;
+
+  const PRESETS = [
+    { key:'methanoic', label:'Methanoic acid (HCOOH)', pKa:3.75 },
+    { key:'benzoic',   label:'Benzoic acid (C6H5COOH)', pKa:4.20 },
+    { key:'ethanoic',  label:'Ethanoic acid (CH3COOH)', pKa:4.76 },
+    { key:'hcn',       label:'Hydrocyanic acid (HCN)', pKa:9.21 },
+    { key:'phenol',    label:'Phenol (C6H5OH)', pKa:10.00 },
+    { key:'custom',    label:'Custom pKa', pKa:null },
+  ];
+
+  // ---------- pH models ----------
+  function approxPH(Ka, C){
+    const H = Math.sqrt(Ka*C);
+    return -Math.log10(H);
+  }
+  function approxH(Ka, C){ return Math.sqrt(Ka*C); }
+
+  // Exact charge balance: H - OH - Ctot*Ka/(Ka+H) = 0 (monoprotic weak acid,
+  // no assumption that [HA]=[HA]0 or that water's own H+/OH- is negligible).
+  function chargeF(pH, Ctot, Ka){
+    const H = Math.pow(10, -pH);
+    const OH = KW / H;
+    return H - OH - Ctot*Ka/(Ka+H);
+  }
+  function exactPH(Ctot, Ka){
+    let lo=-2, hi=16;
+    for(let i=0;i<80;i++){
+      const mid=(lo+hi)/2;
+      if(chargeF(mid,Ctot,Ka) > 0) lo=mid; else hi=mid;
+    }
+    return (lo+hi)/2;
+  }
+  function exactAlpha(Ctot, Ka){
+    const pH = exactPH(Ctot, Ka);
+    const H = Math.pow(10,-pH);
+    return Ka/(Ka+H); // fraction of [HA]0 that is dissociated ([A-]/Ctot)
+  }
+
+  // ---------- DOM ----------
+  const el = {};
+  ['graph','presetSelect','pkaSlider','c0Slider','pkaVal','c0Val',
+   'rAcid','rKa','rPka','rC0','rPHapprox','rPHexact','rAlpha','rValid',
+   'sHapprox','sHexact','sDpH','sDH','headline'
+  ].forEach(id => el[id] = document.getElementById(id));
+  const gctx = el.graph.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  function cssVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  function populatePresets(){
+    const sel = el.presetSelect;
+    sel.innerHTML = '';
+    PRESETS.forEach(p=>{
+      const opt = document.createElement('option');
+      opt.value = p.key;
+      opt.textContent = p.key==='custom' ? p.label : p.label + ' (pKa ' + p.pKa.toFixed(2) + ')';
+      sel.appendChild(opt);
+    });
+    sel.value = 'ethanoic';
+  }
+  populatePresets();
+
+  // ---------- state ----------
+  let pKa = 4.76, Ka = Math.pow(10,-pKa);
+  let c0Exp = -1, C0 = Math.pow(10,c0Exp);
+
+  function fmtConc(C){
+    if(C >= 0.001) return C.toFixed(C>=0.1?3:5).replace(/0+$/,'').replace(/\.$/, '.0') + ' mol dm⁻³';
+    return C.toExponential(2) + ' mol dm⁻³';
+  }
+  function fmtSci(x){ return x.toExponential(3) + ' mol dm⁻³'; }
+
+  function recompute(){
+    Ka = Math.pow(10, -pKa);
+    const pHa = approxPH(Ka, C0);
+    const pHe = exactPH(C0, Ka);
+    const Ha = approxH(Ka, C0);
+    const He = Math.pow(10,-pHe);
+    const alphaExact = exactAlpha(C0, Ka) * 100;
+    const alphaApprox = (Ha/C0) * 100;
+    const ratio = C0 / Ka;
+    const valid = ratio >= 400;
+
+    el.rKa.textContent = Ka.toExponential(3);
+    el.rPka.textContent = pKa.toFixed(2);
+    el.rC0.textContent = fmtConc(C0);
+    el.rPHapprox.textContent = pHa.toFixed(2);
+    el.rPHexact.textContent = pHe.toFixed(2);
+    el.rAlpha.textContent = alphaExact.toFixed(2) + '%';
+    el.rValid.textContent = valid ? 'reasonable' : 'breaks down';
+    el.rValid.className = 'valid-badge ' + (valid ? 'ok' : 'warn');
+
+    el.sHapprox.textContent = fmtSci(Ha);
+    el.sHexact.textContent = fmtSci(He);
+    const dpH = pHa - pHe;
+    el.sDpH.textContent = (dpH>=0?'+':'') + dpH.toFixed(3);
+    const dHpct = Ha>0 ? ((Ha-He)/He*100) : 0;
+    el.sDH.textContent = (dHpct>=0?'+':'') + dHpct.toFixed(1) + '%';
+
+    if(valid){
+      el.headline.innerHTML = 'At this pKa and [HA]₀, only <b>' + alphaExact.toFixed(2) + '%</b> of the acid dissociates ([HA]₀/K<sub>a</sub> = ' + ratio.toFixed(0) + ') — the approximation\'s two assumptions hold well, and the two pH values agree to within <b>' + Math.abs(dpH).toFixed(3) + '</b> of a pH unit.';
+    } else {
+      el.headline.innerHTML = 'Here <b>' + alphaExact.toFixed(2) + '%</b> of the acid dissociates ([HA]₀/K<sub>a</sub> = ' + ratio.toFixed(0) + ', below the usual 400 rule of thumb) — [HA]≈[HA]₀ is no longer a good assumption, and the approximation\'s pH is off by <b>' + Math.abs(dpH).toFixed(3) + '</b> from the exact value.';
+    }
+
+    renderGraph();
+  }
+
+  // ---------- graph rendering ----------
+  const PAD = {l:34,r:12,t:12,b:30};
+  const LOG_MIN = -6, LOG_MAX = 0;
+  function sizeGraph(){
+    const w = el.graph.parentElement.clientWidth;
+    const h = Math.max(240, Math.round(w*0.6));
+    el.graph.style.height=h+'px';
+    el.graph.width=Math.round(w*dpr); el.graph.height=Math.round(h*dpr);
+    gctx.setTransform(dpr,0,0,dpr,0,0);
+    return {w,h};
+  }
+  let gX, gY;
+  function renderGraph(){
+    const {w,h} = sizeGraph();
+    gctx.clearRect(0,0,w,h);
+    const x0=PAD.l, y0=h-PAD.b, x1=w-PAD.r, y1=PAD.t;
+    gX = logC => x0 + (x1-x0)*((logC-LOG_MIN)/(LOG_MAX-LOG_MIN));
+    gY = pH => y0 - (y0-y1)*(pH-0)/14;
+
+    gctx.font='10px '+cssVar('--mono'); gctx.textBaseline='middle'; gctx.textAlign='right';
+    gctx.strokeStyle=cssVar('--border'); gctx.fillStyle=cssVar('--muted-dim'); gctx.lineWidth=1;
+    for(let p=0;p<=14;p+=2){
+      const yy=gY(p);
+      gctx.beginPath(); gctx.moveTo(x0,yy); gctx.lineTo(x1,yy); gctx.stroke();
+      gctx.fillText(String(p), x0-6, yy);
+    }
+    gctx.textAlign='center'; gctx.textBaseline='top';
+    const SUP = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶'};
+    function supExp(n){ return String(n).split('').map(ch=>SUP[ch]||ch).join(''); }
+    for(let e=LOG_MIN; e<=LOG_MAX+0.001; e++){
+      const xx = gX(e);
+      gctx.strokeStyle=cssVar('--border-soft');
+      gctx.beginPath(); gctx.moveTo(xx,y0); gctx.lineTo(xx,y1); gctx.stroke();
+      gctx.fillStyle=cssVar('--muted-dim');
+      gctx.fillText('10'+supExp(e), xx, y0+7);
+    }
+    gctx.fillStyle=cssVar('--muted'); gctx.textBaseline='alphabetic'; gctx.textAlign='center';
+    gctx.fillText('[HA]₀ / mol dm⁻³ (log scale)', (x0+x1)/2, h-3);
+    gctx.save(); gctx.translate(11,(y0+y1)/2); gctx.rotate(-Math.PI/2);
+    gctx.textAlign='center'; gctx.fillText('pH', 0, 0); gctx.restore();
+
+    // sweep both curves across the log-concentration domain at fixed pKa
+    const N = 240;
+    const ptsApprox = [], ptsExact = [];
+    for(let i=0;i<=N;i++){
+      const logC = LOG_MIN + (LOG_MAX-LOG_MIN)*i/N;
+      const C = Math.pow(10, logC);
+      ptsApprox.push(approxPH(Ka, C));
+      ptsExact.push(exactPH(C, Ka));
+    }
+    function drawCurve(arr, color, dash, lw){
+      gctx.beginPath();
+      for(let i=0;i<=N;i++){
+        const logC = LOG_MIN + (LOG_MAX-LOG_MIN)*i/N;
+        const px = gX(logC), py = gY(arr[i]);
+        i===0 ? gctx.moveTo(px,py) : gctx.lineTo(px,py);
+      }
+      gctx.strokeStyle = color; gctx.lineWidth = lw;
+      gctx.setLineDash(dash || []);
+      gctx.lineJoin='round'; gctx.lineCap='round'; gctx.stroke();
+      gctx.setLineDash([]);
+    }
+    drawCurve(ptsApprox, cssVar('--muted-dim'), [5,4], 1.8);
+    drawCurve(ptsExact, cssVar('--accent'), null, 2.4);
+
+    // current-point markers
+    const logC0 = Math.log10(C0);
+    const xx = gX(logC0);
+    gctx.strokeStyle = cssVar('--border'); gctx.lineWidth=1; gctx.setLineDash([2,2]);
+    gctx.beginPath(); gctx.moveTo(xx,y0); gctx.lineTo(xx,y1); gctx.stroke();
+    gctx.setLineDash([]);
+    function dot(pH,color){
+      gctx.beginPath(); gctx.arc(xx, gY(pH), 4, 0, Math.PI*2);
+      gctx.fillStyle=color; gctx.fill(); gctx.strokeStyle=cssVar('--bg'); gctx.lineWidth=1.4; gctx.stroke();
+    }
+    dot(approxPH(Ka,C0), cssVar('--muted-dim'));
+    dot(exactPH(C0,Ka), cssVar('--accent'));
+  }
+
+  // ---------- controls ----------
+  function applyPreset(key){
+    const p = PRESETS.find(x=>x.key===key);
+    if(p && p.pKa !== null){
+      pKa = p.pKa;
+      el.pkaSlider.value = pKa;
+      el.pkaVal.textContent = pKa.toFixed(2);
+      el.rAcid.textContent = p.label;
+    } else {
+      el.rAcid.textContent = 'Custom';
+    }
+    recompute();
+  }
+  el.presetSelect.addEventListener('change', ()=> applyPreset(el.presetSelect.value));
+  el.pkaSlider.addEventListener('input', ()=>{
+    pKa = +el.pkaSlider.value;
+    el.pkaVal.textContent = pKa.toFixed(2);
+    el.presetSelect.value = 'custom';
+    el.rAcid.textContent = 'Custom';
+    recompute();
+  });
+  el.c0Slider.addEventListener('input', ()=>{
+    c0Exp = +el.c0Slider.value;
+    C0 = Math.pow(10, c0Exp);
+    el.c0Val.textContent = fmtConc(C0);
+    recompute();
+  });
+
+  let rt;
+  window.addEventListener('resize', ()=>{ clearTimeout(rt); rt=setTimeout(()=>{ renderGraph(); reportHeight(); }, 120); });
+
+  function reportHeight(){
+    window.parent.postMessage({ type:'simHeight', height: document.body.scrollHeight }, '*');
+  }
+  new MutationObserver(renderGraph).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+  new ResizeObserver(reportHeight).observe(document.body);
+  setInterval(reportHeight, 800);
+
+  // ---------- boot ----------
+  el.rAcid.textContent = 'Ethanoic acid (CH3COOH)';
+  el.pkaVal.textContent = pKa.toFixed(2);
+  el.c0Val.textContent = fmtConc(C0);
+  recompute();
+  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>
