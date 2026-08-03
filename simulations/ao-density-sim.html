@@ -153,11 +153,23 @@
       <optgroup label="s orbitals">
         <option value="1s">1s</option>
         <option value="2s">2s</option>
+        <option value="3s">3s</option>
+        <option value="4s">4s</option>
       </optgroup>
       <optgroup label="p orbitals (n=2)">
         <option value="2px">2px</option>
         <option value="2py">2py</option>
         <option value="2pz">2pz</option>
+      </optgroup>
+      <optgroup label="p orbitals (n=3)">
+        <option value="3px">3px</option>
+        <option value="3py">3py</option>
+        <option value="3pz">3pz</option>
+      </optgroup>
+      <optgroup label="p orbitals (n=4)">
+        <option value="4px">4px</option>
+        <option value="4py">4py</option>
+        <option value="4pz">4pz</option>
       </optgroup>
       <optgroup label="d orbitals (n=3)">
         <option value="3dz2">3dz²</option>
@@ -165,6 +177,22 @@
         <option value="3dxy">3dxy</option>
         <option value="3dxz">3dxz</option>
         <option value="3dyz">3dyz</option>
+      </optgroup>
+      <optgroup label="d orbitals (n=4)">
+        <option value="4dz2">4dz²</option>
+        <option value="4dx2y2">4dx²-y²</option>
+        <option value="4dxy">4dxy</option>
+        <option value="4dxz">4dxz</option>
+        <option value="4dyz">4dyz</option>
+      </optgroup>
+      <optgroup label="f orbitals (n=4)">
+        <option value="4fz3">4fz³</option>
+        <option value="4fxz2">4fxz²</option>
+        <option value="4fyz2">4fyz²</option>
+        <option value="4fxyz">4fxyz</option>
+        <option value="4fzx2y2">4fz(x²-y²)</option>
+        <option value="4fxx2y2">4fx(x²-3y²)</option>
+        <option value="4fyx2y2">4fy(3x²-y²)</option>
       </optgroup>
     </select>
 
@@ -205,6 +233,16 @@
     <label class="axes-toggle" for="axesToggle">
       <input type="checkbox" id="axesToggle">
       Show axes
+    </label>
+
+    <label class="axes-toggle" for="radialNodesToggle">
+      <input type="checkbox" id="radialNodesToggle">
+      Show radial nodes
+    </label>
+
+    <label class="axes-toggle" for="angularNodesToggle">
+      <input type="checkbox" id="angularNodesToggle">
+      Show angular nodes
     </label>
 
   </div>
@@ -274,6 +312,8 @@
   const opacityOut    = document.getElementById('opacityOut');
   const orbitalSelect = document.getElementById('orbitalSelect');
   const axesToggle    = document.getElementById('axesToggle');
+  const radialNodesToggle  = document.getElementById('radialNodesToggle');
+  const angularNodesToggle = document.getElementById('angularNodesToggle');
 
   /* SVG path data for the play/pause toggle */
   const PAUSE_SVG = '<rect x="2" y="2" width="3.5" height="10" rx="1"/>'
@@ -286,11 +326,15 @@
      sign(x,y,z)    : +1 / -1, used to colour lobes by wavefunction phase
      maxR            : bounding cube half-size for the sampler
      viewDist/zoom   : initial and clamped camera distance                  */
+  const H  = Math.SQRT1_2;   // 1/√2, used for the diagonal nodal planes of 3dx²-y²/4dx²-y²
+  const S3 = Math.sqrt(3)/2; // used for the 30°/60° nodal planes of the chiral 4f orbitals
+
   const ORBITALS = {
     '1s': {
       maxR:6, densityMax:1, viewDist:16, zoomMin:8, zoomMax:30,
       density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return Math.exp(-2*r); },
-      sign(){ return 1; }
+      sign(){ return 1; },
+      radialNodes: [], angularNodes: []
     },
     '2s': {
       maxR:9, densityMax:4, viewDist:20, zoomMin:10, zoomMax:40,
@@ -298,22 +342,29 @@
         const r=Math.sqrt(x*x+y*y+z*z), v=(2-r);
         return v*v*Math.exp(-r);
       },
-      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return (2-r)>=0?1:-1; }
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return (2-r)>=0?1:-1; },
+      radialNodes: [2], angularNodes: []
     },
     '2px': {
       maxR:9, densityMax:0.5413, viewDist:20, zoomMin:10, zoomMax:40,
       density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return x*x*Math.exp(-r); },
-      sign(x){ return x>=0?1:-1; }
+      sign(x){ return x>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [ { type:'plane', u:[0,1,0], v:[0,0,1] } ] // x=0 (yz-plane)
     },
     '2py': {
       maxR:9, densityMax:0.5413, viewDist:20, zoomMin:10, zoomMax:40,
       density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return y*y*Math.exp(-r); },
-      sign(x,y){ return y>=0?1:-1; }
+      sign(x,y){ return y>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [ { type:'plane', u:[1,0,0], v:[0,0,1] } ] // y=0 (xz-plane)
     },
     '2pz': {
       maxR:9, densityMax:0.5413, viewDist:20, zoomMin:10, zoomMax:40,
       density(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return z*z*Math.exp(-r); },
-      sign(x,y,z){ return z>=0?1:-1; }
+      sign(x,y,z){ return z>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [ { type:'plane', u:[1,0,0], v:[0,1,0] } ] // z=0 (xy-plane)
     },
     '3dz2': {
       maxR:20, densityMax:94.94, viewDist:34, zoomMin:16, zoomMax:70,
@@ -321,7 +372,9 @@
         const r2=x*x+y*y+z*z, r=Math.sqrt(r2), v=(3*z*z-r2);
         return v*v*Math.exp(-2*r/3);
       },
-      sign(x,y,z){ const r2=x*x+y*y+z*z; return (3*z*z-r2)>=0?1:-1; }
+      sign(x,y,z){ const r2=x*x+y*y+z*z; return (3*z*z-r2)>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [ { type:'cone', slope: Math.SQRT2 } ] // 3z²=r² → cone at ~54.7° from z-axis
     },
     '3dx2y2': {
       maxR:20, densityMax:23.74, viewDist:34, zoomMin:16, zoomMax:70,
@@ -329,7 +382,12 @@
         const r=Math.sqrt(x*x+y*y+z*z), v=(x*x-y*y);
         return v*v*Math.exp(-2*r/3);
       },
-      sign(x,y){ return (x*x-y*y)>=0?1:-1; }
+      sign(x,y){ return (x*x-y*y)>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[H,H,0],  v:[0,0,1] },  // y=x
+        { type:'plane', u:[H,-H,0], v:[0,0,1] }   // y=-x
+      ]
     },
     '3dxy': {
       maxR:20, densityMax:5.934, viewDist:34, zoomMin:16, zoomMax:70,
@@ -337,7 +395,12 @@
         const r=Math.sqrt(x*x+y*y+z*z);
         return x*x*y*y*Math.exp(-2*r/3);
       },
-      sign(x,y){ return (x*y)>=0?1:-1; }
+      sign(x,y){ return (x*y)>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,0,1] }, // y=0 (xz-plane)
+        { type:'plane', u:[0,1,0], v:[0,0,1] }  // x=0 (yz-plane)
+      ]
     },
     '3dxz': {
       maxR:20, densityMax:5.934, viewDist:34, zoomMin:16, zoomMax:70,
@@ -345,7 +408,12 @@
         const r=Math.sqrt(x*x+y*y+z*z);
         return x*x*z*z*Math.exp(-2*r/3);
       },
-      sign(x,y,z){ return (x*z)>=0?1:-1; }
+      sign(x,y,z){ return (x*z)>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,1,0] }, // z=0 (xy-plane)
+        { type:'plane', u:[0,1,0], v:[0,0,1] }  // x=0 (yz-plane)
+      ]
     },
     '3dyz': {
       maxR:20, densityMax:5.934, viewDist:34, zoomMin:16, zoomMax:70,
@@ -353,7 +421,260 @@
         const r=Math.sqrt(x*x+y*y+z*z);
         return y*y*z*z*Math.exp(-2*r/3);
       },
-      sign(x,y,z){ return (y*z)>=0?1:-1; }
+      sign(x,y,z){ return (y*z)>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,1,0] }, // z=0 (xy-plane)
+        { type:'plane', u:[1,0,0], v:[0,0,1] }  // y=0 (xz-plane)
+      ]
+    },
+
+    /* ── n=3, n=4 shells ──
+       R_nl(r) here is the "reduced" radial factor L(r) such that the full
+       wavefunction is L(r) * A(x,y,z) * exp(-r/n), where A is the degree-l
+       solid harmonic (already used above for l≤2). L(r) comes from the
+       associated Laguerre polynomial L_{n-l-1}^{2l+1}(2r/n) with the r^l
+       factor divided out; its roots are the radial nodes.               */
+
+    '3s': {
+      maxR:22, densityMax:838, viewDist:37, zoomMin:18, zoomMax:77,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=27-18*r+2*r*r;
+        return L*L*Math.exp(-2*r/3);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return (27-18*r+2*r*r)>=0?1:-1; },
+      radialNodes: [1.902, 7.098], angularNodes: []
+    },
+    '3px': {
+      maxR:22, densityMax:19.8, viewDist:37, zoomMin:18, zoomMax:77,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=6-r;
+        return L*L*x*x*Math.exp(-2*r/3);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((6-r)*x)>=0?1:-1; },
+      radialNodes: [6],
+      angularNodes: [ { type:'plane', u:[0,1,0], v:[0,0,1] } ] // x=0 (yz-plane)
+    },
+    '3py': {
+      maxR:22, densityMax:19.8, viewDist:37, zoomMin:18, zoomMax:77,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=6-r;
+        return L*L*y*y*Math.exp(-2*r/3);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((6-r)*y)>=0?1:-1; },
+      radialNodes: [6],
+      angularNodes: [ { type:'plane', u:[1,0,0], v:[0,0,1] } ] // y=0 (xz-plane)
+    },
+    '3pz': {
+      maxR:22, densityMax:19.8, viewDist:37, zoomMin:18, zoomMax:77,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=6-r;
+        return L*L*z*z*Math.exp(-2*r/3);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((6-r)*z)>=0?1:-1; },
+      radialNodes: [6],
+      angularNodes: [ { type:'plane', u:[1,0,0], v:[0,1,0] } ] // z=0 (xy-plane)
+    },
+
+    '4s': {
+      maxR:36, densityMax:42400, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=192-144*r+24*r*r-r*r*r;
+        return L*L*Math.exp(-r/2);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return (192-144*r+24*r*r-r*r*r)>=0?1:-1; },
+      radialNodes: [1.872, 6.611, 15.518], angularNodes: []
+    },
+    '4px': {
+      maxR:36, densityMax:3400, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=r*r-20*r+80;
+        return L*L*x*x*Math.exp(-r/2);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((r*r-20*r+80)*x)>=0?1:-1; },
+      radialNodes: [5.528, 14.472],
+      angularNodes: [ { type:'plane', u:[0,1,0], v:[0,0,1] } ] // x=0 (yz-plane)
+    },
+    '4py': {
+      maxR:36, densityMax:3400, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=r*r-20*r+80;
+        return L*L*y*y*Math.exp(-r/2);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((r*r-20*r+80)*y)>=0?1:-1; },
+      radialNodes: [5.528, 14.472],
+      angularNodes: [ { type:'plane', u:[1,0,0], v:[0,0,1] } ] // y=0 (xz-plane)
+    },
+    '4pz': {
+      maxR:36, densityMax:3400, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=r*r-20*r+80;
+        return L*L*z*z*Math.exp(-r/2);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((r*r-20*r+80)*z)>=0?1:-1; },
+      radialNodes: [5.528, 14.472],
+      angularNodes: [ { type:'plane', u:[1,0,0], v:[0,1,0] } ] // z=0 (xy-plane)
+    },
+
+    '4dz2': {
+      maxR:36, densityMax:11600, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r2=x*x+y*y+z*z, r=Math.sqrt(r2), L=12-r, v=3*z*z-r2;
+        return L*L*v*v*Math.exp(-r/2);
+      },
+      sign(x,y,z){ const r2=x*x+y*y+z*z, r=Math.sqrt(r2); return ((12-r)*(3*z*z-r2))>=0?1:-1; },
+      radialNodes: [12],
+      angularNodes: [ { type:'cone', slope: Math.SQRT2 } ]
+    },
+    '4dx2y2': {
+      maxR:36, densityMax:2900, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=12-r, v=x*x-y*y;
+        return L*L*v*v*Math.exp(-r/2);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((12-r)*(x*x-y*y))>=0?1:-1; },
+      radialNodes: [12],
+      angularNodes: [
+        { type:'plane', u:[H,H,0],  v:[0,0,1] },
+        { type:'plane', u:[H,-H,0], v:[0,0,1] }
+      ]
+    },
+    '4dxy': {
+      maxR:36, densityMax:725, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=12-r, v=x*y;
+        return L*L*v*v*Math.exp(-r/2);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((12-r)*(x*y))>=0?1:-1; },
+      radialNodes: [12],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,0,1] },
+        { type:'plane', u:[0,1,0], v:[0,0,1] }
+      ]
+    },
+    '4dxz': {
+      maxR:36, densityMax:725, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=12-r, v=x*z;
+        return L*L*v*v*Math.exp(-r/2);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((12-r)*(x*z))>=0?1:-1; },
+      radialNodes: [12],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,1,0] },
+        { type:'plane', u:[0,1,0], v:[0,0,1] }
+      ]
+    },
+    '4dyz': {
+      maxR:36, densityMax:725, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), L=12-r, v=y*z;
+        return L*L*v*v*Math.exp(-r/2);
+      },
+      sign(x,y,z){ const r=Math.sqrt(x*x+y*y+z*z); return ((12-r)*(y*z))>=0?1:-1; },
+      radialNodes: [12],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,1,0] },
+        { type:'plane', u:[1,0,0], v:[0,0,1] }
+      ]
+    },
+
+    /* f orbitals (4f) have zero radial nodes (n-l-1=0), so density is just
+       the degree-3 solid harmonic squared times the n=4 exponential decay. */
+    '4fz3': {
+      maxR:36, densityMax:34100, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r2=x*x+y*y+z*z, A=z*(5*z*z-3*r2);
+        return A*A*Math.exp(-Math.sqrt(r2)/2);
+      },
+      sign(x,y,z){ const r2=x*x+y*y+z*z; return (z*(5*z*z-3*r2))>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,1,0] },     // z=0 (xy-plane)
+        { type:'cone', slope: Math.sqrt(2/3) }
+      ]
+    },
+    '4fxz2': {
+      maxR:36, densityMax:16150, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r2=x*x+y*y+z*z, A=x*(5*z*z-r2);
+        return A*A*Math.exp(-Math.sqrt(r2)/2);
+      },
+      sign(x,y,z){ const r2=x*x+y*y+z*z; return (x*(5*z*z-r2))>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[0,1,0], v:[0,0,1] },     // x=0 (yz-plane)
+        { type:'cone', slope: 2 }
+      ]
+    },
+    '4fyz2': {
+      maxR:36, densityMax:16150, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r2=x*x+y*y+z*z, A=y*(5*z*z-r2);
+        return A*A*Math.exp(-Math.sqrt(r2)/2);
+      },
+      sign(x,y,z){ const r2=x*x+y*y+z*z; return (y*(5*z*z-r2))>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,0,1] },     // y=0 (xz-plane)
+        { type:'cone', slope: 2 }
+      ]
+    },
+    '4fxyz': {
+      maxR:36, densityMax:316, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), A=x*y*z;
+        return A*A*Math.exp(-r/2);
+      },
+      sign(x,y,z){ return (x*y*z)>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[0,1,0], v:[0,0,1] }, // x=0
+        { type:'plane', u:[1,0,0], v:[0,0,1] }, // y=0
+        { type:'plane', u:[1,0,0], v:[0,1,0] }  // z=0
+      ]
+    },
+    '4fzx2y2': {
+      maxR:36, densityMax:1265, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), A=z*(x*x-y*y);
+        return A*A*Math.exp(-r/2);
+      },
+      sign(x,y,z){ return (z*(x*x-y*y))>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,1,0] }, // z=0
+        { type:'plane', u:[H,H,0],  v:[0,0,1] }, // y=x
+        { type:'plane', u:[H,-H,0], v:[0,0,1] }  // y=-x
+      ]
+    },
+    '4fxx2y2': {
+      maxR:36, densityMax:8520, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), A=x*(x*x-3*y*y);
+        return A*A*Math.exp(-r/2);
+      },
+      sign(x,y,z){ return (x*(x*x-3*y*y))>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[0,1,0], v:[0,0,1] },       // x=0
+        { type:'plane', u:[S3,0.5,0],  v:[0,0,1] },   // y = x/√3
+        { type:'plane', u:[S3,-0.5,0], v:[0,0,1] }    // y = -x/√3
+      ]
+    },
+    '4fyx2y2': {
+      maxR:36, densityMax:8520, viewDist:61, zoomMin:29, zoomMax:126,
+      density(x,y,z){
+        const r=Math.sqrt(x*x+y*y+z*z), A=y*(3*x*x-y*y);
+        return A*A*Math.exp(-r/2);
+      },
+      sign(x,y,z){ return (y*(3*x*x-y*y))>=0?1:-1; },
+      radialNodes: [],
+      angularNodes: [
+        { type:'plane', u:[1,0,0], v:[0,0,1] },       // y=0
+        { type:'plane', u:[0.5,S3,0],  v:[0,0,1] },   // y = √3 x
+        { type:'plane', u:[0.5,-S3,0], v:[0,0,1] }    // y = -√3 x
+      ]
     }
   };
 
@@ -363,6 +684,8 @@
   const MAX_PARTICLES = 15000;
   let playing = true;
   let showAxes = false;
+  let showRadialNodes = false;
+  let showAngularNodes = false;
   let speed   = parseInt(speedInput.value, 10);
   let opacity = parseInt(opacityInput.value, 10) / 100;
   let yaw = 0.6, pitch = 0.35, camDist = currentOrbital.viewDist;
@@ -461,6 +784,14 @@
     showAxes = axesToggle.checked;
   });
 
+  radialNodesToggle.addEventListener('change', () => {
+    showRadialNodes = radialNodesToggle.checked;
+  });
+
+  angularNodesToggle.addEventListener('change', () => {
+    showAngularNodes = angularNodesToggle.checked;
+  });
+
   orbitalSelect.addEventListener('change', e => {
     const orb = ORBITALS[e.target.value];
     if (orb) {
@@ -505,17 +836,19 @@
     mctx.fill();
   }
 
+  /* ── Shared perspective projection (world-space → screen-space) ── */
+  function project(x, y, z, p) {
+    const x1 =  x*p.cosY + z*p.sinY;
+    const z1 = -x*p.sinY + z*p.cosY;
+    const y2 = y*p.cosP - z1*p.sinP;
+    const z2 = y*p.sinP + z1*p.cosP;
+    const zc = z2 + p.D;
+    return { sx: p.cx + x1*(p.f/zc), sy: p.cy - y2*(p.f/zc), zc };
+  }
+
   /* ── Cartesian axes overlay (world-space lines through the origin) ── */
-  function drawAxes(cosY, sinY, cosP, sinP, cx, cy, f, D, unit) {
+  function drawAxes(p, unit) {
     const L = currentOrbital.maxR * 1.15;
-    function project(x, y, z) {
-      const x1 =  x*cosY + z*sinY;
-      const z1 = -x*sinY + z*cosY;
-      const y2 = y*cosP - z1*sinP;
-      const z2 = y*sinP + z1*cosP;
-      const zc = z2 + D;
-      return { sx: cx + x1*(f/zc), sy: cy - y2*(f/zc), zc };
-    }
     const axes = [
       { end: [L,0,0], color: '#ff6b6b', label: 'x' },
       { end: [0,L,0], color: '#5be08a', label: 'y' },
@@ -527,8 +860,8 @@
     ctx.textBaseline = 'middle';
     for (const axis of axes) {
       const [ex, ey, ez] = axis.end;
-      const pPos = project(ex, ey, ez);
-      const pNeg = project(-ex, -ey, -ez);
+      const pPos = project(ex, ey, ez, p);
+      const pNeg = project(-ex, -ey, -ez, p);
       if (pPos.zc <= 0.6 || pNeg.zc <= 0.6) continue;
       ctx.strokeStyle = axis.color;
       ctx.globalAlpha = 0.7;
@@ -539,6 +872,111 @@
       ctx.globalAlpha = 1;
       ctx.fillStyle = axis.color;
       ctx.fillText(axis.label, pPos.sx, pPos.sy);
+    }
+  }
+
+  /* ── Node overlays ──
+     Radial nodes are spheres (|ψ|=0 at fixed r); angular nodes are the
+     nodal planes/cones defined by each orbital's angular part.
+     Both are drawn as wireframes using the same perspective projection
+     as the axes overlay so they rotate and zoom along with the cloud.   */
+  function drawSegment3D(a, b, p, alpha) {
+    const pa = project(a[0], a[1], a[2], p);
+    const pb = project(b[0], b[1], b[2], p);
+    if (pa.zc <= 0.6 || pb.zc <= 0.6) return;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.moveTo(pa.sx, pa.sy);
+    ctx.lineTo(pb.sx, pb.sy);
+    ctx.stroke();
+  }
+
+  function drawSphere(r, p, unit, color) {
+    const nLon = 12, nLat = 5, nSeg = 24;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(0.75, unit * 0.75);
+    for (let i = 0; i < nLon; i++) {
+      const phi = i / nLon * Math.PI;
+      let prev = null;
+      for (let s = 0; s <= nSeg; s++) {
+        const theta = s / nSeg * 2*Math.PI;
+        const pt = [ r*Math.sin(theta)*Math.cos(phi), r*Math.sin(theta)*Math.sin(phi), r*Math.cos(theta) ];
+        if (prev) drawSegment3D(prev, pt, p, 0.3);
+        prev = pt;
+      }
+    }
+    for (let j = 1; j < nLat; j++) {
+      const theta = j / nLat * Math.PI;
+      const rr = r * Math.sin(theta), z = r * Math.cos(theta);
+      let prev = null;
+      for (let s = 0; s <= nSeg; s++) {
+        const phi = s / nSeg * 2*Math.PI;
+        const pt = [ rr*Math.cos(phi), rr*Math.sin(phi), z ];
+        if (prev) drawSegment3D(prev, pt, p, 0.3);
+        prev = pt;
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPlane(u, v, p, unit, color) {
+    const L = currentOrbital.maxR;
+    const N = 8;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(0.75, unit * 0.75);
+    for (let i = -N; i <= N; i++) {
+      const t = i / N * L;
+      drawSegment3D(
+        [u[0]*-L + v[0]*t, u[1]*-L + v[1]*t, u[2]*-L + v[2]*t],
+        [u[0]*L  + v[0]*t, u[1]*L  + v[1]*t, u[2]*L  + v[2]*t],
+        p, 0.22
+      );
+      drawSegment3D(
+        [u[0]*t + v[0]*-L, u[1]*t + v[1]*-L, u[2]*t + v[2]*-L],
+        [u[0]*t + v[0]*L,  u[1]*t + v[1]*L,  u[2]*t + v[2]*L],
+        p, 0.22
+      );
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawCone(slope, p, unit, color) {
+    const L = currentOrbital.maxR;
+    const nMerid = 12, nRings = 5, nSeg = 32;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(0.75, unit * 0.75);
+    for (let i = 0; i < nMerid; i++) {
+      const theta = i / nMerid * 2*Math.PI;
+      const top = [ slope*L*Math.cos(theta), slope*L*Math.sin(theta), L ];
+      const bot = [ slope*L*Math.cos(theta), slope*L*Math.sin(theta), -L ];
+      drawSegment3D([0,0,0], top, p, 0.22);
+      drawSegment3D([0,0,0], bot, p, 0.22);
+    }
+    for (let ring = 1; ring <= nRings; ring++) {
+      const z = ring / nRings * L;
+      for (const zc of [z, -z]) {
+        const r = slope * Math.abs(zc);
+        let prev = null;
+        for (let s = 0; s <= nSeg; s++) {
+          const theta = s / nSeg * 2*Math.PI;
+          const pt = [ r*Math.cos(theta), r*Math.sin(theta), zc ];
+          if (prev) drawSegment3D(prev, pt, p, 0.22);
+          prev = pt;
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawNodes(p, unit) {
+    if (showRadialNodes) {
+      for (const r of currentOrbital.radialNodes) drawSphere(r, p, unit, '#ffd166');
+    }
+    if (showAngularNodes) {
+      for (const node of currentOrbital.angularNodes) {
+        if (node.type === 'plane') drawPlane(node.u, node.v, p, unit, '#c4c9d4');
+        else if (node.type === 'cone') drawCone(node.slope, p, unit, '#c4c9d4');
+      }
     }
   }
 
@@ -559,8 +997,10 @@
     const f    = Math.min(w,h) * 1.05;
     const D    = camDist;
     const unit = w / 600;
+    const proj = { cosY, sinY, cosP, sinP, cx, cy, f, D };
 
-    if (showAxes) drawAxes(cosY, sinY, cosP, sinP, cx, cy, f, D, unit);
+    if (showAxes) drawAxes(proj, unit);
+    drawNodes(proj, unit);
 
     /* particles — additive blending gives natural density glow */
     ctx.globalCompositeOperation = 'lighter';

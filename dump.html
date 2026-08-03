@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="en-GB">
-<head>
+<html lang="en-GB"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buffer Solutions — Resisting pH Change</title>
@@ -39,7 +38,7 @@
 
   .btn-swap{padding:8px 12px;font-size:13px;}
 </style>
-</head>
+<style>#theme-toggle-btn{position:fixed;left:16px;bottom:16px;z-index:9999;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.25);transition:border-color .15s,color .15s;font-family:var(--font);}#theme-toggle-btn:hover{border-color:var(--gold);color:var(--gold);}#theme-toggle-btn svg{width:18px;height:18px;}</style></head>
 <body>
 <div class="wrap">
 
@@ -53,7 +52,7 @@
       <div class="card beakers-card">
         <div class="card-label"><span>Three identical additions</span><span class="right" id="stageStatus">ready</span></div>
         <div class="beakers-canvas-wrap" id="beakersCanvasWrap">
-          <canvas id="beakers" aria-label="Three beakers: buffer, water, and a matched-pH unbuffered solution, each receiving the same titrant"></canvas>
+          <canvas id="beakers" aria-label="Three beakers: buffer, water, and a matched-pH unbuffered solution, each receiving the same titrant" width="314" height="209" style="width: 314px; height: 209px;"></canvas>
         </div>
         <div class="legend">
           <span><span class="ldot" style="background:var(--accent)"></span>Buffer</span>
@@ -64,15 +63,15 @@
 
       <div class="card recipe-card">
         <div class="card-label"><span>Buffer recipe</span></div>
-        <div class="row"><span class="k">System</span><span class="v" id="rSystem">—</span></div>
-        <div class="row"><span class="k">pKa</span><span class="v" id="rPka">—</span></div>
-        <div class="row"><span class="k">[base]/[acid] ratio</span><span class="v" id="rRatio">—</span></div>
-        <div class="row"><span class="k">Henderson–Hasselbalch pH</span><span class="v" id="rHH">—</span></div>
-        <div class="row"><span class="k">Exact model pH</span><span class="v accent" id="rExact">—</span></div>
-        <div class="row"><span class="k">Capacity remaining vs HCl</span><span class="v" id="rCapAcid">—</span></div>
-        <div class="cap-bar"><div class="cap-fill" id="rCapAcidFill"></div></div>
-        <div class="row"><span class="k">Capacity remaining vs NaOH</span><span class="v" id="rCapBase">—</span></div>
-        <div class="cap-bar"><div class="cap-fill" id="rCapBaseFill"></div></div>
+        <div class="row"><span class="k">System</span><span class="v" id="rSystem">CH₃COOH / CH₃COONa</span></div>
+        <div class="row"><span class="k">pKa</span><span class="v" id="rPka">4.76</span></div>
+        <div class="row"><span class="k">[base]/[acid] ratio</span><span class="v" id="rRatio">1.00 : 1</span></div>
+        <div class="row"><span class="k">Henderson–Hasselbalch pH</span><span class="v" id="rHH">4.76</span></div>
+        <div class="row"><span class="k">Exact model pH</span><span class="v accent" id="rExact">4.76</span></div>
+        <div class="row"><span class="k">Capacity remaining vs HCl</span><span class="v" id="rCapAcid">2.50 mmol (of 2.50)</span></div>
+        <div class="cap-bar"><div class="cap-fill" id="rCapAcidFill" style="width: 100%; background: rgb(224, 166, 138);"></div></div>
+        <div class="row"><span class="k">Capacity remaining vs NaOH</span><span class="v" id="rCapBase">2.50 mmol (of 2.50)</span></div>
+        <div class="cap-bar"><div class="cap-fill" id="rCapBaseFill" style="width: 100%; background: rgb(224, 166, 138);"></div></div>
       </div>
     </div>
 
@@ -85,19 +84,19 @@
           <button type="button" class="chip-toggle active" id="capToggle" title="Mark the volumes at which the buffer's capacity is used up on each side">capacity points</button>
         </span>
       </div>
-      <div class="graph-wrap"><canvas id="graph" aria-label="pH against volume of HCl added to the left of centre, or NaOH added to the right, for the buffer and two unbuffered comparisons"></canvas></div>
+      <div class="graph-wrap"><canvas id="graph" aria-label="pH against volume of HCl added to the left of centre, or NaOH added to the right, for the buffer and two unbuffered comparisons" width="329" height="240" style="height: 240px;"></canvas></div>
       <div class="stats">
         <div class="stat"><span class="k">Volume added</span><span class="v" id="sVol">0.00 cm³</span></div>
-        <div class="stat accent"><span class="k">pH · buffer</span><span class="v" id="sPHb">—</span></div>
-        <div class="stat"><span class="k">pH · water</span><span class="v" id="sPHw">—</span></div>
-        <div class="stat"><span class="k">pH · same-pH</span><span class="v" id="sPHm">—</span></div>
-        <div class="stat accent"><span class="k">ΔpH · buffer</span><span class="v" id="dPHb">—</span></div>
-        <div class="stat"><span class="k">ΔpH · water</span><span class="v" id="dPHw">—</span></div>
-        <div class="stat"><span class="k">ΔpH · same-pH</span><span class="v" id="dPHm">—</span></div>
-        <div class="stat accent"><span class="k">Buffering factor</span><span class="v" id="sFactor">—</span></div>
+        <div class="stat accent"><span class="k">pH · buffer</span><span class="v" id="sPHb">4.76</span></div>
+        <div class="stat"><span class="k">pH · water</span><span class="v" id="sPHw">7.00</span></div>
+        <div class="stat"><span class="k">pH · same-pH</span><span class="v" id="sPHm">4.76</span></div>
+        <div class="stat accent"><span class="k">ΔpH · buffer</span><span class="v" id="dPHb">+0.00</span></div>
+        <div class="stat"><span class="k">ΔpH · water</span><span class="v" id="dPHw">+0.00</span></div>
+        <div class="stat"><span class="k">ΔpH · same-pH</span><span class="v" id="dPHm">+0.00</span></div>
+        <div class="stat accent"><span class="k">Buffering factor</span><span class="v" id="sFactor">1×</span></div>
       </div>
-      <div class="headline" id="headline"></div>
-      <div class="caveat" id="capNote"></div>
+      <div class="headline" id="headline">Drag the slider (or press Run) to add <b>HCl</b> to the left, or <b>NaOH</b> to the right, and compare how much the buffer's pH moves against the two unbuffered curves.</div>
+      <div class="caveat" id="capNote"><b>Capacity limits.</b> This buffer can absorb 2.50 mmol of H⁺ (against HCl, up to 5.00 cm³ before CH₃COONa runs out), and 2.50 mmol of OH⁻ (against NaOH, up to 5.00 cm³ before CH₃COOH runs out). Beyond either limit, it offers no more protection than plain water.</div>
     </div>
   </div>
 
@@ -105,14 +104,14 @@
     <div class="ctl-row">
       <div class="select-block">
         <span class="ctl-label">Buffer system</span>
-        <select id="sysSelect"></select>
+        <select id="sysSelect"><option value="acetate">Ethanoic acid / sodium ethanoate (pKa 4.76)</option><option value="ammonium">Ammonia / ammonium chloride (pKa 9.25)</option><option value="phosphate">Sodium dihydrogenphosphate / disodium hydrogenphosphate (pKa 7.21)</option></select>
       </div>
       <div class="slider-row">
-        <div class="slider-head"><span class="ctl-label" id="caLabel">Acid-form concentration</span><span class="val" id="caVal">0.100 mol dm⁻³</span></div>
+        <div class="slider-head"><span class="ctl-label" id="caLabel">CH₃COOH concentration</span><span class="val" id="caVal">0.1 mol dm⁻³</span></div>
         <input type="range" id="caSlider" min="0.02" max="1" step="0.02" value="0.1">
       </div>
       <div class="slider-row">
-        <div class="slider-head"><span class="ctl-label" id="cbLabel">Base-form concentration</span><span class="val" id="cbVal">0.100 mol dm⁻³</span></div>
+        <div class="slider-head"><span class="ctl-label" id="cbLabel">CH₃COONa concentration</span><span class="val" id="cbVal">0.1 mol dm⁻³</span></div>
         <input type="range" id="cbSlider" min="0.02" max="1" step="0.02" value="0.1">
       </div>
       <button type="button" class="btn btn-ghost btn-swap" id="swapBtn" title="Swap acid-form and base-form concentrations">⇄</button>
@@ -124,7 +123,7 @@
 
     <div class="ctl-row">
       <div class="slider-row">
-        <div class="slider-head"><span class="ctl-label">Titrant concentration (both HCl and NaOH)</span><span class="val" id="ctVal">0.500 mol dm⁻³</span></div>
+        <div class="slider-head"><span class="ctl-label">Titrant concentration (both HCl and NaOH)</span><span class="val" id="ctVal">0.5 mol dm⁻³</span></div>
         <input type="range" id="ctSlider" min="0.02" max="2" step="0.02" value="0.5">
       </div>
       <div class="slider-row" style="flex:2 1 320px;">
@@ -767,5 +766,6 @@
   ]);
 })();
 </script>
-</body>
-</html>
+
+
+<button id="theme-toggle-btn" type="button" aria-label="Switch to light mode" title="Switch to light mode"><svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path></svg><svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg></button><button id="tour-trigger-btn" type="button">Take the tour</button></body></html>

@@ -79,7 +79,9 @@ function renderResourceCategories() {
             <span class="item-title">${it.title}</span><br>
             <span class="item-desc">${it.desc}</span>
           </span>
-          ${it.file
+          ${it.url
+            ? `<a class="dl" href="${it.url}" target="_blank" rel="noopener">${it.type}</a>`
+            : it.file
             ? `<a class="dl" href="${it.file}" download>${it.type}</a>`
             : `<span class="dl disabled" title="Add a file path in the data to enable">${it.type}</span>`}
         </div>
@@ -115,6 +117,7 @@ function renderSim(id) {
   document.title = `${s.title} - chemistr.io`;
   document.getElementById("viewerTitle").textContent = s.title;
   const frame = document.getElementById("viewerFrame");
+  document.getElementById("tourBtn").style.display = s.tour ? "" : "none";
   if (s.file) {
     const iframeEl = document.createElement('iframe');
     iframeEl.src = s.file;
@@ -147,6 +150,25 @@ const MATH_DELIMITERS = [
   { left: "\\[", right: "\\]", display: true }
 ];
 
+/* Marked applies CommonMark backslash-escaping (e.g. "\," -> ",") before
+   KaTeX ever sees the markdown, which mangles LaTeX spacing macros like
+   \, \; \! \\. Swap math spans out for placeholders before marked runs,
+   then restore the untouched original text for KaTeX to render. */
+const MATH_SPAN_RE = /\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$(?:\\.|[^\$\\\n])*\$/g;
+
+function protectMath(md) {
+  const store = [];
+  const protectedMd = md.replace(MATH_SPAN_RE, (match) => {
+    store.push(match);
+    return `${store.length - 1}`;
+  });
+  return { protectedMd, store };
+}
+
+function restoreMath(html, store) {
+  return html.replace(/(\d+)/g, (_, idx) => store[Number(idx)]);
+}
+
 async function loadNotes(s) {
   const sidebar = document.getElementById("notesSidebar");
   const toggle = document.getElementById("notesToggle");
@@ -164,7 +186,8 @@ async function loadNotes(s) {
     const res = await fetch(s.notes);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const md = await res.text();
-    content.innerHTML = marked.parse(md);
+    const { protectedMd, store } = protectMath(md);
+    content.innerHTML = restoreMath(marked.parse(protectedMd), store);
     if (window.renderMathInElement) {
       renderMathInElement(content, { delimiters: MATH_DELIMITERS, throwOnError: false });
     }
@@ -314,6 +337,13 @@ window.addEventListener('message', (e) => {
    plain 100% stretch, same as before. */
 const EXPAND_PATH = "M1 5V1h4M9 1h4v4M13 9v4h-4M5 13H1V9";
 const COMPRESS_PATH = "M5 1v4H1M13 5H9V1M9 13v-4h4M1 9h4v4";
+
+function startSimTour() {
+  const iframe = document.querySelector('#viewerFrame iframe');
+  if (iframe && iframe.contentWindow && iframe.contentWindow.ChemTour) {
+    iframe.contentWindow.ChemTour.start();
+  }
+}
 
 function toggleFullscreen() {
   const frame = document.getElementById('viewerFrame');

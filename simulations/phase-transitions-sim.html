@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="../assets/css/theme.css">
 <script src="../assets/js/theme.js"></script>
+<script src="../assets/js/tour.js"></script>
 <!-- <title>Phase Transitions — A Molecular Dynamics Simulation</title> -->
 <style>
   :root {
@@ -151,6 +152,12 @@
     color: var(--text);
   }
   details.explainer ul { font-size: 0.86rem; line-height: 1.55; padding-left: 20px; }
+  details.advanced-settings summary {
+    cursor: pointer;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
   .hc-box { padding-bottom: 18px; }
   .hc-subtitle { font-size: 0.78rem; font-weight: 400; color: var(--muted); text-transform: none; letter-spacing: 0; }
   #hcCanvas { display: block; width: 100%; height: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 5px; }
@@ -207,26 +214,30 @@
           <span>applies on release</span>
         </div>
 
-        <label class="slider-label" style="margin-top:14px;"><span>Interaction strength (ε)</span></label>
-        <input type="range" id="epsSlider" min="0.3" max="2.5" step="0.05" value="1.0">
-        <div class="temp-readout">
-          <span id="epsReadout">ε = 1.00</span>
-          <span id="epsHint">argon-like</span>
-        </div>
+        <details class="advanced-settings" style="margin-top:14px;">
+          <summary>Advanced settings</summary>
 
-        <label class="slider-label" style="margin-top:14px;"><span>Gravity</span></label>
-        <input type="range" id="gravitySlider" min="0" max="0.15" step="0.005" value="0.045">
-        <div class="temp-readout">
-          <span id="gravityReadout">g = 0.045</span>
-          <span id="gravityHint">Earth-like</span>
-        </div>
+          <label class="slider-label" style="margin-top:14px;"><span>Interaction strength (ε)</span></label>
+          <input type="range" id="epsSlider" min="0.3" max="2.5" step="0.05" value="1.0">
+          <div class="temp-readout">
+            <span id="epsReadout">ε = 1.00</span>
+            <span id="epsHint">argon-like</span>
+          </div>
 
-        <label class="slider-label" style="margin-top:14px;"><span>Cohesion</span></label>
-        <input type="range" id="cohesionSlider" min="0" max="0.05" step="0.002" value="0.02">
-        <div class="temp-readout">
-          <span id="cohesionReadout">κ = 0.020</span>
-          <span id="cohesionHint">helps re-solidify</span>
-        </div>
+          <label class="slider-label" style="margin-top:14px;"><span>Gravity</span></label>
+          <input type="range" id="gravitySlider" min="0" max="0.15" step="0.005" value="0.045">
+          <div class="temp-readout">
+            <span id="gravityReadout">g = 0.045</span>
+            <span id="gravityHint">Earth-like</span>
+          </div>
+
+          <label class="slider-label" style="margin-top:14px;"><span>Cohesion</span></label>
+          <input type="range" id="cohesionSlider" min="0" max="0.05" step="0.002" value="0.02">
+          <div class="temp-readout">
+            <span id="cohesionReadout">κ = 0.020</span>
+            <span id="cohesionHint">helps re-solidify</span>
+          </div>
+        </details>
       </div>
 
       <!-- <details class="explainer panel-box">
@@ -297,7 +308,7 @@
   </div>
 </div>
 
-<div class="container" style="margin-top:22px;">
+<div class="container" style="margin-top:22px; display:none;">
   <div class="panel-box hc-box">
     <h2 style="display:flex;align-items:baseline;gap:8px;">
       Heating curve
@@ -1193,6 +1204,38 @@
     window.addEventListener("resize", reportHeight);
   }
   requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+
+  /* ---------- guided tour ---------- */
+  function setSlider(input, value) {
+    input.value = value;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  ChemTour.init([
+    { target: "#simCanvas",
+      title: "Solid",
+      body: "At low temperatures, the particles are regularly arranged and closely packed. They do not move freely but vibrate around a fixed position. They are held together by forces of attraction. This is characteristic of a solid.",
+      before: () => { setSlider(tempSlider, 0.05); } },
+
+    { target: ["#simCanvas", "#tempSlider"],
+      title: "Heating the solid",
+      body: "When the temperature increases, the particles have more kinetic energy. The particles in the solid vibrate faster but still cannot overcome the forces of attraction.",
+      before: () => { setSlider(tempSlider, 0.10); } },
+
+    { target: ["#simCanvas", "#tempSlider"],
+      title: "Liquid",
+      body: "With enough energy, particles can start to overcome the forces of attraction. Here, particles can move from their starting position. Their arrangement is no longer regular but it is still quite close packed and most particles are still touching. This is characteristic of a liquid.",
+      before: () => { setSlider(tempSlider, 0.50); } },
+
+    { target: ["#simCanvas", "#tempSlider"],
+      title: "Gas",
+      body: "With even more energy, particles can fully overcome the forces of attraction and move freely and quickly. They spread out to fill the space available. This is characteristic of a gas.",
+      before: () => { setSlider(tempSlider, 2.00); } },
+
+    { target: ["#simCanvas", "#resetBtn", "#sweepBtn"],
+      title: "Watch it all happen",
+      body: "By slowly increasing the temperature, we can see the changes between each state.",
+      before: () => { resetBtn.click(); sweepBtn.click(); } },
+  ]);
 })();
 </script>
 </body>

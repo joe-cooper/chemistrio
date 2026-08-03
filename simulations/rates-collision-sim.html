@@ -58,6 +58,8 @@
 
   #aSlider::-webkit-slider-thumb{background:var(--A);}
   #aSlider::-moz-range-thumb{background:var(--A);}
+  #bSlider::-webkit-slider-thumb{background:var(--B);}
+  #bSlider::-moz-range-thumb{background:var(--B);}
   #tSlider::-webkit-slider-thumb{background:#ff5d5d;}
   #tSlider::-moz-range-thumb{background:#ff5d5d;}
   #piecesSlider::-webkit-slider-thumb{background:var(--P);}
@@ -127,12 +129,16 @@
       <span class="ctl-label">Reaction</span>
       <div class="seg" id="reactionSeg">
         <button type="button" class="active" data-mode="A1">A → B</button>
-        <button type="button" data-mode="A2">2A → B</button>
+        <button type="button" data-mode="A2">A + B → C</button>
       </div>
     </div>
     <div class="slider-row" id="aSliderRow">
       <div class="slider-head"><span class="ctl-label">Reactant A particles</span><span class="val" id="aVal">120</span></div>
       <input type="range" id="aSlider" min="50" max="250" step="10" value="120">
+    </div>
+    <div class="slider-row" id="bSliderRow" style="display:none">
+      <div class="slider-head"><span class="ctl-label">Reactant B particles</span><span class="val" id="bVal">120</span></div>
+      <input type="range" id="bSlider" min="50" max="250" step="10" value="120">
     </div>
 
     <!-- concentration-module controls -->
@@ -193,7 +199,7 @@
         <p>As the reaction proceeds, a lump doesn't dissolve as one lump-sized event — it erodes from the outside in, exposing fresh particles underneath as the outer layer disappears, exactly like a real shrinking piece of solid reactant.</p>
       </div>
       <div id="noteStoich">
-        <p>In <b>A → B</b>, a successful collision converts <b>both</b> colliding particles into B — particle count is conserved throughout. In <b>2A → B</b>, a successful collision converts one particle into B and removes the other — modelling the 2:1 stoichiometry means particle count falls over time. This is a deliberate simplification: it isn't tracking mass or momentum through the "lost" particle, just making the 2:1 ratio visible at a glance.</p>
+        <p>In <b>A → B</b>, a successful collision requires two A particles to meet, and converts <b>both</b> into B. In <b>A + B → C</b>, a successful collision requires one A <b>and</b> one B to meet, and converts both into C — this is the model for a reaction between two different reactants. In both cases particle count is conserved: nothing is created or destroyed, only converted.</p>
       </div>
     </div>
   </div> -->
@@ -224,6 +230,8 @@
     phaseLabel: document.getElementById('phaseLabel'),
     aSlider: document.getElementById('aSlider'),
     aSliderRow: document.getElementById('aSliderRow'),
+    bSlider: document.getElementById('bSlider'),
+    bSliderRow: document.getElementById('bSliderRow'),
     pSlider: document.getElementById('pSlider'),
     volSlider: document.getElementById('volSlider'),
     tSlider: document.getElementById('tSlider'),
@@ -239,6 +247,7 @@
     fluidSliderRow: document.getElementById('fluidSliderRow'),
     surfPSliderRow: document.getElementById('surfPSliderRow'),
     aVal: document.getElementById('aVal'),
+    bVal: document.getElementById('bVal'),
     pVal: document.getElementById('pVal'),
     volVal: document.getElementById('volVal'),
     tVal: document.getElementById('tVal'),
@@ -278,10 +287,10 @@
 
   // ---------- state ----------
   let activeModule = 'conc'; // 'conc' | 'temp' | 'surf'
-  let reactionMode = 'A1'; // 'A1': A -> B (count-conserving)   |   'A2': 2A -> B (merging) — gas tabs only
+  let reactionMode = 'A1'; // 'A1': A -> B (self-collision)   |   'A2': A + B -> C (two reactants) — gas tabs only
   let showPrevRun = false;
   let prevHist = null; // snapshot of the run that was just cleared, for comparison
-  let particles = [];         // gas tabs: {x,y,vx,vy,type,dead} type: 0=A 1=B
+  let particles = [];         // gas tabs: {x,y,vx,vy,type} type: 0=A 1=B 2=C (C only used in A2 mode)
   let t = 0, reactions = 0, running = false, rafId = null, lastTs = null;
   let reactionTimes = [];
   let hist = { t:[0], a:[0], b:[0] };
@@ -475,7 +484,7 @@
     // snapshot whatever run is being replaced, so it can be shown as a
     // faded comparison line once a new run starts
     if(hist.t.length>1){
-      prevHist = { t:hist.t.slice(), a:hist.a.slice(), b:hist.b.slice(), total:hist.a[0]+hist.b[0] };
+      prevHist = { t:hist.t.slice(), a:hist.a.slice(), b:hist.b.slice(), c: hist.c ? hist.c.slice() : null, total:hist.a[0]+hist.b[0]+(hist.c?hist.c[0]:0) };
     }
     t = 0; reactions = 0; reactionTimes = []; lastSampleT = 0; xMaxAnim = 8;
 
@@ -485,6 +494,7 @@
       hist = { t:[0], a:[N_SOLID], b:[0] };
     } else {
       const nA = +el.aSlider.value;
+      const nB = reactionMode==='A2' ? +el.bSlider.value : 0;
       if(activeModule==='conc'){
         const volPct = +el.volSlider.value;
         // area-based scaling: volume% is the fraction of the reference box's
@@ -500,8 +510,9 @@
       }
       particles = [];
       place(nA, 0, particles);
-      yMaxFixed = niceMax(nA); // fixed ceiling: totals never increase from the starting count
-      hist = { t:[0], a:[nA], b:[0] };
+      if(reactionMode==='A2') place(nB, 1, particles);
+      yMaxFixed = niceMax(Math.max(nA, nB)); // fixed ceiling: no species count exceeds its own starting value
+      hist = reactionMode==='A2' ? { t:[0], a:[nA], b:[nB], c:[0] } : { t:[0], a:[nA], b:[0] };
     }
     updateStatsDisplay();
     renderBox();
@@ -535,10 +546,8 @@
       let arr=grid.get(key); if(!arr){arr=[];grid.set(key,arr);} arr.push(i);
     }
     const minDist = 2*R, minDist2 = minDist*minDist;
-    let anyDead = false;
     for(let i=0;i<particles.length;i++){
       const p=particles[i];
-      if(p.dead) continue;
       const cx=(p.x/cell)|0, cy=(p.y/cell)|0;
       for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){
         const arr=grid.get((cx+ox)*100000+(cy+oy));
@@ -546,7 +555,6 @@
         for(const j of arr){
           if(j<=i) continue;
           const q=particles[j];
-          if(q.dead) continue;
           const dx=q.x-p.x, dy=q.y-p.y;
           const dist2=dx*dx+dy*dy;
           if(dist2>=minDist2 || dist2<1e-9) continue;
@@ -560,21 +568,16 @@
           const velAlongNormal = rvx*nx+rvy*ny;
           if(velAlongNormal>0) continue; // separating already, don't resolve twice
 
-          // both reactions here are triggered only by an A–A collision —
-          // there is no second reactant species in either mode
-          if(p.type===0 && q.type===0){
-            if(Math.random()<REACT_PROB){
-              if(reactionMode==='A1'){
-                // A -> B: both colliding particles become product; count conserved
-                p.type=1; q.type=1;
-              } else {
-                // 2A -> B: one becomes product, the other is removed —
-                // trades strict mass/count conservation for a clear 2:1
-                // stoichiometry visual, a deliberate teaching simplification
-                q.type=1; p.dead=true; anyDead=true;
-              }
-              reactions++; reactionTimes.push(t);
-            }
+          // A -> B needs two A particles to meet; A + B -> C needs one of
+          // each. Either way both colliding particles convert to product —
+          // particle count is conserved throughout.
+          const reacts = reactionMode==='A1'
+            ? (p.type===0 && q.type===0)
+            : ((p.type===0 && q.type===1) || (p.type===1 && q.type===0));
+          if(reacts && Math.random()<REACT_PROB){
+            p.type = reactionMode==='A1' ? 1 : 2;
+            q.type = reactionMode==='A1' ? 1 : 2;
+            reactions++; reactionTimes.push(t);
           }
           // equal-mass elastic bounce: exchange normal velocity components
           p.vx+=velAlongNormal*nx; p.vy+=velAlongNormal*ny;
@@ -582,7 +585,6 @@
         }
       }
     }
-    if(anyDead) particles = particles.filter(pt => !pt.dead);
     t += dt;
   }
 
@@ -592,20 +594,22 @@
       for(const s of solids) if(s.alive) a++;
       return { a, b:N_SOLID-a };
     }
-    let a=0,b=0;
-    for(const pt of particles){ if(pt.type===0)a++; else b++; }
-    return {a,b};
+    let a=0,b=0,c=0;
+    for(const pt of particles){ if(pt.type===0)a++; else if(pt.type===1)b++; else c++; }
+    return {a,b,c};
   }
 
   function maybeSample(){
     if(t-lastSampleT>=SAMPLE_DT){
-      const c=counts();
-      hist.t.push(t); hist.a.push(c.a); hist.b.push(c.b);
+      const cn=counts();
+      hist.t.push(t); hist.a.push(cn.a); hist.b.push(cn.b);
+      if(hist.c) hist.c.push(cn.c);
       lastSampleT=t;
       if(hist.t.length>2000){ // cap history length for long-running sessions
         hist.t.splice(0, hist.t.length-2000);
         hist.a.splice(0, hist.a.length-2000);
         hist.b.splice(0, hist.b.length-2000);
+        if(hist.c) hist.c.splice(0, hist.c.length-2000);
       }
     }
     reactionTimes = reactionTimes.filter(tt => t-tt<=RATE_WINDOW);
@@ -670,11 +674,11 @@
       bctx.strokeStyle = cssVar('--border-soft');
       bctx.lineWidth = 2;
       bctx.strokeRect(off, off, L, L);
-      const colA=cssVar('--A'), colB=cssVar('--B');
+      const colA=cssVar('--A'), colB=cssVar('--B'), colC=cssVar('--P');
       for(const p of particles){
         bctx.beginPath();
         bctx.arc(p.x+off, p.y+off, R, 0, Math.PI*2);
-        bctx.fillStyle = p.type===0?colA:colB;
+        bctx.fillStyle = p.type===0?colA : p.type===1?colB : colC;
         bctx.fill();
       }
     }
@@ -752,13 +756,15 @@
       gctx.stroke();
       gctx.restore();
     }
-    const colA=cssVar('--A'), colB = activeModule==='surf' ? cssVar('--B') : cssVar('--B');
+    const colA=cssVar('--A'), colB=cssVar('--B'), colC=cssVar('--P');
     if(showPrev){
       plot(prevHist.t, prevHist.a, colA, true);
       plot(prevHist.t, prevHist.b, colB, true);
+      if(prevHist.c) plot(prevHist.t, prevHist.c, colC, true);
     }
     plot(hist.t, hist.a, colA, false);
     plot(hist.t, hist.b, colB, false);
+    if(hist.c) plot(hist.t, hist.c, colC, false);
   }
 
   function render(){ renderBox(); renderGraph(); updateStatsDisplay(); }
@@ -787,6 +793,10 @@
   el.resetBtn.addEventListener('click', ()=>{ setRunning(false); init(); });
   el.aSlider.addEventListener('input', ()=>{
     el.aVal.textContent = el.aSlider.value;
+    init(); // new starting concentration = a fresh experiment
+  });
+  el.bSlider.addEventListener('input', ()=>{
+    el.bVal.textContent = el.bSlider.value;
     init(); // new starting concentration = a fresh experiment
   });
   el.pSlider.addEventListener('input', ()=>{
@@ -833,10 +843,15 @@
   });
 
   function applyReactionModeUI(){
-    el.eqnLabel.textContent = 'Reaction vessel — ' + (reactionMode==='A1' ? 'A → B' : '2A → B');
+    const isA2 = reactionMode==='A2';
+    el.eqnLabel.textContent = 'Reaction vessel — ' + (isA2 ? 'A + B → C' : 'A → B');
     for(const btn of el.reactionSeg.querySelectorAll('button')){
       btn.classList.toggle('active', btn.dataset.mode===reactionMode);
     }
+    el.bSliderRow.style.display = (isA2 && activeModule!=='surf') ? '' : 'none';
+    el.legendBox.innerHTML = isA2 ? GAS_LEGEND_AB : GAS_LEGEND;
+    el.sALabel.textContent = 'A remaining';
+    el.sBLabel.textContent = isA2 ? 'B remaining' : 'B formed';
   }
   el.reactionSeg.addEventListener('click', e=>{
     const btn = e.target.closest('button[data-mode]');
@@ -856,6 +871,9 @@
     + '<span><span class="ldot" style="background:var(--P)"></span>Fluid</span>';
   const GAS_LEGEND = '<span><span class="ldot" style="background:var(--A)"></span>Reactant A</span>'
     + '<span><span class="ldot" style="background:var(--B)"></span>Product B</span>';
+  const GAS_LEGEND_AB = '<span><span class="ldot" style="background:var(--A)"></span>Reactant A</span>'
+    + '<span><span class="ldot" style="background:var(--B)"></span>Reactant B</span>'
+    + '<span><span class="ldot" style="background:var(--P)"></span>Product C</span>';
 
   function applyModuleUI(){
     const isConc = activeModule==='conc';
@@ -864,6 +882,7 @@
 
     el.reactionRow.style.display = isSurf ? 'none' : '';
     el.aSliderRow.style.display = isSurf ? 'none' : '';
+    el.bSliderRow.style.display = (!isSurf && reactionMode==='A2') ? '' : 'none';
     el.pSliderRow.style.display = isConc ? '' : 'none';
     el.volSliderRow.style.display = isConc ? '' : 'none';
     el.tSliderRow.style.display = isTemp ? '' : 'none';
@@ -877,14 +896,13 @@
     if(el.noteSurf) el.noteSurf.style.display = isSurf ? '' : 'none';
     if(el.noteStoich) el.noteStoich.style.display = isSurf ? 'none' : '';
 
-    el.legendBox.innerHTML = isSurf ? SURF_LEGEND : GAS_LEGEND;
-    el.sALabel.textContent = isSurf ? 'Solid remaining' : 'A remaining';
-    el.sBLabel.textContent = isSurf ? 'Dissolved' : 'B formed';
-
     if(isSurf){
+      el.legendBox.innerHTML = SURF_LEGEND;
+      el.sALabel.textContent = 'Solid remaining';
+      el.sBLabel.textContent = 'Dissolved';
       el.eqnLabel.textContent = 'Reaction vessel — solid + fluid';
     } else {
-      applyReactionModeUI();
+      applyReactionModeUI(); // sets legend, sALabel/sBLabel, eqnLabel and bSliderRow for the active reaction mode
     }
 
     for(const btn of el.moduleTabs.querySelectorAll('button')){

@@ -7,6 +7,9 @@
        "New" badge next to it on the sims list and home page for
        NEW_BADGE_DAYS days afterwards, then stops on its own — no
        need to remember to remove a flag later.
+     - tour: true to show a "Take the tour" button in the viewer bar
+       for a simulation that calls ChemTour.init(...) in its own
+       script (see assets/js/tour.js).
      - notes: path to a Markdown file with teaching notes for the
        viewer's "Teaching notes" panel (leave "" to hide the panel).
        LaTeX is supported inside notes files: use $...$ for inline
@@ -25,11 +28,15 @@
        it as part of the raw <details> HTML.
    Add a resource: add an object to `resources`.
      - file: path to the PDF (leave "" to disable the download link)
+     - url: link to an external website instead of a file — opens in a
+       new tab rather than downloading. If both are set, url wins.
+       e.g. { title:"RSC Periodic Table", type:"Website", desc:"...",
+              url:"https://www.rsc.org/periodic-table" }
    ========================================================= */
 
 const simulations = [
   { id:"phase-transitions-sim", title:"State Changes", topic:"Kinetic Theory of Matter", level:"GCSE",
-    desc:"Simulations of particles and their state changes.", featured:true, file:"simulations/phase-transitions-sim.html", notes:"simulations/notes/phase-transitions-sim.md" },
+    desc:"Simulations of particles and their state changes.", featured:true, file:"simulations/phase-transitions-sim.html", notes:"simulations/notes/phase-transitions-sim.md", tour:true },
   { id:"rates-collision-sim", title:"Collision Theory", topic:"Rates/Kinetics", level:"GCSE",
     desc:"How concentration, temperature and surface area affect the rate of reaction shown using collision theory", file:"simulations/rates-collision-sim.html",
     notes:"simulations/notes/rates-collision-sim.md" },
@@ -50,7 +57,7 @@ const simulations = [
     notes:"simulations/notes/ph-curve-sim.md", added:"2026-07-24" },
   { id:"buffer-sim", title:"Buffer Solutions", topic:"Acids & Bases", level:"A-level",
     desc:"Add acid or base to a buffer and to two unbuffered comparisons (water, and a solution matched to the same starting pH) at once, and watch how much less the buffer's pH changes.", featured:true, file:"simulations/buffer-sim.html",
-    notes:"simulations/notes/buffer-sim.md", added:"2026-07-27" },
+    notes:"simulations/notes/buffer-sim.md", added:"2026-07-27", tour:true },
   { id:"weak-acid-sim", title:"Weak Acid pH — Approximation vs Exact", topic:"Acids & Bases", level:"A-level",
     desc:"Compare the simplifying assumption [H+]=[A-], [HA]=[HA]0 against the exact charge-balance pH for a weak acid, varying Ka and initial concentration.", featured:true, file:"simulations/weak-acid-sim.html",
     notes:"simulations/notes/weak-acid-sim.md", added:"2026-07-27" },
@@ -89,4 +96,7 @@ const resources = [
   // { topic:"Competition Preparation", items:[
   //   { title:"C3L6 Extension Notes", type:"PDF", desc:"Beyond-A-level topics for the Cambridge Chemistry Challenge.", file:"" }
   // ]}
+  { topic:"Useful Links", items:[
+    { title:"Cambridge Chemistry Challenge Lower Sixth", type:"Visit Website", desc:"Extension competition for Lower Sixth students.", url:"https://www.c3l6.com"}
+  ]}
 ];
