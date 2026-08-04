@@ -97,6 +97,7 @@ const resources = [
   //   { title:"C3L6 Extension Notes", type:"PDF", desc:"Beyond-A-level topics for the Cambridge Chemistry Challenge.", file:"" }
   // ]}
   { topic:"Useful Links", items:[
-    { title:"Cambridge Chemistry Challenge Lower Sixth", type:"Visit Website", desc:"Extension competition for Lower Sixth students.", url:"https://www.c3l6.com"}
+    { title:"Cambridge Chemistry Challenge Lower Sixth", type:"Visit Website", desc:"Extension competition for Lower Sixth students.", url:"https://www.c3l6.com"},
+    { title:"UK Chemistry Olympiad", type:"Visit Website", desc:"Extension competition for Upper Sixth students.", url:"https://www.rsc.org/competitions/uk-chemistry-olympiad/"},
   ]}
 ];

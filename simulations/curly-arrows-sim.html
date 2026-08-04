@@ -13,12 +13,19 @@
      small derived additions for things that shared palette doesn't have
      a token for (a brighter highlight, a tinted panel background),
      built from theme.css's own variables rather than hardcoded so they
-     still track it. --good/--bad below (correct/incorrect feedback)
-     stay as literal colours since they're specific to this sim, not a
-     site-wide concept. */
+     still track it. --good/--bad are this sim's own correct/incorrect
+     feedback colours — not part of the shared palette, so each is given
+     its own light-mode override below rather than derived, but both
+     still switch with the toggle rather than staying fixed to one look. */
   :root{
     --accent-dark: var(--gold);
     --accent-soft: color-mix(in srgb, var(--accent) 16%, var(--surface));
+    --good-border: #2f6b48; --good-bg: #10261b; --good-text: #9be6b4;
+    --bad-border: #6b2f2f; --bad-bg: #261010; --bad-text: #f2a8a1;
+  }
+  :root[data-theme="light"]{
+    --good-border: #2f9e5e; --good-bg: #e6f6ec; --good-text: #1f7a44;
+    --bad-border: #c94f4f; --bad-bg: #fbeaea; --bad-text: #a23636;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -39,9 +46,10 @@
   .mech-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
   .mech-bar label{font-size:0.78rem;color:var(--muted-dim);letter-spacing:.02em;}
   .mech-bar select{
-    font:inherit;font-size:0.86rem;background:var(--raised);color:var(--text);
+    font:inherit;font-family:var(--font);font-size:0.86rem;background:var(--raised);color:var(--text);
     border:1px solid var(--border);border-radius:6px;padding:6px 10px;cursor:pointer;
   }
+  .mech-bar select option, .mech-bar select optgroup{ font-family:var(--font); }
   .step-pill{
     margin-left:auto;font-size:0.76rem;font-weight:600;color:var(--accent-dark);
     background:var(--accent-soft);border:1px solid var(--border);border-radius:999px;padding:3px 11px;
@@ -72,7 +80,7 @@
     padding:9px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;
   }
   .panel-label .hint{text-transform:none;letter-spacing:0;color:var(--muted);font-size:0.75rem;}
-  svg{display:block;width:100%;height:auto;background:#0c0f0e;}
+  svg{display:block;width:100%;height:auto;background:var(--surface);}
 
   .atom-label{font-family:var(--font);font-weight:600;user-select:none;pointer-events:none;}
   .charge-label{font-family:var(--font);font-weight:700;user-select:none;pointer-events:none;}
@@ -100,7 +108,7 @@
   .lp-group:hover .lp-cross .lewis-cross-line{stroke:var(--gold);}
   .atom-hit{fill:transparent;cursor:pointer;}
   .atom-group:hover .atom-circle{stroke:var(--gold);}
-  .atom-circle{fill:#0c0f0e;stroke:var(--border);stroke-width:1.4;pointer-events:none;}
+  .atom-circle{fill:var(--bg);stroke:var(--border);stroke-width:1.4;pointer-events:none;}
 
   .arrow-path{fill:none;stroke:var(--gold);stroke-width:1.4;}
   .arrow-head{fill:none;stroke:var(--gold);stroke-width:1.3;stroke-linecap:round;stroke-linejoin:round;}
@@ -121,8 +129,8 @@
     border:1px solid var(--border);background:var(--surface);display:none;
   }
   .feedback.show{display:block;}
-  .feedback.correct{border-color:#2f6b48;background:#10261b;color:#9be6b4;}
-  .feedback.incorrect{border-color:#6b2f2f;background:#261010;color:#f2a8a1;}
+  .feedback.correct{border-color:var(--good-border);background:var(--good-bg);color:var(--good-text);}
+  .feedback.incorrect{border-color:var(--bad-border);background:var(--bad-bg);color:var(--bad-text);}
   .feedback .fb-title{font-weight:700;margin-bottom:4px;}
 
   .status-line{font-size:0.78rem;color:var(--muted-dim);margin-top:2px;}
@@ -541,16 +549,20 @@ function layoutClean(atoms, bonds, anchorAtomId, ring){
     });
   }
 
-  // place the anchor's component at a fixed canvas position, other
-  // (disconnected) components spread out beside it
+  // place the anchor's component at a fixed canvas position; each other
+  // (disconnected) component gets its own row below the previous one,
+  // stacking vertically rather than extending the same row sideways —
+  // three or more separate products (e.g. an alcohol plus a hydronium
+  // plus a halide ion) would otherwise keep widening a single row until
+  // fitViewBox has to shrink the whole diagram down to fit it.
   const anchorCompIdx = comps.findIndex(c=>c.includes(anchorAtomId));
   const offsets = [];
   offsets[anchorCompIdx<0?0:anchorCompIdx] = { x:190, y:150 };
-  let sideX = 440;
+  let sideY = 150;
   comps.forEach((comp,i)=>{
     if (i===anchorCompIdx) return;
-    offsets[i] = { x:sideX, y:150 };
-    sideX += 230;
+    offsets[i] = { x:440, y:sideY };
+    sideY += 210;
   });
 
   const result = atoms.map(a=>({ ...a }));
@@ -648,7 +660,9 @@ function structuresMatch(resultA, resultB){
 const MECHANISMS = [
   {
     id: 'sn2',
-    shortTitle: 'Nucleophilic substitution: hydroxide + bromomethane',
+    type: 'Nucleophilic substitution',
+    aLevel: true,
+    shortTitle: 'Nucleophilic substitution (SN2): hydroxide + bromomethane',
     title: "hydroxide attacks bromomethane",
     anchorAtom: 'C1',
     atoms: [
@@ -681,6 +695,8 @@ const MECHANISMS = [
   },
   {
     id: 'eladd',
+    type: 'Electrophilic addition',
+    aLevel: true,
     shortTitle: 'Electrophilic addition: HBr + ethene',
     title: "Electrophilic addition: HBr adds to ethene",
     anchorAtom: 'C1',
@@ -724,6 +740,8 @@ const MECHANISMS = [
   },
   {
     id: 'nucadd',
+    type: 'Nucleophilic addition',
+    aLevel: true,
     shortTitle: 'Nucleophilic addition: CN\u207b + methanal',
     title: "Nucleophilic addition: cyanide adds to methanal",
     anchorAtom: 'C1',
@@ -769,8 +787,10 @@ const MECHANISMS = [
   },
   {
     id: 'acidsub',
-    shortTitle: 'Nucleophilic substitution: alcohol + HBr (acid catalysed)',
-    title: "Nucleophilic substitution: HBr converts methanol to bromomethane via acid catalysis",
+    type: 'Nucleophilic substitution',
+    aLevel: true,
+    shortTitle: 'Nucleophilic substitution (SN2): alcohol + HBr (acid catalysed)',
+    title: "Nucleophilic substitution (SN2): HBr converts methanol to bromomethane via acid catalysis",
     anchorAtom: 'C1',
     atoms: [
       {id:'C1', el:'C', x:150, y:150, lp:0},
@@ -813,6 +833,8 @@ const MECHANISMS = [
   },
   {
     id: 'addelim',
+    type: 'Nucleophilic addition',
+    aLevel: true,
     shortTitle: 'Nucleophilic addition\u2013elimination: OH\u207b + ethanoyl chloride',
     title: "Nucleophilic addition\u2013elimination: hydroxide and ethanoyl chloride",
     anchorAtom: 'C2',
@@ -859,6 +881,8 @@ const MECHANISMS = [
   },
   {
     id: 'nitration',
+    type: 'Electrophilic aromatic substitution',
+    aLevel: true,
     shortTitle: 'Electrophilic aromatic substitution: NO\u2082\u207a + methylbenzene',
     title: "Electrophilic aromatic substitution: nitration of methylbenzene",
     anchorAtom: 'C4',
@@ -950,6 +974,8 @@ const MECHANISMS = [
   },
   {
     id: 'dinitration',
+    type: 'Electrophilic aromatic substitution',
+    aLevel: true,
     shortTitle: 'Electrophilic aromatic substitution: NO\u2082\u207a + nitrobenzene',
     title: "Electrophilic aromatic substitution: nitration of nitrobenzene",
     anchorAtom: 'C3',
@@ -1035,6 +1061,190 @@ const MECHANISMS = [
       },
     ],
   },
+  {
+    id: 'e2',
+    type: 'Elimination',
+    aLevel: true,
+    shortTitle: 'Elimination (E2): hydroxide + bromoethane',
+    title: "E2 elimination: hydroxide eliminates HBr from bromoethane",
+    anchorAtom: 'C1',
+    atoms: [
+      {id:'O1', el:'O', x:90,  y:150, lp:3},
+      {id:'H1', el:'H', x:90,  y:80,  lp:0},
+      {id:'Hx', el:'H', x:210, y:150, lp:0}, // beta-H removed by the base, facing hydroxide
+      {id:'C2', el:'C', x:280, y:150, lp:0}, // beta carbon
+      {id:'Hy', el:'H', x:280, y:80,  lp:0},
+      {id:'Hz', el:'H', x:280, y:220, lp:0},
+      {id:'C1', el:'C', x:380, y:150, lp:0}, // alpha carbon, bears the leaving group
+      {id:'Ha', el:'H', x:380, y:80,  lp:0},
+      {id:'Hb', el:'H', x:380, y:220, lp:0},
+      {id:'Br1',el:'Br',x:460, y:150, lp:3},
+    ],
+    bonds: [
+      {id:'o1h1', a:'O1', b:'H1', order:1},
+      {id:'c1c2', a:'C1', b:'C2', order:1},
+      {id:'c2hx', a:'C2', b:'Hx', order:1},
+      {id:'c2hy', a:'C2', b:'Hy', order:1},
+      {id:'c2hz', a:'C2', b:'Hz', order:1},
+      {id:'c1ha', a:'C1', b:'Ha', order:1},
+      {id:'c1hb', a:'C1', b:'Hb', order:1},
+      {id:'c1br1', a:'C1', b:'Br1', order:1},
+    ],
+    steps: [
+      {
+        instructions: "Draw the curly arrow(s) to show the E2 elimination of bromoethane by hydroxide \u2014 this happens in one concerted step, so all the arrows are drawn together.",
+        hint: "Hydroxide is a strong base as well as a nucleophile. It removes a proton from the carbon beta to the leaving group; the C\u2013H bond's electrons form the new \u03c0 bond as the C\u2013Br bond breaks, all at once.",
+        expectedArrows: [
+          { tailType:'lonepair', tailAtom:'O1', headAtom:'Hx' },
+          { tailType:'bond', tailBond:'c2hx', headAtom:'C1' },
+          { tailType:'bond', tailBond:'c1br1', headAtom:'Br1' },
+        ],
+        correctMsg: "Hydroxide's lone pair forms the new O\u2013H bond, the C\u2013H bond's electrons shift across to form the new C=C \u03c0 bond, and the C\u2013Br bond breaks onto bromine \u2014 all in a single concerted step, giving ethene, water and a bromide ion.",
+      },
+    ],
+  },
+  {
+    id: 'e1',
+    type: 'Elimination',
+    aLevel: false,
+    shortTitle: 'Elimination (E1): water + 2-bromopropane',
+    title: "E1 elimination: 2-bromopropane ionises, then water removes a proton",
+    anchorAtom: 'C1',
+    atoms: [
+      {id:'O1', el:'O', x:90,  y:150, lp:2},
+      {id:'Hw1',el:'H', x:90,  y:80,  lp:0},
+      {id:'Hw2',el:'H', x:20,  y:190, lp:0},
+      {id:'Ha', el:'H', x:200, y:150, lp:0}, // beta-H removed by water in step 2, facing it
+      {id:'C2', el:'C', x:280, y:150, lp:0}, // beta carbon (a methyl group)
+      {id:'Hb', el:'H', x:280, y:80,  lp:0},
+      {id:'Hc', el:'H', x:280, y:220, lp:0},
+      {id:'C1', el:'C', x:380, y:150, lp:0}, // carbon bearing the leaving group
+      {id:'Hc1',el:'H', x:380, y:220, lp:0},
+      {id:'Br1',el:'Br',x:380, y:80,  lp:3},
+      {id:'C3', el:'C', x:460, y:110, lp:0}, // spectator methyl group, unchanged throughout
+      {id:'Hd', el:'H', x:460, y:40,  lp:0},
+      {id:'He', el:'H', x:530, y:140, lp:0},
+      {id:'Hf', el:'H', x:530, y:80,  lp:0},
+    ],
+    bonds: [
+      {id:'o1hw1', a:'O1', b:'Hw1', order:1},
+      {id:'o1hw2', a:'O1', b:'Hw2', order:1},
+      {id:'c2ha', a:'C2', b:'Ha', order:1},
+      {id:'c2hb', a:'C2', b:'Hb', order:1},
+      {id:'c2hc', a:'C2', b:'Hc', order:1},
+      {id:'c1c2', a:'C1', b:'C2', order:1},
+      {id:'c1hc1', a:'C1', b:'Hc1', order:1},
+      {id:'c1br1', a:'C1', b:'Br1', order:1},
+      {id:'c1c3', a:'C1', b:'C3', order:1},
+      {id:'c3hd', a:'C3', b:'Hd', order:1},
+      {id:'c3he', a:'C3', b:'He', order:1},
+      {id:'c3hf', a:'C3', b:'Hf', order:1},
+    ],
+    steps: [
+      {
+        instructions: "Step 1 of 2: Draw the curly arrow to show the initial ionisation step of the E1 elimination of 2-bromopropane.",
+        hint: "Bromine is far more electronegative than carbon, and can leave as a stable bromide ion, taking the C\u2013Br bonding electrons with it.",
+        expectedArrows: [
+          { tailType:'bond', tailBond:'c1br1', headAtom:'Br1' },
+        ],
+        correctMsg: "The C\u2013Br bond breaks heterolytically onto bromine, giving a bromide ion and a secondary carbocation \u2014 this slow, rate-determining ionisation step is exactly what E1 shares with SN1.",
+      },
+      {
+        instructions: "Step 2 of 2: Draw the curly arrow(s) to show the final step of the E1 elimination of 2-bromopropane.",
+        hint: "Water is a weak base. It can remove a proton from a carbon beta to the carbocation, and the C\u2013H bond's electrons can form a new \u03c0 bond directly onto the positively-charged carbon.",
+        expectedArrows: [
+          { tailType:'lonepair', tailAtom:'O1', headAtom:'Ha' },
+          { tailType:'bond', tailBond:'c2ha', headAtom:'C1' },
+        ],
+        // The carbocation is symmetric \u2014 C2 and C3 are equivalent methyl
+        // groups, so any of their six beta-hydrogens is an equally valid
+        // proton for water to remove, all giving the same propene product.
+        altExpectedArrows: [
+          [ { tailType:'lonepair', tailAtom:'O1', headAtom:'Hb' }, { tailType:'bond', tailBond:'c2hb', headAtom:'C1' } ],
+          [ { tailType:'lonepair', tailAtom:'O1', headAtom:'Hc' }, { tailType:'bond', tailBond:'c2hc', headAtom:'C1' } ],
+          [ { tailType:'lonepair', tailAtom:'O1', headAtom:'Hd' }, { tailType:'bond', tailBond:'c3hd', headAtom:'C1' } ],
+          [ { tailType:'lonepair', tailAtom:'O1', headAtom:'He' }, { tailType:'bond', tailBond:'c3he', headAtom:'C1' } ],
+          [ { tailType:'lonepair', tailAtom:'O1', headAtom:'Hf' }, { tailType:'bond', tailBond:'c3hf', headAtom:'C1' } ],
+        ],
+        correctMsg: "Water's lone pair forms the new O\u2013H bond as the C\u2013H bond's electrons shift across to form the new C=C \u03c0 bond directly onto the carbocation, neutralising it. This gives propene and a hydronium ion \u2014 unlike E2, the leaving group had already left in a separate step before this one.",
+      },
+    ],
+  },
+  {
+    id: 'sn1',
+    type: 'Nucleophilic substitution',
+    aLevel: true,
+    shortTitle: 'Nucleophilic substitution (SN1): water + 2-bromopropane',
+    title: "SN1 substitution: 2-bromopropane ionises, then water attacks the carbocation",
+    anchorAtom: 'C1',
+    atoms: [
+      {id:'O1', el:'O', x:90,  y:150, lp:2}, // the attacking water
+      {id:'Hw1',el:'H', x:90,  y:80,  lp:0},
+      {id:'Hw2',el:'H', x:20,  y:190, lp:0},
+      {id:'C2', el:'C', x:280, y:150, lp:0}, // a methyl group
+      {id:'Ha', el:'H', x:200, y:150, lp:0},
+      {id:'Hb', el:'H', x:280, y:80,  lp:0},
+      {id:'Hc', el:'H', x:280, y:220, lp:0},
+      {id:'C1', el:'C', x:380, y:150, lp:0}, // carbon bearing the leaving group
+      {id:'Hc1',el:'H', x:380, y:220, lp:0},
+      {id:'Br1',el:'Br',x:380, y:80,  lp:3},
+      {id:'C3', el:'C', x:460, y:110, lp:0}, // a second, equivalent methyl group
+      {id:'Hd', el:'H', x:460, y:40,  lp:0},
+      {id:'He', el:'H', x:530, y:140, lp:0},
+      {id:'Hf', el:'H', x:530, y:80,  lp:0},
+      {id:'O2', el:'O', x:200, y:300, lp:2}, // a second water, acting as a base in step 3
+      {id:'Hi', el:'H', x:200, y:370, lp:0},
+      {id:'Hj', el:'H', x:130, y:300, lp:0},
+    ],
+    bonds: [
+      {id:'o1hw1', a:'O1', b:'Hw1', order:1},
+      {id:'o1hw2', a:'O1', b:'Hw2', order:1},
+      {id:'c2ha', a:'C2', b:'Ha', order:1},
+      {id:'c2hb', a:'C2', b:'Hb', order:1},
+      {id:'c2hc', a:'C2', b:'Hc', order:1},
+      {id:'c1c2', a:'C1', b:'C2', order:1},
+      {id:'c1hc1', a:'C1', b:'Hc1', order:1},
+      {id:'c1br1', a:'C1', b:'Br1', order:1},
+      {id:'c1c3', a:'C1', b:'C3', order:1},
+      {id:'c3hd', a:'C3', b:'Hd', order:1},
+      {id:'c3he', a:'C3', b:'He', order:1},
+      {id:'c3hf', a:'C3', b:'Hf', order:1},
+      {id:'o2hi', a:'O2', b:'Hi', order:1},
+      {id:'o2hj', a:'O2', b:'Hj', order:1},
+    ],
+    steps: [
+      {
+        instructions: "Step 1 of 3: Draw the curly arrow to show the initial ionisation step of the SN1 substitution of 2-bromopropane.",
+        hint: "Bromine is far more electronegative than carbon, and can leave as a stable bromide ion, taking the C\u2013Br bonding electrons with it.",
+        expectedArrows: [
+          { tailType:'bond', tailBond:'c1br1', headAtom:'Br1' },
+        ],
+        correctMsg: "The C\u2013Br bond breaks heterolytically onto bromine, giving a bromide ion and a secondary carbocation \u2014 this slow, rate-determining ionisation step is exactly what SN1 shares with E1.",
+      },
+      {
+        instructions: "Step 2 of 3: Draw the curly arrow to show water attacking the carbocation.",
+        hint: "Water is nucleophilic, and the carbocation is a strong electrophile with an empty p orbital \u2014 water's lone pair can form a bond directly to it.",
+        expectedArrows: [
+          { tailType:'lonepair', tailAtom:'O1', headAtom:'C1' },
+        ],
+        correctMsg: "Water's lone pair forms the new C\u2013O bond directly onto the carbocation, giving a protonated alcohol (an oxonium ion). Because the carbocation is flat and planar, water can approach from either face equally \u2014 the reason SN1 at a stereocentre gives racemisation, unlike the inversion seen in SN2.",
+      },
+      {
+        instructions: "Step 3 of 3: Draw the curly arrow(s) to show a second water molecule removing a proton from the oxonium ion.",
+        hint: "The oxonium ion is a strong acid. A second water molecule can act as a base, using a lone pair to remove one of its protons.",
+        expectedArrows: [
+          { tailType:'lonepair', tailAtom:'O2', headAtom:'Hw1' },
+          { tailType:'bond', tailBond:'o1hw1', headAtom:'O1' },
+        ],
+        // The two hydrogens left on the oxonium oxygen are equivalent \u2014
+        // removing either one gives the same neutral alcohol product.
+        altExpectedArrows: [
+          [ { tailType:'lonepair', tailAtom:'O2', headAtom:'Hw2' }, { tailType:'bond', tailBond:'o1hw2', headAtom:'O1' } ],
+        ],
+        correctMsg: "The second water's lone pair forms a new O\u2013H bond as the O\u2013H bond on the oxonium ion breaks back onto oxygen, giving neutral propan-2-ol and a hydronium ion.",
+      },
+    ],
+  },
 ];
 
 
@@ -1099,12 +1309,17 @@ function makeElectronSymbol(p, type, extraClass){
   }
   return el('circle',{cx:p.x,cy:p.y,r:2.3,class:extraClass||'lp-dot'});
 }
+// O and Br keep their own fixed hues (a chemistry-diagram convention,
+// not a themeable colour) since both read fine against either a dark or
+// light stage background. C and H fall back to the shared text/muted
+// tokens instead of a hardcoded near-white, so they stay legible when
+// the stage background switches with the site's light/dark toggle.
 function elColor(elName){
   switch(elName){
     case 'O': return '#ff8a7a';
     case 'Br': return '#f2c07a';
-    case 'H': return '#8a9490';
-    default: return '#e8ebe9'; // C and others
+    case 'H': return 'var(--muted)';
+    default: return 'var(--text)'; // C and others
   }
 }
 
@@ -1322,9 +1537,15 @@ function renderMolecule(svg, atoms, bonds, opts){
     label.textContent = a.el;
     g.appendChild(circle); g.appendChild(label);
     if (a.charge){
+      // Sits as a true superscript: anchored to the start (not centre) of
+      // the text so it butts up against the symbol's own right edge —
+      // scaled by character count so two-letter symbols (Br, Cl) push it
+      // out further than one-letter ones (O, H, C, N) — and raised above
+      // the symbol's baseline the way a superscript actually sits.
+      const symbolHalfWidth = a.el.length * 4.3;
       const ch = el('text',{
-        x:a.x+ATOM_R*0.62, y:a.y-ATOM_R*0.55, 'text-anchor':'middle', class:'charge-label',
-        fill: a.charge>0 ? '#f2a65a' : '#7ab4ff', 'font-size':11
+        x:a.x+symbolHalfWidth+1, y:a.y-5, 'text-anchor':'start', class:'charge-label',
+        fill: elColor(a.el), 'font-size':10
       });
       ch.textContent = a.charge>0 ? (a.charge===1?'+':`${a.charge}+`) : (a.charge===-1?'\u2212':`${Math.abs(a.charge)}\u2212`);
       g.appendChild(ch);
@@ -1470,6 +1691,7 @@ function drawArrow(svg, arrow, atoms, bonds, markerId, ring){
   let tail;
   const excludeAtoms = new Set([arrow.headAtom]);
   const excludeBonds = new Set();
+  let autoHeadBond = null;
   if (arrow.tailType==='lonepair'){
     tail = anchors[arrow.tailAtom] || getAtom(atoms, arrow.tailAtom);
     excludeAtoms.add(arrow.tailAtom);
@@ -1494,17 +1716,30 @@ function drawArrow(svg, arrow, atoms, bonds, markerId, ring){
     tail = { x:(A.x+B.x)/2, y:(A.y+B.y)/2 };
     excludeAtoms.add(bond.a); excludeAtoms.add(bond.b);
     excludeBonds.add(bond.id);
+    // If the head atom is already bonded to one of this bond's own atoms
+    // (e.g. a C–H bond's electrons shifting to form a new C=C π bond on
+    // the existing C–C σ bond, as in E2 elimination), that existing bond
+    // sits directly in the arrow's path and is exactly where the
+    // electrons are heading — not an obstacle for it. Mirrors the same
+    // exemption already given to a lone pair reinforcing an existing bond.
+    if (arrow.headAtom !== bond.a && arrow.headAtom !== bond.b){
+      autoHeadBond = findBondBetween(bonds, bond.a, arrow.headAtom) || findBondBetween(bonds, bond.b, arrow.headAtom);
+      if (autoHeadBond) excludeBonds.add(autoHeadBond.id);
+    }
   }
   const headAtom = getAtom(atoms, arrow.headAtom);
   if (!headAtom || !tail) return;
 
-  // Normally the arrow aims at the head atom's true center. Two
+  // Normally the arrow aims at the head atom's true center. Three
   // exceptions: if it was drawn by clicking a bond itself (headBondId
   // set — the standard way to depict a lone pair reinforcing an
-  // existing bond into a double bond), it aims at that bond's midpoint
-  // instead; and if the head is a ring carbon whose arc is currently
-  // absent, it aims at that carbon's arc position — an arrow re-forming
-  // the ring should visibly point at where the missing arc belongs.
+  // existing bond into a double bond), or the tail bond's own atom is
+  // already bonded to the head some other way (autoHeadBond — e.g. a
+  // C–H bond's electrons forming a new π bond on an existing C–C σ
+  // bond), it aims at that bond's midpoint instead; and if the head is
+  // a ring carbon whose arc is currently absent, it aims at that
+  // carbon's arc position — an arrow re-forming the ring should
+  // visibly point at where the missing arc belongs.
   // But if that carbon's arc is still present, there's no gap to point
   // into: some other arrow attacking it from outside (always incorrect,
   // but should still render sensibly) is a genuinely different bond
@@ -1512,8 +1747,9 @@ function drawArrow(svg, arrow, atoms, bonds, markerId, ring){
   // system, so it aims at the atom itself like any other atom would.
   let targetPoint = headAtom;
   let pullback = ATOM_R+3;
-  if (arrow.headBondId){
-    const hb = getBond(bonds, arrow.headBondId);
+  const headBondId = arrow.headBondId || (autoHeadBond && autoHeadBond.id);
+  if (headBondId){
+    const hb = getBond(bonds, headBondId);
     if (hb){
       const hA = getAtom(atoms, hb.a), hB = getAtom(atoms, hb.b);
       if (hA && hB){
@@ -1571,7 +1807,24 @@ const hintBox = document.getElementById('hintBox');
 const nextStepBtn = document.getElementById('nextStepBtn');
 const checkBtn = document.getElementById('checkBtn');
 
-mechSelect.innerHTML = MECHANISMS.map((m,i)=>`<option value="${i}">${m.shortTitle}</option>`).join('');
+// Groups the dropdown by mechanism type (each option's own `type`
+// field), in this fixed pedagogical order, rather than the order
+// mechanisms happen to be declared in MECHANISMS above.
+const MECHANISM_TYPE_ORDER = [
+  'Nucleophilic substitution',
+  'Electrophilic addition',
+  'Nucleophilic addition',
+  'Electrophilic aromatic substitution',
+  'Elimination',
+];
+mechSelect.innerHTML = MECHANISM_TYPE_ORDER.map(type=>{
+  const options = MECHANISMS
+    .map((m,i)=>({m,i}))
+    .filter(({m})=>m.type===type)
+    .map(({m,i})=>`<option value="${i}">${m.shortTitle}</option>`)
+    .join('');
+  return `<optgroup label="${type}">${options}</optgroup>`;
+}).join('');
 
 let mechIdx = 0;
 let stepIdx = 0;
@@ -1637,6 +1890,32 @@ function renderReactant(){
           renderReactant();
           updateStatus();
           return;
+        }
+      }
+      // Same idea, but for a bond tail rather than a lone pair — e.g. a
+      // C–H bond's electrons forming a new π bond directly on the C–C
+      // bond next to it (E2 elimination). If the clicked bond shares an
+      // atom with the pending tail bond, that shared atom is the "near"
+      // end the electrons flow into, and the arrow completes pointing
+      // at the clicked bond's OTHER atom — exactly as if that atom had
+      // been clicked directly. Without this, a bond could only ever be
+      // completed by clicking the head atom itself, not the bond it's
+      // becoming part of.
+      if (pendingTail && pendingTail.type==='bond' && pendingTail.id!==bondId){
+        const tailBond = state.bonds.find(b=>b.id===pendingTail.id);
+        const clickedBond = state.bonds.find(b=>b.id===bondId);
+        if (tailBond && clickedBond){
+          const shared = [tailBond.a,tailBond.b].find(id=>id===clickedBond.a||id===clickedBond.b);
+          if (shared){
+            const headAtom = clickedBond.a===shared ? clickedBond.b : clickedBond.a;
+            arrows.push({ tailType:'bond', tailBond:pendingTail.id, headAtom, headBondId:bondId });
+            pendingTail = null;
+            stepSolved = false;
+            nextStepBtn.style.display = 'none';
+            renderReactant();
+            updateStatus();
+            return;
+          }
         }
       }
       if (pendingTail && pendingTail.type==='bond' && pendingTail.id===bondId){ pendingTail=null; }

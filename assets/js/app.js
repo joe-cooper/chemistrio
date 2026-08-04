@@ -274,6 +274,9 @@ async function renderPage(id, section) {
   const mount = document.getElementById("pageMount");
   mount.innerHTML = html;
   mount.classList.add("active");
+  document.body.dataset.page = page.id;
+  if (page.id === "home") window.homeBg && window.homeBg.start();
+  else window.homeBg && window.homeBg.stop();
   if (page.init) page.init();
   document.title = page.id === "home" ? "chemistr.io" : `${page.label} - chemistr.io`;
 
@@ -297,6 +300,8 @@ async function renderPage(id, section) {
 function showViewer() {
   document.getElementById("pageMount").classList.remove("active");
   document.getElementById("page-viewer").classList.add("active");
+  document.body.dataset.page = "viewer";
+  window.homeBg && window.homeBg.stop();
   document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("active"));
   document.querySelector('[data-nav="sims"]').classList.add("active");
   window.scrollTo({ top: 0 });
