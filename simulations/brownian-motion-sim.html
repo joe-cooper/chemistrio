@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brownian Motion — Pollen in Water</title>
+<link rel="stylesheet" href="../assets/css/theme.css">
+<link rel="stylesheet" href="../assets/css/sim.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  /* Local colour tokens, same pattern as rates-collision-sim.html /
+     diffusion-tube-sim.html — light-mode override keeps them legible
+     against the lighter canvas background. */
+  :root{
+    --W:#4d9fff; --POL:#ff8a3d;
+  }
+  :root[data-theme="light"]{
+    --W:#2f6fd6; --POL:#d9691f;
+  }
+  .tagline{max-width:380px;}
+
+  .stage{max-width:620px;margin:0 auto 14px;}
+
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;}
+  .ldot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
+
+  .stats{grid-template-columns:repeat(2,1fr);}
+  .stat .v{font-size:16px;line-height:1;}
+
+  .controls{display:flex;flex-wrap:wrap;gap:18px 26px;align-items:center;}
+  .toggle-row{display:flex;gap:10px;flex-wrap:wrap;}
+
+  #waterCountSlider::-webkit-slider-thumb{background:var(--W);}
+  #waterCountSlider::-moz-range-thumb{background:var(--W);}
+  #waterSpeedSlider::-webkit-slider-thumb{background:#ff5d5d;}
+  #waterSpeedSlider::-moz-range-thumb{background:#ff5d5d;}
+  #pollenSizeSlider::-webkit-slider-thumb{background:var(--POL);}
+  #pollenSizeSlider::-moz-range-thumb{background:var(--POL);}
+
+  #waterToggle.active{background:var(--raised);color:var(--W);border-color:var(--W);}
+  #trailToggle.active{background:var(--raised);color:var(--POL);border-color:var(--POL);}
+
+  .note{display:grid;grid-template-columns:1fr;gap:14px;align-items:start;}
+  .note p{margin:0 0 8px;}
+  .note p:last-child{margin-bottom:0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header></header>
+
+  <div class="stage">
+    <!-- particle box -->
+    <div class="card">
+      <div class="card-label">
+        <span>Pollen grain in water</span>
+        <span class="right" id="phaseLabel">ready</span>
+      </div>
+      <canvas id="box" aria-label="A pollen grain jostled by many small, fast water molecules"></canvas>
+      <div class="legend" id="legendBox">
+        <span><span class="ldot" style="background:var(--W)"></span>Water molecule</span>
+        <span><span class="ldot" style="background:var(--POL)"></span>Pollen grain</span>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="k">Time</span><span class="v" id="sTime">0.0 s</span></div>
+        <div class="stat accent"><span class="k">Displacement from start</span><span class="v" id="sDisp">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- controls -->
+  <div class="controls">
+    <div class="slider-row" id="waterCountSliderRow">
+      <div class="slider-head"><span class="ctl-label">Number of water molecules</span><span class="val" id="waterCountVal">220</span></div>
+      <input type="range" id="waterCountSlider" min="60" max="320" step="20" value="220">
+    </div>
+    <div class="slider-row" id="waterSpeedSliderRow">
+      <div class="slider-head"><span class="ctl-label">Water molecule speed</span><span class="val" id="waterSpeedVal">200</span></div>
+      <input type="range" id="waterSpeedSlider" min="80" max="280" step="10" value="200">
+    </div>
+    <div class="slider-row" id="pollenSizeSliderRow">
+      <div class="slider-head"><span class="ctl-label">Pollen size (× water molecule mass)</span><span class="val" id="pollenSizeVal">80</span></div>
+      <input type="range" id="pollenSizeSlider" min="20" max="200" step="10" value="80">
+    </div>
+
+    <div class="toggle-row">
+      <button type="button" class="chip-toggle" id="waterToggle">Show water molecules</button>
+      <button type="button" class="chip-toggle active" id="trailToggle">Show trail</button>
+    </div>
+
+    <div class="ctl-run">
+      <button class="btn btn-run" id="runBtn">Run</button>
+      <button class="btn btn-ghost" id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="marker">Model</span>
+    <div>
+      <p>This is Robert Brown's original 1827 observation: a single, large, heavy pollen grain (orange) suspended among a great many small, fast-moving water molecules (blue) — hidden by default, exactly as they'd be invisible under Brown's microscope. Every collision here is a genuine elastic collision that conserves momentum and kinetic energy, using each particle's actual mass; nothing about the pollen grain's motion is scripted or randomised directly. Its dotted trail — on by default — shows where it's actually been.</p>
+      <p>Click <b>Show water molecules</b> to reveal what's really going on: a constant hail of tiny, fast molecules striking the pollen grain from every direction. No single collision does anything dramatic, but with so many arriving at once, there's always a small random imbalance — and it's that imbalance, moment to moment, that produces the jiggle you see when the water is hidden again.</p>
+      <p><b>Pollen size</b> is the parameter that matters most. Every particle shares, on average, the same kinetic energy — so a bigger, heavier pollen grain moves proportionally slower (speed ∝ 1/√mass) but is also proportionally harder to push around once moving. Shrink it down towards the water molecules' own size and it starts jittering rapidly like an ordinary molecule. Grow it and it becomes slow and heavily damped, barely drifting despite constant bombardment — exactly why real Brownian motion is only visible for particles in a fairly narrow size range: big enough to see under a microscope, but light enough that molecular collisions still visibly move it.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- constants ----------
+  const LMAX = 640;             // reference frame size, sim units
+  const R_W = 3;                   // water molecule radius, sim units
+  const SPEED_VAR = 0.25;      // fractional random speed spread at start
+  const TRAIL_SAMPLE_DT = 0.06; // s between recorded trail points
+  const TRAIL_MAX = 400;       // capped trail length
+  const MAX_DT = 1/30;         // s, clamp per-frame integration step
+
+  const el = {
+    box: document.getElementById('box'),
+    phaseLabel: document.getElementById('phaseLabel'),
+    waterCountSlider: document.getElementById('waterCountSlider'),
+    waterCountVal: document.getElementById('waterCountVal'),
+    waterSpeedSlider: document.getElementById('waterSpeedSlider'),
+    waterSpeedVal: document.getElementById('waterSpeedVal'),
+    pollenSizeSlider: document.getElementById('pollenSizeSlider'),
+    pollenSizeVal: document.getElementById('pollenSizeVal'),
+    waterToggle: document.getElementById('waterToggle'),
+    trailToggle: document.getElementById('trailToggle'),
+    runBtn: document.getElementById('runBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    sTime: document.getElementById('sTime'),
+    sDisp: document.getElementById('sDisp'),
+  };
+  const bctx = el.box.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  function cssVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  // ---------- state ----------
+  let particles = [];   // {x,y,vx,vy,r,m,kind,x0,y0}
+  let pollenIdx = 0;    // index of the single pollen grain within particles — always tracked
+  let RP = R_W;            // current pollen radius, sim units — set in init()
+  let showWater = false;
+  let showTrail = true;
+  let trail = [];          // {x,y}
+  let trailAccum = 0;
+  let t = 0, running = false, rafId = null, lastTs = null;
+
+  // ---------- placement ----------
+  // The pollen grain always starts at the centre of the box. Water molecules
+  // are scattered avoiding only the pollen (water-water overlap at spawn is
+  // negligible and self-resolves within the first frame or two of physics).
+  function placeParticles(){
+    const massRatio = +el.pollenSizeSlider.value;   // pollen mass, in water-molecule masses
+    RP = R_W*Math.sqrt(massRatio);                     // constant "density": mass ~ area
+    const vWater = +el.waterSpeedSlider.value;
+    const idealSpeed = vWater/Math.sqrt(massRatio);  // equipartition: same mean KE for both species
+    const nWater = +el.waterCountSlider.value;
+
+    const cx = LMAX/2, cy = LMAX/2;
+    const speed0 = idealSpeed*(1-SPEED_VAR/2 + Math.random()*SPEED_VAR);
+    const ang0 = Math.random()*Math.PI*2;
+    const pollen = { x:cx, y:cy, vx:Math.cos(ang0)*speed0, vy:Math.sin(ang0)*speed0, r:RP, m:massRatio, kind:'pollen', x0:cx, y0:cy };
+
+    const waters = [];
+    for(let i=0;i<nWater;i++){
+      let x,y,ok,tries=0;
+      do{
+        x = R_W + Math.random()*(LMAX-2*R_W);
+        y = R_W + Math.random()*(LMAX-2*R_W);
+        const dx=x-cx, dy=y-cy;
+        ok = dx*dx+dy*dy >= (R_W+RP)*(R_W+RP);
+        tries++;
+      } while(!ok && tries<20);
+      const speed = vWater*(1-SPEED_VAR/2 + Math.random()*SPEED_VAR);
+      const ang = Math.random()*Math.PI*2;
+      waters.push({ x, y, vx:Math.cos(ang)*speed, vy:Math.sin(ang)*speed, r:R_W, m:1, kind:'water', x0:x, y0:y });
+    }
+
+    waters.push(pollen);
+    pollenIdx = waters.length-1;
+    return waters;
+  }
+
+  function init(){
+    t = 0; trail = []; trailAccum = 0;
+    particles = placeParticles();
+    trail.push({x:particles[pollenIdx].x, y:particles[pollenIdx].y});
+    updateStatsDisplay();
+    renderBox();
+  }
+
+  // ---------- physics ----------
+  // General 1D elastic collision resolved along the contact normal, used for
+  // every pair regardless of mass — reduces to a simple velocity swap when
+  // m1 === m2 (water-water), and to the usual "heavy barely moves, light
+  // bounces back hard" behaviour when the masses differ (water-pollen).
+  function resolveCollision(p, q){
+    const dx=q.x-p.x, dy=q.y-p.y;
+    const minDist = p.r+q.r;
+    const dist2 = dx*dx+dy*dy;
+    if(dist2>=minDist*minDist || dist2<1e-9) return;
+    const dist=Math.sqrt(dist2);
+    const nx=dx/dist, ny=dy/dist;
+
+    const overlap = minDist-dist;
+    const w1 = q.m/(p.m+q.m), w2 = p.m/(p.m+q.m); // heavier particle is displaced less
+    p.x -= nx*overlap*w1; p.y -= ny*overlap*w1;
+    q.x += nx*overlap*w2; q.y += ny*overlap*w2;
+
+    const v1n = p.vx*nx+p.vy*ny;
+    const v2n = q.vx*nx+q.vy*ny;
+    if(v2n-v1n > 0) return; // separating already, don't resolve twice
+
+    const v1nNew = ((p.m-q.m)*v1n + 2*q.m*v2n)/(p.m+q.m);
+    const v2nNew = ((q.m-p.m)*v2n + 2*p.m*v1n)/(p.m+q.m);
+    const d1=v1nNew-v1n, d2=v2nNew-v2n;
+    p.vx += d1*nx; p.vy += d1*ny;
+    q.vx += d2*nx; q.vy += d2*ny;
+  }
+
+  function step(dt){
+    for(const p of particles){
+      p.x += p.vx*dt; p.y += p.vy*dt;
+      if(p.x < p.r){ p.x=p.r; p.vx=Math.abs(p.vx); }
+      else if(p.x > LMAX-p.r){ p.x=LMAX-p.r; p.vx=-Math.abs(p.vx); }
+      if(p.y < p.r){ p.y=p.r; p.vy=Math.abs(p.vy); }
+      else if(p.y > LMAX-p.r){ p.y=LMAX-p.r; p.vy=-Math.abs(p.vy); }
+      if(!isFinite(p.x) || !isFinite(p.y)){ p.x=LMAX/2; p.y=LMAX/2; p.vx=0; p.vy=0; }
+      p.x = Math.min(Math.max(p.x, p.r), LMAX-p.r);
+      p.y = Math.min(Math.max(p.y, p.r), LMAX-p.r);
+    }
+
+    // spatial grid for pairwise collisions, same bucketing pattern as
+    // rates-collision-sim.html / mb-sim.html — cell sized to the larger
+    // (pollen) radius so neighbour search still catches every real contact
+    const cell = 2*Math.max(R_W, RP);
+    const grid = new Map();
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i];
+      const cx=(p.x/cell)|0, cy=(p.y/cell)|0;
+      const key=cx*100000+cy;
+      let arr=grid.get(key); if(!arr){arr=[];grid.set(key,arr);} arr.push(i);
+    }
+    for(let i=0;i<particles.length;i++){
+      const p=particles[i];
+      const cx=(p.x/cell)|0, cy=(p.y/cell)|0;
+      for(let ox=-1;ox<=1;ox++)for(let oy=-1;oy<=1;oy++){
+        const arr=grid.get((cx+ox)*100000+(cy+oy));
+        if(!arr) continue;
+        for(const j of arr){
+          if(j<=i) continue;
+          resolveCollision(p, particles[j]);
+        }
+      }
+    }
+
+    trailAccum += dt;
+    if(trailAccum>=TRAIL_SAMPLE_DT){
+      trailAccum = 0;
+      const p = particles[pollenIdx];
+      trail.push({x:p.x, y:p.y});
+      if(trail.length>TRAIL_MAX) trail.shift();
+    }
+
+    t += dt;
+  }
+
+  function pollenDisplacement(){
+    const p = particles[pollenIdx];
+    const dx=p.x-p.x0, dy=p.y-p.y0;
+    return Math.sqrt(dx*dx+dy*dy);
+  }
+
+  function updateStatsDisplay(){
+    el.sTime.textContent = t.toFixed(1)+' s';
+    el.sDisp.textContent = pollenDisplacement().toFixed(0);
+  }
+
+  // ---------- toggles ----------
+  function updateToggleUI(){
+    el.waterToggle.classList.toggle('active', showWater);
+    el.trailToggle.classList.toggle('active', showTrail);
+  }
+  el.waterToggle.addEventListener('click', ()=>{ showWater=!showWater; updateToggleUI(); renderBox(); });
+  el.trailToggle.addEventListener('click', ()=>{ showTrail=!showTrail; updateToggleUI(); renderBox(); });
+
+  // ---------- rendering: box ----------
+  let boxScale = 1;
+  function sizeBox(){
+    const w = el.box.parentElement.clientWidth;
+    el.box.style.height = w+'px';
+    el.box.width = Math.round(w*dpr);
+    el.box.height = Math.round(w*dpr);
+    bctx.setTransform(dpr,0,0,dpr,0,0);
+    boxScale = w/LMAX;
+  }
+  function renderBox(){
+    bctx.save();
+    bctx.scale(boxScale, boxScale);
+    bctx.clearRect(0,0,LMAX,LMAX);
+    bctx.strokeStyle = cssVar('--border-soft');
+    bctx.lineWidth = 2;
+    bctx.strokeRect(0,0,LMAX,LMAX);
+
+    if(showTrail && trail.length>1){
+      bctx.beginPath();
+      bctx.moveTo(trail[0].x, trail[0].y);
+      for(let i=1;i<trail.length;i++) bctx.lineTo(trail[i].x, trail[i].y);
+      bctx.setLineDash([3,4]);
+      bctx.strokeStyle = cssVar('--POL');
+      bctx.globalAlpha = 0.8;
+      bctx.lineWidth = 1.6;
+      bctx.stroke();
+      bctx.setLineDash([]);
+      bctx.globalAlpha = 1;
+    }
+
+    if(showWater){
+      const colW = cssVar('--W');
+      for(let i=0;i<particles.length;i++){
+        const p = particles[i];
+        if(p.kind!=='water') continue;
+        bctx.beginPath();
+        bctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+        bctx.fillStyle = colW;
+        bctx.fill();
+      }
+    }
+
+    const pollen = particles[pollenIdx];
+    bctx.beginPath();
+    bctx.arc(pollen.x, pollen.y, pollen.r, 0, Math.PI*2);
+    bctx.fillStyle = cssVar('--POL');
+    bctx.fill();
+
+    bctx.restore();
+  }
+
+  function render(){ renderBox(); updateStatsDisplay(); }
+
+  // ---------- main loop ----------
+  function loop(ts){
+    if(!running){ rafId=null; return; }
+    if(lastTs===null) lastTs=ts;
+    const dt = Math.min((ts-lastTs)/1000, MAX_DT);
+    lastTs = ts;
+    step(dt);
+    render();
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function setRunning(on){
+    running = on;
+    el.runBtn.textContent = on ? 'Pause' : 'Run';
+    el.phaseLabel.textContent = on ? 'running' : 'paused';
+    if(on){ lastTs=null; if(!rafId) rafId=requestAnimationFrame(loop); }
+  }
+
+  // ---------- controls ----------
+  el.runBtn.addEventListener('click', ()=> setRunning(!running));
+  el.resetBtn.addEventListener('click', ()=>{ setRunning(false); init(); });
+  el.waterCountSlider.addEventListener('input', ()=>{
+    el.waterCountVal.textContent = el.waterCountSlider.value;
+    setRunning(false);
+    init(); // new starting conditions = a fresh experiment
+  });
+  el.waterSpeedSlider.addEventListener('input', ()=>{
+    el.waterSpeedVal.textContent = el.waterSpeedSlider.value;
+    setRunning(false);
+    init(); // changes the equipartition pollen speed too
+  });
+  el.pollenSizeSlider.addEventListener('input', ()=>{
+    el.pollenSizeVal.textContent = el.pollenSizeSlider.value;
+    setRunning(false);
+    init(); // size sets both the pollen radius and its equipartition speed
+  });
+
+  window.addEventListener('keydown', e=>{
+    if(e.code==='Space'){ e.preventDefault(); setRunning(!running); }
+    else if(e.key==='r'||e.key==='R'){ setRunning(false); init(); }
+    else if(e.key==='w'||e.key==='W'){ showWater=!showWater; updateToggleUI(); renderBox(); }
+  });
+
+  let rt;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(rt);
+    rt=setTimeout(()=>{ sizeBox(); render(); reportHeight(); }, 120);
+  });
+
+  function reportHeight(){
+    const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    window.parent.postMessage({ type:'simHeight', height:h }, '*');
+  }
+
+  // ---------- boot ----------
+  updateToggleUI();
+  sizeBox();
+  init();
+  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>
