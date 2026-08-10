@@ -309,7 +309,7 @@ async function renderPage(id, section) {
   if (page.id === "home") window.homeBg && window.homeBg.start();
   else window.homeBg && window.homeBg.stop();
   if (page.init) page.init();
-  document.title = page.id === "home" ? "chemistr.io" : `${page.label} - chemistr.io`;
+  document.title = page.id === "home" ? "chemistr.io | Chemistry Simulations and Resources" : `${page.label} | chemistr.io`;
 
   document.querySelectorAll(".nav-links button").forEach(b =>
     b.classList.toggle("active", b.dataset.nav === page.id));

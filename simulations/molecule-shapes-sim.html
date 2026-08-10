@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shapes of Molecules — VSEPR</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<link rel="stylesheet" href="../assets/css/sim.css">
+<script src="../assets/js/theme.js"></script>
+<script src="../assets/js/tour.js"></script>
+<style>
+  /* Element colours, same local-token pattern as the other simulations.
+     The light-mode block darkens the pale ones (hydrogen especially) so
+     they stay visible against the lighter canvas background. */
+  :root{
+    --E-H:#dbe3ec; --E-B:#d9907a; --E-C:#6b7787; --E-N:#4d9fff; --E-O:#e0625a;
+    --E-F:#7fd8b8; --E-P:#e08a4a; --E-S:#e3c05a; --E-CL:#6fce7a;
+    --E-A:#8fa3b8; --E-X:#c3ccd6;
+    --LP:#9b8cff;
+  }
+  :root[data-theme="light"]{
+    --E-H:#98a5b4; --E-B:#c06a50; --E-C:#4a5461; --E-N:#2f6fd6; --E-O:#cf4f46;
+    --E-F:#3fa887; --E-P:#c96f2e; --E-S:#bd961f; --E-CL:#3fa64f;
+    --E-A:#5d7590; --E-X:#94a1b0;
+    --LP:#6f5fd6;
+  }
+
+  .stage{display:grid;grid-template-columns:minmax(0,1fr) 296px;gap:14px;align-items:start;margin-bottom:14px;}
+
+  canvas#scene{touch-action:none;cursor:grab;}
+  canvas#scene.grabbing{cursor:grabbing;}
+  canvas#scene.over-atom{cursor:pointer;}
+
+  .legend{display:flex;gap:14px;margin-top:10px;font-size:12.5px;color:var(--muted);flex-wrap:wrap;}
+  .ldot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;}
+
+  .stats{grid-template-columns:repeat(2,1fr);}
+  .stat .v{font-size:15px;line-height:1.25;}
+
+  .mol-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px;}
+  .mol-chip{
+    font-family:var(--font);font-weight:600;font-size:13px;letter-spacing:.01em;
+    padding:7px 12px;border-radius:4px;border:1px solid var(--border);
+    background:var(--raised);color:var(--muted);cursor:pointer;
+    transition:background .15s,color .15s,border-color .15s;
+  }
+  .mol-chip sub{font-size:.7em;vertical-align:-.2em;}
+  .mol-chip:hover:not(.active){color:var(--text);border-color:var(--muted-dim);}
+  .mol-chip.active{background:var(--surface);color:var(--gold);border-color:var(--gold-dim);}
+  .mol-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .toggle-row{display:flex;gap:8px;flex-wrap:wrap;}
+  #lpToggle.active{background:var(--raised);color:var(--LP);border-color:var(--LP);}
+
+  .note p{margin:0 0 8px;}
+  .note p:last-child{margin-bottom:0;}
+  .note .marker{
+    font-family:var(--font);font-weight:600;font-size:10.5px;letter-spacing:.02em;
+    color:var(--gold-dim);display:block;margin-bottom:8px;
+  }
+
+  @media(max-width:860px){ .stage{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <!-- <h1>Shapes of molecules</h1> -->
+  </header>
+
+  <div class="stage">
+
+    <div class="card" id="sceneCard">
+      <div class="card-label">
+        <span id="molName">Methane</span>
+        <span class="right" id="stateLabel">relaxed</span>
+      </div>
+      <canvas id="scene" aria-label="Three-dimensional model of a molecule. Drag an outer atom to pull it out of position and watch it relax back."></canvas>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="left-col">
+      <div class="card recipe-card" id="shapeCard">
+        <div class="card-label">
+          <span>Central atom</span>
+          <span class="right" id="axeLabel">AX<sub>4</sub></span>
+        </div>
+        <div class="row"><span class="k">Bonding pairs</span><span class="v" id="rBond">4</span></div>
+        <div class="row"><span class="k">Lone pairs</span><span class="v" id="rLone">0</span></div>
+        <div class="row"><span class="k">Electron pairs</span><span class="v" id="rDom">4</span></div>
+        <div class="row"><span class="k">Pairs arranged as</span><span class="v" id="rArr">Tetrahedron</span></div>
+        <div class="row"><span class="k">Shape of molecule</span><span class="v accent" id="rShape">Tetrahedral</span></div>
+      </div>
+
+      <div class="card" id="angleCard">
+        <div class="card-label"><span>Bond angles</span><span class="right" id="angRight">X&ndash;A&ndash;X</span></div>
+        <div class="stats">
+          <div class="stat accent"><span class="k">Model, now</span><span class="v" id="sNow">109.5&deg;</span></div>
+          <div class="stat"><span class="k">Measured</span><span class="v" id="sEq">109.5&deg;</span></div>
+        </div>
+        <div class="caveat" id="angNote"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="controls">
+    <div class="ctl-row">
+      <div style="flex:1 1 100%;">
+        <span class="ctl-label">Molecule</span>
+        <div class="mol-row" id="molRow"></div>
+      </div>
+    </div>
+
+    <div class="ctl-row" id="modelRow">
+      <div class="slider-row">
+        <div class="slider-head"><span class="ctl-label">Bonding pairs</span><span class="val" id="mbVal">4</span></div>
+        <input type="range" id="mbSlider" min="1" max="6" step="1" value="4">
+      </div>
+      <div class="slider-row">
+        <div class="slider-head"><span class="ctl-label">Lone pairs</span><span class="val" id="mlVal">0</span></div>
+        <input type="range" id="mlSlider" min="0" max="5" step="1" value="0">
+      </div>
+    </div>
+
+    <div class="ctl-row">
+      <div class="toggle-row">
+        <button type="button" class="chip-toggle active" id="lpToggle">Show lone pairs</button>
+        <button type="button" class="chip-toggle active" id="angToggle">Show angles</button>
+        <button type="button" class="chip-toggle" id="spinToggle">Auto-rotate</button>
+      </div>
+
+      <div class="ctl-run">
+        <button class="btn btn-ghost" id="shakeBtn">Shake</button>
+        <button class="btn btn-run" id="resetBtn">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <span class="marker">Model</span>
+    <p>Every electron pair around the central atom is treated as a point charge on a sphere, and every pair pushes every other pair away with a repulsion that falls off with the square of the distance between them. Nothing here is told where to sit: the shapes you see are what that repulsion settles into on its own. Bonds also have a length they prefer, so an atom pulled in or out springs back.</p>
+    <p>Drag any outer atom (or any lone pair) and let go. The rest of the molecule responds while you drag, and the whole thing relaxes back to the same arrangement afterwards. <b>Shake</b> throws everything off at once, which is a quicker way to see that the geometry is a genuine minimum rather than a starting position. Drag the empty space to turn the molecule round.</p>
+    <p>The angles under <b>Measured</b> are the real ones, from experiment. For carbon dioxide, borane, methane, phosphorus pentachloride and sulfur hexafluoride the model reaches them with no help at all: equal charges repelling on a sphere give 180&deg;, 120&deg;, 109.5&deg;, 90&deg; and 120&deg;, and every one of those is fixed by symmetry anyway.</p>
+    <p>The last entry in the row, AX<sub>n</sub>E<sub>m</sub>, is not a substance. Set any number of bonding and lone pairs, up to six between them, and the model builds whatever those pairs settle into &mdash; including the see-saw, the T-shape and the square plane, which need five or six pairs and are easier to believe once you have watched them form. Where the lone pairs go is not written down anywhere: the model costs every arrangement and keeps the cheapest. Nothing here has a measured angle to be checked against, so that column reads as a dash.</p>
+    <p>Ammonia and water are different. A lone pair sits closer to the nucleus than a bonding pair and is not pulled towards a second atom, so it takes up more room and presses the bonds together &mdash; but nothing in the model works out how much more room. That one number is set by hand for each molecule, to whatever reproduces the measured angle: 107&deg; for ammonia, 104.5&deg; for water. It is worth knowing which of these shapes the model predicts and which it has been told.</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- vector helpers ----------
+  const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+  const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+  const scl=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
+  const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  const len=a=>Math.sqrt(dot(a,a));
+  const norm=a=>{const l=len(a); return l<1e-9?[0,0,1]:scl(a,1/l);};
+  const clamp=(v,lo,hi)=>Math.min(Math.max(v,lo),hi);
+  const DEG=180/Math.PI;
+
+  // ---------- physics constants ----------
+  // K_BOND sets how stiffly a stretched bond springs back; K_REP how
+  // stiffly a bent angle does. Only these and the damping affect what the
+  // relaxation looks like -- the resting geometry itself is fixed by the
+  // repulsion pattern alone, which is the whole point of VSEPR.
+  const K_BOND = 60, K_REP = 25;
+
+  // Radial and tangential motion are damped separately. Bending an angle is
+  // a far slower mode than stretching a bond (about 2 rad/s against 7.8), so
+  // a single drag coefficient large enough to settle a bond leaves the
+  // angles overdamped -- the geometry crept back instead of springing back.
+  // Damping the two components apart lets an angle overshoot a few times
+  // while a stretched bond behaves exactly as it did before.
+  const DAMP_RADIAL = 5;      // resists a bond being stretched or squashed
+  const DAMP_ANGULAR = 2.5;   // resists an angle being bent
+  const DAMP_SOLVE = 5;       // headless solve only: converge fast, never seen
+  const DT = 0.004, SUBSTEPS = 6;
+  const EQ_STEPS = 1500, EQ_DT = 0.005;   // headless relaxation to find equilibrium
+  const LP_RATIO = 0.72;                  // lone pair sits this fraction of a bond length out
+  const BOND_W = 0.09;                    // bond thickness in world units, same scale as the radii
+  const BOND_SAMPLES = 24;                // visibility samples along each bond
+
+  // How hard a lone pair repels, as a multiple of a bonding pair. Equal
+  // charges reproduce every lone-pair-free shape here exactly, so the only
+  // molecules that need a number are the ones with lone pairs, and for
+  // those it is set to whatever gives the measured bond angle -- 1.2209 for
+  // ammonia's 107 degrees, 1.2442 for water's 104.5. The relaxed angle does
+  // not depend on bond length, so these hold whatever `bondLen` is set to.
+  // Hydrogen chloride has no bond angle to fit, so it takes the mean.
+
+  // ---------- element data ----------
+  // Radii are drawing radii in the same world units as the bond lengths,
+  // loosely following covalent radii -- they only have to look right.
+  const ELEM = {
+    H:{r:0.26, c:'--E-H'}, B:{r:0.36, c:'--E-B'}, C:{r:0.34, c:'--E-C'},
+    N:{r:0.32, c:'--E-N'}, O:{r:0.31, c:'--E-O'}, F:{r:0.27, c:'--E-F'},
+    P:{r:0.44, c:'--E-P'}, S:{r:0.42, c:'--E-S'}, Cl:{r:0.40, c:'--E-CL'},
+    // generic pair for the build-your-own entry: A the central atom, X a bonded one
+    A:{r:0.38, c:'--E-A'}, X:{r:0.30, c:'--E-X'}
+  };
+
+  // ---------- canonical starting directions ----------
+  const T3 = 1/3, R3 = Math.sqrt(8)/3;                 // tetrahedral: cos and sin of 109.47 deg
+  const TETRA = [[0,-T3,R3],[-0.8165,-T3,-0.4714],[0.8165,-T3,-0.4714],[0,1,0]];
+  const A54 = 54.7356/DEG, CA = Math.cos(A54), SA = Math.sin(A54);
+
+  // ---------- molecules ----------
+  // Listed in order of the number of electron pairs on the central atom,
+  // which is the order the shapes are usually built up in.
+  const MOLECULES = [
+    { id:'HCl', html:'HCl', name:'Hydrogen chloride', central:'Cl',
+      shape:'Linear', arrangement:'Tetrahedron', axe:'AXE<sub>3</sub>',
+      bondLen:1.20, order:1, lpQ:1.2326, measured:'—',
+      bonds:[{el:'H', dir:[1,0,0]}],
+      lp:[[-T3,R3,0],[-T3,-0.4714,0.8165],[-T3,-0.4714,-0.8165]],
+      note:'Only one bond, so there is no bond angle to measure. Two atoms lie on a straight line whatever the three lone pairs do &mdash; every diatomic molecule is linear.' },
+
+    { id:'CO2', html:'CO<sub>2</sub>', name:'Carbon dioxide', central:'C',
+      shape:'Linear', arrangement:'Linear', axe:'AX<sub>2</sub>',
+      bondLen:1.02, order:2, measured:'180°',
+      bonds:[{el:'O', dir:[1,0,0]},{el:'O', dir:[-1,0,0]}],
+      lp:[],
+      note:'Each C=O double bond is <b>one</b> region of charge, not two, so carbon has two electron pairs to separate, not four. Two point charges on a sphere go to opposite poles: 180&deg;.' },
+
+    { id:'BH3', html:'BH<sub>3</sub>', name:'Borane', central:'B',
+      shape:'Trigonal planar', arrangement:'Trigonal planar', axe:'AX<sub>3</sub>',
+      bondLen:1.06, order:1, measured:'120°',
+      bonds:[{el:'H', dir:[0,1,0]},{el:'H', dir:[-0.8660,-0.5,0]},{el:'H', dir:[0.8660,-0.5,0]}],
+      lp:[],
+      note:'Boron has only six electrons here, so there is no lone pair to push the hydrogens out of the plane. Three pairs spread out into a flat triangle at 120&deg;.' },
+
+    { id:'CH4', html:'CH<sub>4</sub>', name:'Methane', central:'C',
+      shape:'Tetrahedral', arrangement:'Tetrahedron', axe:'AX<sub>4</sub>',
+      bondLen:1.06, order:1, measured:'109.5°',
+      bonds:[{el:'H',dir:TETRA[0]},{el:'H',dir:TETRA[1]},{el:'H',dir:TETRA[2]},{el:'H',dir:TETRA[3]}],
+      lp:[],
+      note:'Four pairs cannot all stay in a plane and keep 120&deg;, so they lift out of it. The best they can manage in three dimensions is 109.5&deg;.' },
+
+    { id:'NH3', html:'NH<sub>3</sub>', name:'Ammonia', central:'N',
+      shape:'Trigonal pyramidal', arrangement:'Tetrahedron', axe:'AX<sub>3</sub>E',
+      bondLen:1.06, order:1, lpQ:1.2209, measured:'107°',
+      bonds:[{el:'H',dir:TETRA[0]},{el:'H',dir:TETRA[1]},{el:'H',dir:TETRA[2]}],
+      lp:[TETRA[3]],
+      note:'Four pairs again, so the arrangement is still tetrahedral &mdash; but one vertex holds a lone pair rather than an atom, and the <i>shape</i> we name is the shape of the atoms alone.' },
+
+    { id:'H2O', html:'H<sub>2</sub>O', name:'Water', central:'O',
+      shape:'Bent', arrangement:'Tetrahedron', axe:'AX<sub>2</sub>E<sub>2</sub>',
+      bondLen:1.00, order:1, lpQ:1.2442, measured:'104.5°',
+      bonds:[{el:'H',dir:[SA,-CA,0]},{el:'H',dir:[-SA,-CA,0]}],
+      lp:[[0,CA,SA],[0,CA,-SA]], cam:[0.72, 0.20],   // turned so the two lobes separate instead of stacking
+      note:'Two lone pairs now, squeezing the bond angle further than the single lone pair of ammonia does. Were lone pairs no different from bonding pairs, both molecules would sit at the tetrahedral 109.5&deg;.' },
+
+    { id:'PCl5', html:'PCl<sub>5</sub>', name:'Phosphorus pentachloride', central:'P',
+      shape:'Trigonal bipyramidal', arrangement:'Trigonal bipyramid', axe:'AX<sub>5</sub>',
+      bondLen:1.34, order:1, measured:'90°, 120°, 180°',
+      bonds:[{el:'Cl',dir:[1,0,0]},{el:'Cl',dir:[-0.5,0,0.8660]},{el:'Cl',dir:[-0.5,0,-0.8660]},
+             {el:'Cl',dir:[0,1,0]},{el:'Cl',dir:[0,-1,0]}],
+      // Looked at slightly from above and turned so that no equatorial
+      // chlorine sits straight in front of the phosphorus.
+      lp:[], cam:[-0.35, 0.38],
+      note:'Five is the first number of pairs that cannot be spread out evenly &mdash; the two axial positions are not equivalent to the three equatorial ones, which is why there are two different bond angles here and not one.' },
+
+    { id:'SF6', html:'SF<sub>6</sub>', name:'Sulfur hexafluoride', central:'S',
+      shape:'Octahedral', arrangement:'Octahedron', axe:'AX<sub>6</sub>',
+      bondLen:1.18, order:1, measured:'90°, 180°',
+      bonds:[{el:'F',dir:[1,0,0]},{el:'F',dir:[-1,0,0]},{el:'F',dir:[0,1,0]},
+             {el:'F',dir:[0,-1,0]},{el:'F',dir:[0,0,1]},{el:'F',dir:[0,0,-1]}],
+      lp:[],
+      note:'Six pairs go to the corners of an octahedron, and every position is equivalent to every other. All twelve neighbouring angles are 90&deg;.' }
+  ];
+
+  // ---------- build-your-own entry ----------
+  // Not a substance, so there is nothing measured to compare against. The
+  // lone pair strength is the representative value the fitted molecules sit
+  // either side of, rather than one tuned to any particular compound.
+  const MODEL_LPQ = 1.23;
+
+  // Where n electron pairs sit once they have spread out, in a fixed
+  // orientation so the default view stays sensible as the counts change.
+  const SITES = {
+    1: [[1,0,0]],
+    2: [[1,0,0],[-1,0,0]],
+    3: [[0,1,0],[-0.8660,-0.5,0],[0.8660,-0.5,0]],
+    4: [TETRA[0],TETRA[1],TETRA[2],TETRA[3]],
+    5: [[1,0,0],[-0.5,0,0.8660],[-0.5,0,-0.8660],[0,1,0],[0,-1,0]],
+    6: [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]
+  };
+  const ARRANGEMENTS = { 1:'—', 2:'Linear', 3:'Trigonal planar', 4:'Tetrahedron',
+                         5:'Trigonal bipyramid', 6:'Octahedron' };
+  const SPREAD = { 1:'a single direction', 2:'a straight line', 3:'a flat triangle',
+                   4:'a tetrahedron', 5:'a trigonal bipyramid', 6:'an octahedron' };
+  const SHAPE_NAMES = {
+    '1,0':'Linear','1,1':'Linear','1,2':'Linear','1,3':'Linear','1,4':'Linear','1,5':'Linear',
+    '2,0':'Linear','2,1':'Bent','2,2':'Bent','2,3':'Linear','2,4':'Linear',
+    '3,0':'Trigonal planar','3,1':'Trigonal pyramidal','3,2':'T-shaped','3,3':'T-shaped',
+    '4,0':'Tetrahedral','4,1':'See-saw','4,2':'Square planar',
+    '5,0':'Trigonal bipyramidal','5,1':'Square pyramidal',
+    '6,0':'Octahedral'
+  };
+  const MAX_PAIRS = 6;
+
+  function numSub(k){ return k > 1 ? '<sub>'+k+'</sub>' : ''; }
+
+  // Which of the arrangement's positions do the lone pairs take? Every way of
+  // choosing them is costed and the cheapest kept, so the model works out for
+  // itself that a lone pair in a trigonal bipyramid prefers the equator and
+  // that two in an octahedron go opposite each other. Ties keep the last
+  // option, which puts a single lone pair at the top of the picture.
+  function chooseLonePairSites(dirs, nl, q){
+    const n = dirs.length, combo = [];
+    let best = [], bestE = Infinity;
+    (function pick(start, left){
+      if(left === 0){
+        const isLP = new Array(n).fill(false);
+        for(const i of combo) isLP[i] = true;
+        let E = 0;
+        for(let i=0;i<n;i++) for(let j=i+1;j<n;j++)
+          E += (isLP[i]?q:1)*(isLP[j]?q:1)/len(sub(dirs[i], dirs[j]));
+        if(E <= bestE + 1e-9){ bestE = Math.min(E, bestE); best = combo.slice(); }
+        return;
+      }
+      for(let i=start;i<n;i++){ combo.push(i); pick(i+1, left-1); combo.pop(); }
+    })(0, nl);
+    return best;
+  }
+
+  const MODEL = { id:'model', html:'AX<sub>n</sub>E<sub>m</sub>', name:'Model molecule',
+                  central:'A', bondLen:1.12, order:1, lpQ:MODEL_LPQ, measured:'—',
+                  cam:[0.45,0.28], bonds:[], lp:[] };
+
+  function configureModel(nb, nl){
+    const n = nb + nl, dirs = SITES[n];
+    const isLP = new Set(chooseLonePairSites(dirs, nl, MODEL_LPQ));
+    MODEL.bonds = []; MODEL.lp = [];
+    for(let i=0;i<n;i++){
+      if(isLP.has(i)) MODEL.lp.push(dirs[i]);
+      else MODEL.bonds.push({ el:'X', dir:dirs[i] });
+    }
+    MODEL.shape = SHAPE_NAMES[nb+','+nl] || '—';
+    MODEL.arrangement = ARRANGEMENTS[n];
+    MODEL.axe = 'AX' + numSub(nb) + (nl ? 'E' + numSub(nl) : '');
+    MODEL.note = n === 1
+      ? 'One electron pair, with nothing to be pushed away from. Any two atoms lie on a straight line, so this is linear whatever else is going on.'
+      : nl === 0
+        ? n + ' electron pairs, which spread out into ' + SPREAD[n] + '. All of them hold an atom, so the shape of the molecule is the same as the arrangement of the pairs.'
+        : n + ' electron pairs, which spread out into ' + SPREAD[n] + '. Only ' + nb + ' of them hold an atom, and the shape we name describes where those atoms are. The lone pairs have gone to whichever positions leave them least crowded &mdash; the model works that out rather than being told.';
+  }
+  configureModel(4, 0);
+  MOLECULES.push(MODEL);
+
+  // ---------- elements ----------
+  const el = {
+    scene: document.getElementById('scene'),
+    molName: document.getElementById('molName'),
+    stateLabel: document.getElementById('stateLabel'),
+    legend: document.getElementById('legend'),
+    axeLabel: document.getElementById('axeLabel'),
+    rBond: document.getElementById('rBond'),
+    rLone: document.getElementById('rLone'),
+    rDom: document.getElementById('rDom'),
+    rArr: document.getElementById('rArr'),
+    rShape: document.getElementById('rShape'),
+    sNow: document.getElementById('sNow'),
+    sEq: document.getElementById('sEq'),
+    angNote: document.getElementById('angNote'),
+    molRow: document.getElementById('molRow'),
+    modelRow: document.getElementById('modelRow'),
+    mbSlider: document.getElementById('mbSlider'),
+    mbVal: document.getElementById('mbVal'),
+    mlSlider: document.getElementById('mlSlider'),
+    mlVal: document.getElementById('mlVal'),
+    lpToggle: document.getElementById('lpToggle'),
+    angToggle: document.getElementById('angToggle'),
+    spinToggle: document.getElementById('spinToggle'),
+    shakeBtn: document.getElementById('shakeBtn'),
+    resetBtn: document.getElementById('resetBtn')
+  };
+  const ctx = el.scene.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // ---------- theme-aware colour cache ----------
+  // getComputedStyle is too slow to call per atom per frame, so the tokens
+  // are read once and re-read only when theme.js flips the data-theme
+  // attribute on <html>.
+  let COL = {};
+  function readColours(){
+    const cs = getComputedStyle(document.documentElement);
+    COL = {};
+    for(const k in ELEM) COL[k] = cs.getPropertyValue(ELEM[k].c).trim() || '#888';
+    COL.lp      = cs.getPropertyValue('--LP').trim() || '#9b8cff';
+    COL.bond    = cs.getPropertyValue('--muted-dim').trim();
+    COL.gold    = cs.getPropertyValue('--gold').trim();
+    COL.surface = cs.getPropertyValue('--surface').trim();
+    COL.border  = cs.getPropertyValue('--border').trim();
+    COL.muted   = cs.getPropertyValue('--muted').trim();
+  }
+  readColours();
+  new MutationObserver(readColours).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+
+  function hexToRgb(h){
+    h = h.replace('#','');
+    if(h.length===3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    const n = parseInt(h,16);
+    return [(n>>16)&255,(n>>8)&255,n&255];
+  }
+  function mix(hex, target, t){
+    const c = hexToRgb(hex);
+    return 'rgb('+c.map(v=>Math.round(v+(target-v)*t)).join(',')+')';
+  }
+  function isLight(hex){
+    const c = hexToRgb(hex);
+    return (0.299*c[0]+0.587*c[1]+0.114*c[2]) > 150;
+  }
+
+  // ---------- state ----------
+  let mol = MOLECULES.find(m=>m.id==='CH4');
+  let doms = [];        // {kind:'bond'|'lp', el, L, q, p:[x,y,z], v:[x,y,z]}
+  let eqDoms = [];      // relaxed reference copy, same order
+  let showLP = true, showAngles = true, spinning = false;
+  let lastArcs = [];    // "i:j" of the bond pairs the angle arcs were drawn on last frame
+  let settled = true;   // latched by updateReadouts, with hysteresis
+  let yaw = 0.38, pitch = 0.20;
+  let dragIdx = -1, dragZ = 0, orbiting = false, lastPtr = null, hovering = false;
+  let W = 640, H = 400, SCALE = 120;
+  const CAM_D = 7;      // camera distance in world units; larger = weaker perspective
+
+  // ---------- building and relaxing ----------
+  function buildDomains(m){
+    const out = [];
+    for(const b of m.bonds){
+      out.push({ kind:'bond', el:b.el, L:m.bondLen, q:1,
+                 p:scl(norm(b.dir), m.bondLen), v:[0,0,0] });
+    }
+    for(const d of m.lp){
+      out.push({ kind:'lp', el:null, L:m.bondLen*LP_RATIO, q:m.lpQ,
+                 p:scl(norm(d), m.bondLen*LP_RATIO), v:[0,0,0] });
+    }
+    return out;
+  }
+
+  // One integration step of the whole model: a radial spring holding each
+  // pair at its preferred distance, plus inverse-square repulsion between
+  // every pair of pairs, applied tangentially so it can only change angles.
+  function step(list, dt, skip, dampR, dampA){
+    const n = list.length;
+    const F = new Array(n);
+    for(let i=0;i<n;i++){
+      const d = list[i];
+      let r = len(d.p);
+      if(r < 1e-6){ d.p = [1e-3,0,0]; r = 1e-3; }
+      const u = scl(d.p, 1/r);
+      F[i] = scl(u, -K_BOND*(r - d.L));
+      d._u = u;
+    }
+    for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+      const ui = list[i]._u, uj = list[j]._u;
+      let dv = sub(ui, uj);
+      let d2 = dot(dv,dv);
+      if(d2 < 1e-8){ dv = [1e-4,1e-4,-1e-4]; d2 = dot(dv,dv); }
+      const mag = K_REP*list[i].q*list[j].q/d2;
+      const dir = scl(dv, 1/Math.sqrt(d2));
+      let fi = scl(dir, mag), fj = scl(dir, -mag);
+      fi = sub(fi, scl(ui, dot(fi,ui)));   // keep only the tangential part
+      fj = sub(fj, scl(uj, dot(fj,uj)));
+      F[i] = add(F[i], fi);
+      F[j] = add(F[j], fj);
+    }
+    for(let i=0;i<n;i++){
+      if(i===skip) continue;
+      const d = list[i];
+      const u = d._u;
+      const vr = scl(u, dot(d.v, u));             // along its own bond
+      const vt = sub(d.v, vr);                    // across it, which is what bends an angle
+      const drag = add(scl(vr, dampR), scl(vt, dampA));
+      d.v = add(d.v, scl(sub(F[i], drag), dt));
+      d.p = add(d.p, scl(d.v, dt));
+      const r = len(d.p);
+      if(r < 0.25*d.L) d.p = scl(norm(d.p), 0.25*d.L);
+      else if(r > 2.4*d.L) d.p = scl(norm(d.p), 2.4*d.L);
+    }
+  }
+
+  // Relax a fresh copy from the canonical starting directions to find where
+  // this molecule actually settles. Starting near the answer keeps the
+  // orientation sensible for the default view.
+  function equilibrium(m){
+    const list = buildDomains(m);
+    for(let i=0;i<EQ_STEPS;i++) step(list, EQ_DT, -1, DAMP_SOLVE, DAMP_SOLVE);
+    return list;
+  }
+
+  // ---------- geometry readouts ----------
+  function angleBetween(a,b){ return Math.acos(clamp(dot(norm(a),norm(b)),-1,1))*DEG; }
+
+  // All bond-bond angles, clustered so that (say) the twelve 90 degree
+  // angles of an octahedron are reported once rather than twelve times.
+  function angleGroups(list){
+    const nb = mol.bonds.length;
+    const pairs = [];
+    for(let i=0;i<nb;i++) for(let j=i+1;j<nb;j++)
+      pairs.push({ i, j, a:angleBetween(list[i].p, list[j].p) });
+    pairs.sort((x,y)=>x.a-y.a);
+    const groups = [];
+    for(const p of pairs){
+      const g = groups[groups.length-1];
+      if(g && p.a - g.max < 6){ g.n++; g.sum += p.a; g.max = p.a; g.a = g.sum/g.n; g.members.push(p); }
+      else groups.push({ a:p.a, sum:p.a, max:p.a, n:1, members:[p] });
+    }
+    // Equivalent bonds sit at the same angle to within about 1e-5 degrees, so
+    // sorting the pairs by angle leaves their order at the mercy of whichever
+    // is fractionally larger this frame. Picking the group's representative by
+    // atom index instead keeps a drawn arc on the same two bonds.
+    for(const g of groups){
+      g.members.sort((x,y)=>(x.i - y.i) || (x.j - y.j));
+      g.rep = g.members[0];
+    }
+    return groups;
+  }
+
+  function angleText(groups){
+    if(!groups.length) return '—';
+    if(groups.length <= 3) return groups.map(g=>g.a.toFixed(1)+'°').join(', ');
+    const lo = groups[0].a, hi = groups[groups.length-1].a;
+    return lo.toFixed(0)+'–'+hi.toFixed(0)+'°';
+  }
+
+  function sortedPairAngles(list){
+    const out = [];
+    for(let i=0;i<list.length;i++) for(let j=i+1;j<list.length;j++)
+      out.push(angleBetween(list[i].p, list[j].p));
+    return out.sort((a,b)=>a-b);
+  }
+
+  // Compared against the relaxed reference through quantities that don't
+  // care about orientation or about which atom ended up where -- otherwise
+  // a molecule that relaxes back into a rotated copy of the same shape,
+  // which happens after a big drag, reads as permanently distorted.
+  function distortion(){
+    const a = sortedPairAngles(doms), b = sortedPairAngles(eqDoms);
+    let s = 0, n = 0;
+    for(let i=0;i<a.length;i++){ const d = (a[i]-b[i])/60; s += d*d; n++; }
+    for(const d of doms){ const e = (len(d.p)-d.L)/d.L; s += e*e; n++; }
+    return Math.sqrt(s/Math.max(n,1));
+  }
+
+  // ---------- projection ----------
+  // World point into camera space. The eye sits at (0, 0, CAM_D) looking down
+  // -z, and the picture plane is z = 0, which is what makes the occlusion
+  // test below straightforward.
+  function toCam(p){
+    const cy = Math.cos(yaw), sy = Math.sin(yaw);
+    const x1 =  p[0]*cy + p[2]*sy;
+    const z1 = -p[0]*sy + p[2]*cy;
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    return [x1, p[1]*cp - z1*sp, p[1]*sp + z1*cp];
+  }
+
+  function project(p){
+    const c = toCam(p);
+    const s = CAM_D/(CAM_D - c[2]);
+    return { x: W/2 + c[0]*s*SCALE, y: H/2 - c[1]*s*SCALE, z: c[2], s };
+  }
+
+  // Does the sphere (centre c, radius r) stand between the eye and point q?
+  // All three in camera space. Writing E for the eye, D = q - E and f = c - E:
+  // the eye-to-q ray meets the sphere when b*b >= a*k, and q is beyond that
+  // meeting point when b < a. This is what a depth sort cannot express -- a
+  // sphere carries one depth, but its near face is a whole radius closer than
+  // its centre, and bonds cross exactly that gap.
+  function occluded(q, c, r){
+    // Inside the sphere is never visible, and the algebra below does not cover
+    // it. This is the case when an atom is dragged in on top of the central
+    // one and its bond ends up buried.
+    const qx = q[0]-c[0], qy = q[1]-c[1], qz = q[2]-c[2];
+    if(qx*qx + qy*qy + qz*qz < r*r) return true;
+    const dx = q[0], dy = q[1], dz = q[2] - CAM_D;
+    const fx = c[0], fy = c[1], fz = c[2] - CAM_D;
+    const b = dx*fx + dy*fy + dz*fz;
+    if(b <= 0) return false;                       // sphere is behind the eye
+    const a = dx*dx + dy*dy + dz*dz;
+    if(b >= a) return false;                       // q is in front of the sphere
+    const k = fx*fx + fy*fy + fz*fz - r*r;
+    return b*b >= a*k;                             // ray actually meets it
+  }
+
+  // Screen point back to a world point, holding the camera-space depth of
+  // the atom being dragged fixed -- so a drag slides the atom across the
+  // plane it is already in rather than towards or away from the viewer.
+  function unproject(sx, sy, z2){
+    const s = CAM_D/(CAM_D - z2);
+    const x1 =  (sx - W/2)/(s*SCALE);
+    const y2 = -(sy - H/2)/(s*SCALE);
+    const cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const y  =  y2*cp + z2*sp;
+    const z1 = -y2*sp + z2*cp;
+    const cy = Math.cos(yaw), sy2 = Math.sin(yaw);
+    return [ x1*cy - z1*sy2, y, x1*sy2 + z1*cy ];
+  }
+
+  // ---------- drawing ----------
+  function drawSphere(x, y, r, hex){
+    if(r < 0.6) return;
+    const g = ctx.createRadialGradient(x - r*0.35, y - r*0.4, r*0.05, x, y, r*1.05);
+    g.addColorStop(0, mix(hex, 255, 0.55));
+    g.addColorStop(0.55, hex);
+    g.addColorStop(1, mix(hex, 0, 0.35));
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI*2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = mix(hex, 0, 0.45);
+    ctx.stroke();
+  }
+
+  function drawSymbol(x, y, r, hex, sym){
+    if(r < 9) return;
+    ctx.font = '600 '+Math.min(r*0.85, 17).toFixed(1)+'px '+getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = isLight(hex) ? 'rgba(15,20,26,.8)' : 'rgba(240,244,248,.9)';
+    ctx.fillText(sym, x, y);
+  }
+
+  // Half the bond's widest reach across its own axis, in world units -- the
+  // two lines of a double bond sit further out than a single one does.
+  function bondHalfWidth(order){ return order === 2 ? BOND_W*0.92 : BOND_W*0.5; }
+
+  // How far along the bond, measured from a sphere's centre, the bond's
+  // corner meets that sphere's surface. Trimming to exactly here means no
+  // part of the bond is ever inside a sphere, which is what lets a single
+  // depth per sphere give the right answer at the junction.
+  function surfaceCut(radius, halfW){
+    return Math.sqrt(Math.max(radius*radius - halfW*halfW, 1e-4));
+  }
+
+  // One piece of a bond. Pieces carry their own depth into the scene sort, so
+  // a bond crossing a sphere is covered over exactly the stretch that is
+  // behind it rather than all-or-nothing on the whole bond.
+  function drawBondSeg(a, b, order, px, py){
+    const pa = project(a), pb = project(b);
+    const w = Math.max(1.4, BOND_W*SCALE*((pa.s+pb.s)/2));
+    ctx.lineCap = 'butt';   // pieces are collinear, so flat ends tile exactly
+    ctx.strokeStyle = COL.bond;
+    ctx.lineWidth = order === 2 ? w*0.6 : w;
+    const off = order === 2 ? w*0.62 : 0;
+    for(const k of (order === 2 ? [-1,1] : [0])){
+      ctx.beginPath();
+      ctx.moveTo(pa.x + px*off*k, pa.y + py*off*k);
+      ctx.lineTo(pb.x + px*off*k, pb.y + py*off*k);
+      ctx.stroke();
+    }
+  }
+
+  // The stretches of a bond that no sphere hides. Sampling coarsely and then
+  // bisecting each crossing puts every boundary well inside a pixel, which is
+  // both cheaper and more accurate than slicing the bond into fixed pieces
+  // and sorting them by depth.
+  function visibleRuns(u, t0, t1, spheres){
+    const vis = t => {
+      const q = toCam(scl(u, t));
+      for(const s of spheres) if(occluded(q, s.c, s.r)) return false;
+      return true;
+    };
+    const runs = [];
+    let prev = vis(t0), start = t0;
+    for(let i=1;i<=BOND_SAMPLES;i++){
+      const t = t0 + (t1-t0)*i/BOND_SAMPLES;
+      const cur = vis(t);
+      if(cur !== prev){
+        let lo = t0 + (t1-t0)*(i-1)/BOND_SAMPLES, hi = t;
+        for(let k=0;k<7;k++){ const m = (lo+hi)/2; if(vis(m) === prev) lo = m; else hi = m; }
+        const cut = (lo+hi)/2;
+        if(prev) runs.push([start, cut]); else start = cut;
+        prev = cur;
+      }
+    }
+    if(prev) runs.push([start, t1]);
+    return runs;
+  }
+
+  // Trim a bond back to both sphere surfaces, then queue whichever stretches
+  // of it are actually visible.
+  function addBond(out, u, r, outerR, centralR, spheres, order){
+    const hw = bondHalfWidth(order);
+    let t0 = Math.min(surfaceCut(centralR, hw), r*0.45);
+    let t1 = Math.max(r - surfaceCut(outerR, hw), r*0.55);
+    if(t1 - t0 < 1e-3){ t0 = r*0.45; t1 = r*0.55; }
+
+    // A straight bond projects to a straight line, so one perpendicular
+    // serves every stretch of a double bond.
+    let px = 0, py = 0;
+    if(order === 2){
+      const pa = project(scl(u,t0)), pb = project(scl(u,t1));
+      const dx = pb.x-pa.x, dy = pb.y-pa.y, l = Math.hypot(dx,dy);
+      if(l > 1e-3){ px = -dy/l; py = dx/l; } else { px = 0; py = 1; }
+    }
+
+    for(const run of visibleRuns(u, t0, t1, spheres)){
+      if(run[1] - run[0] < 1e-4) continue;
+      const A = scl(u, run[0]), B = scl(u, run[1]);
+      out.push({ z:project(scl(u, (run[0]+run[1])/2)).z, draw:()=>drawBondSeg(A, B, order, px, py) });
+    }
+  }
+
+  function drawLonePair(p){
+    // Drawn slightly inside its own position so the lobe reaches back to
+    // the central atom rather than floating clear of it.
+    const u = norm(p);
+    const pr = project(scl(u, Math.max(len(p) - 0.11, 0.1)));
+    const tip = project(scl(u, len(p) + 0.30));
+    const ang = Math.atan2(tip.y - pr.y, tip.x - pr.x);
+    const ra = 0.33*SCALE*pr.s, rb = 0.21*SCALE*pr.s;
+    if(ra < 1) return;
+    ctx.save();
+    ctx.translate(pr.x, pr.y);
+    ctx.rotate(ang);
+    const g = ctx.createRadialGradient(0,0,0,0,0,ra);
+    g.addColorStop(0, mix(COL.lp, 255, 0.35));
+    g.addColorStop(0.6, COL.lp);
+    g.addColorStop(1, mix(COL.lp, 0, 0.55));
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, ra, rb, 0, 0, Math.PI*2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.globalAlpha = 0.95;
+    ctx.fillStyle = mix(COL.lp, 255, 0.6);
+    for(const s of [-1,1]){
+      ctx.beginPath();
+      ctx.arc(ra*0.18, s*rb*0.36, Math.max(1.2, rb*0.16), 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  // Rotate u1 towards u2 along the shorter great-circle path. The
+  // antiparallel case has no unique path, so any perpendicular will do --
+  // which is fine, we only need somewhere sensible to hang the "180" label.
+  function slerp(u1, u2, t){
+    const d = clamp(dot(u1,u2), -1, 1);
+    const om = Math.acos(d);
+    if(om < 1e-4) return u1;
+    if(Math.PI - om < 1e-3){
+      let w = Math.abs(u1[0]) < 0.9 ? [1,0,0] : [0,1,0];
+      w = norm(sub(w, scl(u1, dot(w,u1))));
+      const th = om*t;
+      return add(scl(u1, Math.cos(th)), scl(w, Math.sin(th)));
+    }
+    const s = Math.sin(om);
+    return norm(add(scl(u1, Math.sin((1-t)*om)/s), scl(u2, Math.sin(t*om)/s)));
+  }
+
+  function drawAngleArc(i, j, deg){
+    const u1 = norm(doms[i].p), u2 = norm(doms[j].p);
+    // Kept clear of the central atom, or the arc disappears behind it.
+    const rad = Math.max(0.46*Math.min(len(doms[i].p), len(doms[j].p)), ELEM[mol.central].r*1.45);
+    ctx.beginPath();
+    for(let k=0;k<=24;k++){
+      const q = project(scl(slerp(u1,u2,k/24), rad));
+      if(k===0) ctx.moveTo(q.x,q.y); else ctx.lineTo(q.x,q.y);
+    }
+    ctx.strokeStyle = COL.gold;
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([3,3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const m = project(scl(slerp(u1,u2,0.5), rad*1.30));
+    const txt = deg.toFixed(1)+'°';
+    ctx.font = '600 11.5px '+getComputedStyle(document.body).fontFamily;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(txt).width;
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = COL.surface;
+    ctx.beginPath();
+    ctx.roundRect(m.x - tw/2 - 4, m.y - 8, tw + 8, 16, 3);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = COL.border;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = COL.gold;
+    ctx.fillText(txt, m.x, m.y);
+  }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+
+    const items = [];   // spheres and lone pairs, painted back to front
+    const bonds = [];   // the visible stretches of each bond, painted last
+    const cr = ELEM[mol.central].r;
+
+    // Every opaque sphere, in camera space, for the bond visibility test.
+    const spheres = [{ c:toCam([0,0,0]), r:cr }];
+    for(const d of doms) if(d.kind === 'bond') spheres.push({ c:toCam(d.p), r:ELEM[d.el].r });
+
+    for(let i=0;i<doms.length;i++){
+      const d = doms[i];
+      if(d.kind === 'lp'){
+        if(showLP) items.push({ z:project(d.p).z, draw:()=>drawLonePair(d.p) });
+        continue;
+      }
+      addBond(bonds, norm(d.p), len(d.p), ELEM[d.el].r, cr, spheres, mol.order);
+
+      const pr = project(d.p);
+      const rad = ELEM[d.el].r*SCALE*pr.s;
+      items.push({ z:pr.z, draw:()=>{ drawSphere(pr.x, pr.y, rad, COL[d.el]); drawSymbol(pr.x, pr.y, rad, COL[d.el], d.el); } });
+    }
+
+    const pc = project([0,0,0]);
+    const crad = cr*SCALE*pc.s;
+    items.push({ z:pc.z, draw:()=>{ drawSphere(pc.x, pc.y, crad, COL[mol.central]); drawSymbol(pc.x, pc.y, crad, COL[mol.central], mol.central); } });
+
+    items.sort((a,b)=>a.z-b.z);
+    for(const it of items) it.draw();
+
+    // Anything still in `bonds` has already been found unhidden, so it belongs
+    // on top of every sphere; they only need sorting against each other.
+    bonds.sort((a,b)=>a.z-b.z);
+    for(const b of bonds) b.draw();
+
+    if(showAngles){
+      let groups = angleGroups(doms);
+      // A 180 degree "arc" is a semicircle right round the molecule, which
+      // is worth drawing for carbon dioxide but is only clutter once there
+      // are tighter angles to look at instead. Filtered on the group mean
+      // rather than one member's angle, which jitters.
+      if(groups.length > 1) groups = groups.filter(g=>g.a < 175);
+      const keys = [];
+      for(const g of groups.slice(0,3)){
+        // Stay on the pair drawn last frame while it still belongs to this
+        // group, so an arc only moves when the geometry genuinely changes.
+        const kept = g.members.find(p=>lastArcs.indexOf(p.i+':'+p.j) >= 0);
+        const rep = kept || g.rep;
+        keys.push(rep.i+':'+rep.j);
+        drawAngleArc(rep.i, rep.j, rep.a);
+      }
+      lastArcs = keys;
+    }
+  }
+
+  // ---------- readouts ----------
+  let uiTick = 0;
+  function updateReadouts(){
+    el.sNow.textContent = angleText(angleGroups(doms));
+    // Two thresholds, not one: the angles now overshoot on their way back, so
+    // a single cutoff flickered between "relaxed" and "relaxing" as the last
+    // small swings crossed it. Settling is declared at the tighter figure and
+    // only given up at the looser one.
+    const d = distortion();
+    if(settled && d > 0.030) settled = false;
+    else if(!settled && d < 0.012) settled = true;
+    el.stateLabel.textContent = dragIdx >= 0 ? 'dragging' : (settled ? 'relaxed' : 'relaxing');
+  }
+
+  function updateStatic(){
+    const nb = mol.bonds.length, nl = mol.lp.length;
+    el.molName.innerHTML = mol.name + ' — ' + mol.html;
+    el.axeLabel.innerHTML = mol.axe;
+    el.rBond.textContent = nb;
+    el.rLone.textContent = nl;
+    el.rDom.textContent = nb + nl;
+    el.rArr.textContent = mol.arrangement;
+    el.rShape.textContent = mol.shape;
+    el.angNote.innerHTML = mol.note;
+    el.modelRow.style.display = mol.id === 'model' ? '' : 'none';
+    el.sEq.textContent = mol.measured;
+    el.scene.setAttribute('aria-label',
+      mol.name + ', ' + mol.shape.toLowerCase() + '. Drag an outer atom to pull it out of position and watch it relax back.');
+
+
+    const parts = ['<span><span class="ldot" style="background:var(--E-'+mol.central.toUpperCase()+')"></span>'+mol.central+' (central)</span>'];
+    const seen = {};
+    for(const b of mol.bonds){
+      if(seen[b.el]) continue;
+      seen[b.el] = 1;
+      parts.push('<span><span class="ldot" style="background:var(--E-'+b.el.toUpperCase()+')"></span>'+b.el+'</span>');
+    }
+    if(nl) parts.push('<span><span class="ldot" style="background:var(--LP)"></span>Lone pair</span>');
+    el.legend.innerHTML = parts.join('');
+  }
+
+  // ---------- molecule selection ----------
+  function fitScale(){
+    let maxR = 0;
+    for(const b of mol.bonds) maxR = Math.max(maxR, mol.bondLen + ELEM[b.el].r);
+    maxR = Math.max(maxR, ELEM[mol.central].r + 0.35);
+    SCALE = Math.min(W*0.40, H*0.44)/maxR;
+  }
+
+  function loadMolecule(m, keepCamera){
+    mol = m;
+    eqDoms = equilibrium(mol);
+    doms = eqDoms.map(d=>({ kind:d.kind, el:d.el, L:d.L, q:d.q, p:d.p.slice(), v:[0,0,0] }));
+    lastArcs = [];
+    settled = true;
+    if(!keepCamera){ yaw = (mol.cam||[0.38,0.20])[0]; pitch = (mol.cam||[0.38,0.20])[1]; }
+    fitScale();
+    updateStatic();
+    updateReadouts();
+    for(const btn of el.molRow.children) btn.classList.toggle('active', btn.dataset.id === m.id);
+    requestAnimationFrame(reportHeight);   // the model sliders change the page height
+  }
+
+  for(const m of MOLECULES){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'mol-chip';
+    b.dataset.id = m.id;
+    b.innerHTML = m.html;
+    b.title = m.name;
+    b.addEventListener('click', ()=>loadMolecule(m, false));
+    el.molRow.appendChild(b);
+  }
+
+  // ---------- pointer interaction ----------
+  function ptr(e){
+    const r = el.scene.getBoundingClientRect();
+    return { x:(e.clientX - r.left)*(W/r.width), y:(e.clientY - r.top)*(H/r.height) };
+  }
+
+  function pick(px, py){
+    let best = -1, bestZ = -Infinity;
+    for(let i=0;i<doms.length;i++){
+      const d = doms[i];
+      if(d.kind === 'lp' && !showLP) continue;
+      const pr = project(d.p);
+      const rad = (d.kind === 'lp' ? 0.26 : ELEM[d.el].r)*SCALE*pr.s;
+      const hit = Math.max(rad, 13);
+      if(Math.hypot(pr.x - px, pr.y - py) <= hit && pr.z > bestZ){ best = i; bestZ = pr.z; }
+    }
+    return best;
+  }
+
+  el.scene.addEventListener('pointerdown', e=>{
+    const p = ptr(e);
+    const i = pick(p.x, p.y);
+    el.scene.setPointerCapture(e.pointerId);
+    if(i >= 0){
+      dragIdx = i;
+      dragZ = project(doms[i].p).z;
+      doms[i].v = [0,0,0];
+    } else {
+      orbiting = true;
+      lastPtr = p;
+      el.scene.classList.add('grabbing');
+    }
+    e.preventDefault();
+  });
+
+  el.scene.addEventListener('pointermove', e=>{
+    const p = ptr(e);
+    if(dragIdx >= 0){
+      const w = unproject(p.x, p.y, dragZ);
+      const d = doms[dragIdx];
+      const r = len(w);
+      d.p = r < 0.25*d.L ? scl(norm(w), 0.25*d.L)
+          : r > 2.4*d.L  ? scl(norm(w), 2.4*d.L)
+          : w;
+      d.v = [0,0,0];
+    } else if(orbiting){
+      yaw += (p.x - lastPtr.x)*0.010;
+      pitch = clamp(pitch + (p.y - lastPtr.y)*0.010, -1.45, 1.45);
+      lastPtr = p;
+    } else {
+      const over = pick(p.x, p.y) >= 0;
+      if(over !== hovering){ hovering = over; el.scene.classList.toggle('over-atom', over); }
+    }
+  });
+
+  function endPointer(e){
+    if(dragIdx >= 0) doms[dragIdx].v = [0,0,0];
+    dragIdx = -1;
+    orbiting = false;
+    el.scene.classList.remove('grabbing');
+    if(e && el.scene.hasPointerCapture(e.pointerId)) el.scene.releasePointerCapture(e.pointerId);
+  }
+  el.scene.addEventListener('pointerup', endPointer);
+  el.scene.addEventListener('pointercancel', endPointer);
+  el.scene.addEventListener('pointerleave', ()=>{ if(hovering){ hovering=false; el.scene.classList.remove('over-atom'); } });
+
+  // ---------- controls ----------
+  // The two counts share a budget of six pairs; pushing one up pushes the
+  // other down rather than refusing to move.
+  function applyModel(which){
+    let nb = +el.mbSlider.value, nl = +el.mlSlider.value;
+    if(nb + nl > MAX_PAIRS){
+      if(which === 'bond') nl = MAX_PAIRS - nb; else nb = MAX_PAIRS - nl;
+    }
+    nb = clamp(nb, 1, MAX_PAIRS); nl = clamp(nl, 0, MAX_PAIRS-1);
+    el.mbSlider.value = nb; el.mlSlider.value = nl;
+    el.mbVal.textContent = nb; el.mlVal.textContent = nl;
+    configureModel(nb, nl);
+    loadMolecule(MODEL, true);   // keep the camera so counts can be varied in place
+  }
+  el.mbSlider.addEventListener('input', ()=>applyModel('bond'));
+  el.mlSlider.addEventListener('input', ()=>applyModel('lone'));
+
+  el.lpToggle.addEventListener('click', ()=>{
+    showLP = !showLP;
+    el.lpToggle.classList.toggle('active', showLP);
+  });
+  el.angToggle.addEventListener('click', ()=>{
+    showAngles = !showAngles;
+    el.angToggle.classList.toggle('active', showAngles);
+  });
+  el.spinToggle.addEventListener('click', ()=>{
+    spinning = !spinning;
+    el.spinToggle.classList.toggle('active', spinning);
+  });
+  el.shakeBtn.addEventListener('click', ()=>{
+    for(const d of doms){
+      d.v = [(Math.random()-0.5)*7, (Math.random()-0.5)*7, (Math.random()-0.5)*7];
+    }
+  });
+  el.resetBtn.addEventListener('click', ()=>loadMolecule(mol, true));
+
+  window.addEventListener('keydown', e=>{
+    if(e.key === 'r' || e.key === 'R'){ loadMolecule(mol, true); }
+    else if(e.code === 'Space'){ e.preventDefault(); el.shakeBtn.click(); }
+    else if(e.key === 'ArrowLeft'){ yaw -= 0.08; }
+    else if(e.key === 'ArrowRight'){ yaw += 0.08; }
+    else if(e.key === 'ArrowUp'){ pitch = clamp(pitch - 0.08, -1.45, 1.45); }
+    else if(e.key === 'ArrowDown'){ pitch = clamp(pitch + 0.08, -1.45, 1.45); }
+  });
+
+  // ---------- sizing ----------
+  function sizeCanvas(){
+    const w = el.scene.parentElement.clientWidth;
+    const h = Math.round(clamp(w*0.62, 300, 520));
+    W = w; H = h;
+    el.scene.style.height = h+'px';
+    el.scene.width = Math.round(w*dpr);
+    el.scene.height = Math.round(h*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    fitScale();
+  }
+
+  // ---------- main loop ----------
+  function frame(){
+    if(!document.hidden){
+      if(spinning && dragIdx < 0 && !orbiting) yaw += 0.006;
+      for(let s=0;s<SUBSTEPS;s++) step(doms, DT, dragIdx, DAMP_RADIAL, DAMP_ANGULAR);
+      render();
+      if((uiTick++ % 3) === 0) updateReadouts();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  let rt;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(rt);
+    rt = setTimeout(()=>{ sizeCanvas(); render(); reportHeight(); }, 120);
+  });
+
+  function reportHeight(){
+    const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    window.parent.postMessage({ type:'simHeight', height:h }, '*');
+  }
+
+  // ---------- tour ----------
+  function pickMol(id){
+    const m = MOLECULES.find(x=>x.id===id);
+    if(m && m !== mol) loadMolecule(m, false);
+  }
+  function setModel(nb, nl){
+    el.mbSlider.value = nb; el.mlSlider.value = nl;
+    applyModel('bond');
+  }
+  ChemTour.init([
+    { target:null, title:'Electron pair repulsion',
+      body:'Electron pairs around a central atom repel each other, so they end up as far apart as they can get. Everything on this page follows from that. Nothing is told where to sit — each shape is what the repulsion settles into.' },
+    { target:'#molRow', title:'Choosing a molecule',
+      body:'These are in order of how many electron pairs the central atom has: one, two, three, four, five, six. Working along the row is the same as working down the list of shapes.',
+      before:()=>pickMol('CH4') },
+    { target:'#scene', title:'Pulling an atom out of place',
+      body:'Drag one of the hydrogens away from where it sits, then let go. The other three shift while you hold it, and everything springs back afterwards — the tetrahedron is a genuine minimum, not a drawing.',
+      before:()=>pickMol('CH4') },
+    { target:'#shakeBtn', title:'Shake',
+      body:'A quicker version of the same test. Every atom is thrown off at once, and the molecule finds its way back to exactly the same arrangement.' },
+    { target:'#shapeCard', title:'Electron pairs and molecular shape',
+      body:'Ammonia has four electron pairs, arranged as a tetrahedron, but only three of them hold an atom. The shape we name describes where the atoms are, so this one is trigonal pyramidal rather than tetrahedral.',
+      before:()=>pickMol('NH3') },
+    { target:'#angleCard', title:'Lone pairs and bond angles',
+      body:'Ammonia has the same four electron pairs as methane, but 107 degrees rather than 109.5. A lone pair presses harder than a bonding pair does, so the three hydrogens are pushed closer together. This is the one number the model is given rather than working out for itself.',
+      before:()=>pickMol('NH3') },
+    { target:'#angleCard', title:'Two lone pairs',
+      body:'Water closes further still, to 104.5 degrees, because there are now two lone pairs doing the pressing instead of one. "Model, now" is read live from the molecule as it stands, so pull an atom about and watch it leave the measured value behind.',
+      before:()=>pickMol('H2O') },
+    { target:'#molRow', title:'Five electron pairs',
+      body:'Try phosphorus pentachloride. Five pairs cannot be spread evenly over a sphere, so two positions end up different from the other three — which is why there are two bond angles here, 90 and 120 degrees, and not one.',
+      before:()=>pickMol('PCl5') },
+    { target:'#modelRow', title:'Any combination of pairs',
+      body:'The last entry in the row is not a substance. Set any number of bonding and lone pairs, up to six between them, and the model builds the shape. Four bonding and one lone gives the see-saw; four and two gives square planar. Nothing is looked up: the lone pairs find the least crowded positions on their own.',
+      before:()=>{ pickMol('model'); setModel(4,1); } }
+  ]);
+
+  // ---------- boot ----------
+  el.mbSlider.value = 4; el.mlSlider.value = 0;
+  sizeCanvas();
+  loadMolecule(mol, false);
+  requestAnimationFrame(frame);
+  requestAnimationFrame(()=>requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>
