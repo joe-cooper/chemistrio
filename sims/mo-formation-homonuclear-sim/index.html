@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,18 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">Molecular Orbital Formation - Homonuclear Diatomic Molecules</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -60,16 +66,43 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">Molecular orbital diagrams for H₂ and the Period 2 homonuclear diatomic molecules.</p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/mo-formation-homonuclear-sim.html">Open the Molecular Orbital Formation - Homonuclear Diatomic Molecules simulation</a></p>
+      <!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent" data-prerendered-for="mo-formation-homonuclear-sim"><!--prerender:notes:start-->
+<h2>Teaching Notes</h2>
+<p>This simulation shows the complete valence molecular-orbital (MO) diagram for a homonuclear diatomic — all the MOs built from its valence atomic orbitals at once, filled with the correct number of electrons for whichever molecule you pick, from H₂ through the period-2 row up to F₂. It&#39;s a companion to the 1s-1s and s/p-overlap simulations, but trades their single-orbital-pair focus (and, in the s/p-overlap case, its potential-energy curve) for the full picture used to predict bond order and magnetism.</p>
+<p>H₂ is the simplest case: just σ(1s)/σ*(1s), no 2p, no mixing. Li₂ and Be₂ have real 2s/2p atomic orbitals but no 2p valence electrons, so σ(2p)/π(2p) are dropped from their diagrams entirely rather than shown empty — B₂ through F₂ are where the full six-level 2s/2p diagram (and the s–p mixing toggle) actually applies.</p>
+<h2>Building the diagram</h2>
+<p>Two 2s orbitals combine head-on to give σ(2s) (bonding) and σ*(2s) (antibonding), exactly like the 1s-1s case. Two 2p orbitals aligned along the bond axis combine head-on to give σ(2p)/σ*(2p); the two pairs of 2p orbitals perpendicular to the axis combine side-on to give a doubly-degenerate π(2p)/π*(2p) pair — one bonding, one antibonding, each existing as two orbitals at right angles to each other. Only the 2s/2p (valence) orbitals are shown; the 1s core is left out entirely, since it stays non-bonding and its filled bonding/antibonding pair cancels exactly in the bond-order sum regardless.</p>
+<h2>s–p mixing</h2>
+<p>σ(2s) and σ(2p) share the same symmetry, so when their atomic energies are close enough they genuinely mix — and this pushes σ(2p) <em>above</em> π(2p) in energy. That&#39;s the case for Li₂ through N₂, where the 2s–2p atomic energy gap is still small (real values, not estimates: 0.7 eV for Li₂ up to 12.4 eV for N₂). The gap widens across the row as nuclear charge increases — reaching 16.5 eV at O₂ and 27.6 eV at F₂ — and past a certain point mixing can no longer overcome it, restoring the &quot;obvious&quot; order with σ(2p) below π(2p). Use the toggle to switch between the two orderings for any molecule; the stats row shows the actual gap for whichever element is selected.</p>
+<p>Bond order is usually unaffected by which ordering you pick — σ(2p) and π(2p) tend to be either both empty or both completely full regardless of fill order. The exception is when the electron count lands <em>between</em> the two:</p>
+<ul>
+<li><strong>B₂</strong> (2 electrons to place): with mixing, they go one each into the degenerate π(2p) pair (Hund&#39;s rule) → paramagnetic, matching experiment. Without mixing, both pair up in σ(2p) → wrongly predicted diamagnetic.</li>
+<li><strong>C₂</strong> (4 electrons to place): with mixing, all four fill the doubly-degenerate π(2p) pair, two each, fully paired → diamagnetic, matching experiment. Without mixing, two pair up in σ(2p) first and the remaining two split across π(2p) → wrongly predicted paramagnetic.</li>
+</ul>
+<p>Same bond order either way for both molecules — only the magnetism prediction flips, which is exactly why the real ordering matters.</p>
+<h2>Bond order and filling</h2>
+<p>Electrons fill the six valence levels lowest-energy-first (Aufbau), two per orbital, with the two degenerate π levels filled singly before pairing (Hund&#39;s rule) — the same arrows-in-boxes picture used for atomic orbitals. Bond order is:</p>
+<p>$$\text{bond order} = \frac{(\text{electrons in bonding MOs}) - (\text{electrons in antibonding MOs})}{2}$$</p>
+<p>Selecting each species shows this play out across the row: Li₂ (bond order 1) → Be₂ (0 — only very weakly bound in reality, beyond what this simple picture predicts) → B₂ (1, paramagnetic with mixing) → C₂ (2) → N₂ (3, the familiar triple bond) → O₂ (2, paramagnetic — the classic case simple Lewis structures get wrong) → F₂ (1).</p>
+<h2>Reading the diagram</h2>
+<p>Atomic 2s and 2p levels sit either side (labelled with the element, 2p drawn as three parallel lines since a free atom&#39;s three 2p orbitals are degenerate), the six molecular levels sit in the middle, connected by faint correlation lines — bonding levels in one colour, antibonding in another. The vertical axis is real electron energy in eV, not a schematic placeholder: both the AO positions and the six MO levels are computed (see the &quot;Model notes&quot; panel for how), so the <em>spacing</em> between levels is genuine too — notice how compressed Li₂&#39;s whole valence manifold is compared with F₂&#39;s, or how far below the 2p-derived set σ*(2s) sits for N₂, matching its real photoelectron spectrum. Click any level to see its actual shape in the panel on the right: the contour plot uses that molecule&#39;s real bond length and an orbital exponent derived from Slater&#39;s rules for that specific element, so the size and spread of the orbital genuinely changes as you move across the row. The &quot;Model notes &amp; honesty check&quot; panel goes into the details of exactly what&#39;s real data, what&#39;s a standard approximation (Wolfsberg–Helmholz), and what&#39;s a calibrated simplification (the s–p mixing coupling strength).</p>
+
+          <!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +123,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,81 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page active" id="pageMount" data-prerendered-for="about"><!--prerender:page:start-->
+<!-- <p class="eyebrow">For Teachers</p> -->
+<h1>About this site</h1>
+<div class="prose">
+  <p>Chemistr.io is a collection of chemistry simulations and teaching resources for teachers and students to use freely.</p>
+  <!-- <h2>Simulations</h2>
+  <p>Simulations are organised by topic and teaching level, and come with teaching notes for additional guidance.</p> -->
+  <details class="category">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>About the author</span>
+    </summary>
+    <div class="category-body">
+      <p>I am a chemistry teacher in the UK. I have found interactive simulations incredibly useful for complementing my teaching but wished for more to cover the gaps in other topics. I decided to have a punt at making my own and host them here for others to use. If you have suggestions or feedback, or just want to show support, please feel free to use the links below.</p>
+    </div>
+  </details>
+  <details class="category" id="contact">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>Get in touch</span>
+    </summary>
+    <div class="category-body">
+      <form class="contact-form" action="https://formspree.io/f/mgogvzaz" method="POST">
+        <label>
+          Your email
+          <input type="email" name="email" placeholder="you@example.com" required>
+        </label>
+        <label>
+          Your message
+          <textarea name="message" placeholder="What's your question, feedback or suggestion?" required></textarea>
+        </label>
+        <button type="submit" class="btn">Send</button>
+      </form>
+    </div>
+  </details>
+  <details class="category" id="support">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>Donate</span>
+    </summary>
+    <div class="category-body">
+      <p>If you have found these resources useful and wish to show support, please consider <a href="https://ko-fi.com/chemistrio" target="_blank">buying me a ko-fi!</a></p>
+    </div>
+  </details>
+  <details class="category" id="privacy">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>Privacy</span>
+    </summary>
+    <div class="category-body">
+      <p>This site does not use cookies or collect any personal data. The only exception is the contact form, which is handled by Formspree and is subject to their privacy policy.</p>
+    </div>
+  </details>
+  <details class="category" id="license">
+    <summary>
+      <span class="arrow">&#9654;</span>
+      <span>License</span>
+    </summary>
+    <div class="category-body">
+      <p>All content on this site is licensed under a <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License</a>.</p>
+    </div>
+  </details>
+</div>
+<!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
   <section class="viewer" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle"></h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -62,14 +131,18 @@
     </div>
     <p class="vdesc" id="viewerDesc"></p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start--><!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent"><!--prerender:notes:start--><!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +163,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

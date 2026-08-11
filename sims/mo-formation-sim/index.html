@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,18 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">Molecular Orbital Formation - Hydrogen</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -60,16 +66,44 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">Formation of molecular orbitals from two 1s orbitals for hydrogen and helium molecules.</p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/mo-formation-sim.html">Open the Molecular Orbital Formation - Hydrogen simulation</a></p>
+      <!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent" data-prerendered-for="mo-formation-sim"><!--prerender:notes:start-->
+<h2>Teaching Notes</h2>
+<p>This simulation shows how two atomic 1s orbitals combine to form molecular orbitals (MOs) as two nuclei are brought together, and how filling those MOs with electrons determines whether a diatomic species is expected to exist as a stable, bound molecule.</p>
+<h2>Linear combination of atomic orbitals (LCAO)</h2>
+<p>When two atoms approach each other, their atomic orbitals overlap and combine. Quantum mechanically, the new molecular orbitals are built as sums and differences of the original atomic orbitals:</p>
+<p>$$\psi_{\text{bonding}} = 1s_A + 1s_B \qquad \psi_{\text{antibonding}} = 1s_A - 1s_B$$</p>
+<p>Combining the two 1s orbitals <em>in phase</em> (same sign) gives constructive interference between the nuclei — extra electron density builds up in the internuclear region, which is the <strong>bonding orbital</strong>, σ(1s). Combining them <em>out of phase</em> gives destructive interference: the wavefunction cancels exactly on the plane midway between the nuclei, producing a <strong>node</strong> with zero electron density there. This is the <strong>antibonding orbital</strong>, σ*(1s), and it is always higher in energy than the atomic orbitals it was built from, while the bonding orbital is lower.</p>
+<p>Use the two contour panels to see this directly: the bonding orbital shows a single continuous region of density (same colour/phase) spanning both nuclei, while the antibonding orbital shows a visible dashed nodal plane splitting the two lobes into opposite phases (colours).</p>
+<h2>Filling orbitals and bond order</h2>
+<p>Just like atomic orbitals, molecular orbitals are filled from lowest to highest energy (the Aufbau principle), with a maximum of two electrons per orbital. The <strong>bond order</strong> tells you the net number of bonds:</p>
+<p>$$\text{bond order} = \frac{(\text{electrons in bonding orbitals}) - (\text{electrons in antibonding orbitals})}{2}$$</p>
+<p>A bond order greater than zero means the species is predicted to be stable relative to the separated atoms; a bond order of zero means there is no net covalent bond. Use the electron-count buttons (or the preset species buttons) to see this play out:</p>
+<ul>
+<li><strong>H₂⁺</strong> (1 electron): bond order 0.5 — a weak but genuine bond.</li>
+<li><strong>H₂</strong> (2 electrons): both go into σ(1s) — bond order 1.</li>
+<li><strong>He₂⁺</strong> (3 electrons): 2 in σ(1s), 1 in σ*(1s) — bond order 0.5.</li>
+<li><strong>He₂</strong> (4 electrons): both orbitals full — bond order 0, matching the fact that He₂ does not exist as a stable covalent molecule.</li>
+</ul>
+<h2>Reading the diagrams</h2>
+<p>The <strong>MO energy-level diagram</strong> shows the two atomic 1s levels either side, and the split bonding/antibonding molecular levels in the middle, connected by correlation lines — the same style of diagram used for any diatomic MO scheme. The <strong>potential energy curve</strong> shows how the total energy of the system changes with internuclear separation <em>R</em>; species with a genuine bonding interaction show a minimum (an equilibrium bond length), while species with bond order 0 (like He₂) show no minimum at all — the curve simply gets less favourable as the atoms are pushed together.</p>
+<p>Try the &quot;Animate approach&quot; button to watch the two nuclei come together continuously and see the orbitals, energy levels and curve update in real time. The &quot;Model notes &amp; honesty check&quot; panel underneath goes into more detail on exactly what is and isn&#39;t a real quantitative prediction versus a qualitative approximation.</p>
+
+          <!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +124,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

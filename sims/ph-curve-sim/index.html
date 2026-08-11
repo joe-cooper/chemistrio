@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,18 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">Acid–Base Titration</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -60,16 +66,83 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">Run a virtual titration for a range of acids, alkalis and indicators, and plot the pH curve.</p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/ph-curve-sim.html">Open the Acid–Base Titration simulation</a></p>
+      <!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent" data-prerendered-for="ph-curve-sim"><!--prerender:notes:start-->
+<h2>Teaching notes</h2>
+<p>Choose a substance for the <strong>burette</strong> (titrant) and the <strong>conical flask</strong> (analyte), set their concentrations and the flask volume, then press <strong>Run</strong> to titrate — the burette empties, the flask&#39;s colour shifts with universal indicator, and the pH curve builds up point by point as it goes. Drag the <strong>volume added</strong> slider at any time to scrub to a specific point instead.</p>
+<h3>Reading the curve</h3>
+<p>The x-axis is a <strong>fixed 0–50 cm³</strong>, matching a standard burette&#39;s capacity — it never rescales. Changing a concentration doesn&#39;t zoom the graph; it slides the steep jump left or right along that fixed scale, exactly as it would on paper with a real burette. Two dashed gold lines mark the <strong>titre</strong> — the volume at which moles of acid equivalents added equal moles of base equivalents originally in the flask (or vice versa) — and <strong>½ titre</strong>. At ½ titre, the pH equals the pK<sub>a</sub> of whichever weak species is present — a genuinely useful way to read Ka off a graph rather than just being told the formula. If your choices push the titre past 50 cm³, the burette would run dry before reaching equivalence, and the stats panel says so directly.</p>
+<h3>The five combinations worth trying</h3>
+<ul>
+<li><strong>Strong acid + strong base</strong> (default: HCl in the flask, NaOH in the burette). Nearly flat until right at the titre, then an enormous jump — several pH units within a single drop — before flattening out again. Equivalence pH = 7.00 exactly.</li>
+<li><strong>Weak acid + strong base</strong> (switch the flask to ethanoic acid). A shallower &quot;buffer region&quot; appears well before the titre, where pH resists change as acid and its conjugate base coexist. The jump at the titre is smaller, and the equivalence point sits <strong>above</strong> pH 7 (the leftover ethanoate ion is a weak base).</li>
+<li><strong>Weak base + strong acid</strong> (ammonia in the flask, HCl in the burette). The mirror image — equivalence point <strong>below</strong> pH 7, because the leftover ammonium ion is a weak acid.</li>
+<li><strong>Diprotic acid</strong> (H₂SO₄ in either vessel). Needs twice the moles of base to reach the titre, because each mole releases two H⁺. Concentrated H₂SO₄ also shows a little flattening near pH 2, from its second, genuinely weak dissociation (HSO₄⁻ ⇌ H⁺ + SO₄²⁻) — not something a &quot;diprotic acid = 2× monoprotic&quot; shortcut would show.</li>
+<li><strong>Two acids, or two bases, in both vessels.</strong> No neutralisation happens, so the curve just drifts gently with dilution — no sharp jump anywhere. This is itself the useful result: a jump only appears when the two vessels can actually react.</li>
+</ul>
+<h3>Suitable indicator</h3>
+<p>The stats panel computes, from the model, how much the pH changes over a single 0.05 cm³ drop either side of the titre, and checks whether that range covers methyl orange (pH 3.1–4.4) or phenolphthalein (pH 8.2–10.0). For strong-strong titrations both work; for a weak acid + strong base, only phenolphthalein works (methyl orange would change colour too early, well before the titre); for a weak base + strong acid, only methyl orange works. For anything without a sharp jump, neither does — a real limitation of indicator titrations, not just this simulation.</p>
+<h3>Suggested use</h3>
+<ol>
+<li>Leave the defaults (0.100 mol dm⁻³ HCl in the flask, 0.100 mol dm⁻³ NaOH in the burette, 25.0 cm³ flask) and press Run. Watch the pH sit near 1 for most of the run, then leap past 7 in a single drop.</li>
+<li>Reset, switch the flask to ethanoic acid, and run again. Compare the shape: a flatter buffer region, a smaller jump, and an equivalence point you can read as being above 7.</li>
+<li>Use the ½ titre marker to check a Ka or Kb calculation: read the pH there, and confirm it matches the pKa printed in the model notes.</li>
+<li>Try H₂SO₄ against NaOH and check the titre stat is double what the same concentration of HCl would need.</li>
+<li>Set both vessels to acids (or both to bases) and confirm the curve has no jump at all — then use the swap button to put the same two substances the other way round and see the mirror-image curve.</li>
+</ol>
+<h3>Key ideas</h3>
+<ul>
+<li>A titration&#39;s &quot;sharp jump&quot; happens because, right at the equivalence point, a single extra drop swings the solution from being dominated by one reactant to being dominated by the other — away from that point, there&#39;s a large buffering reservoir of unreacted material to absorb the change.</li>
+<li>The steeper/larger the jump, the more precisely the equivalence point can be found with an indicator or a pH meter — which is why strong-strong titrations are the easiest to do accurately, and weak-weak titrations are essentially unusable with an indicator.</li>
+<li>For a weak acid or weak base, the pH at half-titre equals its pKa (or the pKa of its conjugate acid, for a base) — the Henderson–Hasselbalch relationship, visible directly on the graph rather than derived separately.</li>
+<li>The equivalence point of a weak acid vs strong base titration is above pH 7, and a weak base vs strong acid titration is below pH 7, because the &quot;leftover&quot; conjugate ion is itself a weak base or weak acid respectively.</li>
+<li>Choosing the right indicator means choosing one whose colour-change range falls inside the sharp jump — not just &quot;changes colour somewhere near pH 7&quot;.</li>
+</ul>
+<h3>Suggested questions</h3>
+<p><strong>Q1.</strong> Why does the pH barely change for most of a strong acid + strong base titration, then leap by several units within a single drop right at the titre?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Away from the titre, there&#39;s a large excess of one reactant (acid or base) still present, and adding a small extra volume of titrant is a small change relative to that excess — so pH moves only slightly. Right at the titre, both reactants are almost completely consumed, so a single extra drop isn&#39;t diluted by any leftover reactant — it&#39;s the first thing left to dominate the solution, causing a very large relative change in [H⁺] (and hence pH) for a tiny volume added.</p>
+</details>
+
+<p><strong>Q2.</strong> A student titrates ethanoic acid (in the flask) with sodium hydroxide (in the burette) and finds the pH at the equivalence point is about 8.7, not 7.0. Why isn&#39;t it exactly neutral?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>At the equivalence point, essentially all the ethanoic acid has been converted to its conjugate base, ethanoate (CH₃COO⁻), dissolved in water. Ethanoate is a weak base — it takes a proton from water, releasing OH⁻ — so the solution at equivalence is slightly basic, not neutral. The strong-acid/strong-base case gives exactly pH 7 only because neither Cl⁻ nor Na⁺ reacts with water at all.</p>
+</details>
+
+<p><strong>Q3.</strong> Why does titrating sulfuric acid need twice the volume of the same concentration of sodium hydroxide as hydrochloric acid does, to reach the titre?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Each mole of H₂SO₄ can release two moles of H⁺ (it&#39;s diprotic), while each mole of HCl only releases one. Reaching the titre means matching moles of OH⁻ added to moles of H⁺ available — so a given amount of H₂SO₄ needs twice as many moles of NaOH, and therefore (at equal concentrations) twice the volume, compared with the same molar amount of HCl.</p>
+</details>
+
+<p><strong>Q4.</strong> If you set both the burette and the flask to acids, why is there no sharp jump anywhere in the curve?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>A sharp jump comes from a neutralisation reaction consuming one reactant faster than the other builds up — specifically, from one species running out. Two acids mixed together don&#39;t react with each other at all; adding more acid to an acidic solution just dilutes and adds to the existing H⁺ gradually, with no special point where anything runs out, so the pH drifts smoothly rather than jumping.</p>
+</details>
+
+
+          <!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +163,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

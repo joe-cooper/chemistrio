@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,18 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">Molecular Orbital Formation - s and p Orbitals</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -60,16 +66,53 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">Formation of molecular orbitals from two 1s and 2p orbitals.</p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/mo-formation-sp-sim.html">Open the Molecular Orbital Formation - s and p Orbitals simulation</a></p>
+      <!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent" data-prerendered-for="mo-formation-sp-sim"><!--prerender:notes:start-->
+<h2>Teaching Notes</h2>
+<p>This simulation shows how atomic orbitals of different shapes — s and p — combine to form molecular orbitals, and why the resulting bonds are classified as σ (sigma) or π (pi). It is a companion to the 1s-1s molecular orbital simulation, but trades that simulation&#39;s quantitative bond-length/bond-order predictions for a broader, purely qualitative look at orbital overlap.</p>
+<h2>Why carbon</h2>
+<p>The orbital size is no longer a user control — it&#39;s fixed at the orbital exponent for one of carbon&#39;s own 2s/2p electrons, since that&#39;s the relevant case for C–C, C=C and C≡C bonding. Slater&#39;s rules give an effective nuclear charge Z_eff = 3.25 for that electron, and the exponent that belongs in the orbital&#39;s decay is ζ = Z_eff/n = 3.25/2 = 1.625 (n=2 for the valence shell) — use the &quot;C–C bond length&quot; preset (1.54 Å, the accepted single-bond length in ethane or diamond) to jump straight to a realistic separation and see visible overlap.</p>
+<h2>Four overlap types</h2>
+<p>Use the &quot;Overlap&quot; buttons to switch between:</p>
+<ul>
+<li><strong>s + s</strong> — two spherical orbitals overlapping head-on. Always σ symmetry.</li>
+<li><strong>s + p (σ)</strong> — a spherical orbital overlapping with a directional p orbital pointing straight at it. Still σ symmetry.</li>
+<li><strong>p + p (σ)</strong> — two p orbitals pointing at each other along the bond axis, overlapping head-on. σ symmetry.</li>
+<li><strong>p + p (π)</strong> — two p orbitals oriented <em>perpendicular</em> to the bond axis, overlapping side-on. This is π symmetry.</li>
+</ul>
+<p>For each, the two contour panels show the <strong>bonding</strong> combination (atomic orbitals added in phase) and the <strong>antibonding</strong> combination (subtracted, out of phase) — exactly the same LCAO idea as the 1s-1s simulation, just applied to different orbital shapes.</p>
+<h2>σ vs π symmetry</h2>
+<p>The defining test for σ vs π is rotational symmetry about the bond axis:</p>
+<ul>
+<li>A <strong>σ</strong> orbital looks the same from every angle around the internuclear axis — no nodal plane contains that axis. All three head-on combinations above (s-s, s-p, p-p σ) are σ.</li>
+<li>A <strong>π</strong> orbital has exactly one nodal plane that <em>contains</em> the bond axis — rotating around the axis is not a symmetry operation. The side-on p-p combination is π; you can see the nodal plane running straight along the internuclear axis in both the bonding and antibonding panels.</li>
+</ul>
+<p>This is also why σ overlap is generally stronger than π overlap at a typical bonding distance: head-on orbitals overlap directly along the line connecting the nuclei, while side-on orbitals only overlap &quot;off to the side,&quot; away from where the electron density is most concentrated.</p>
+<h2>What the overlap integral curve shows</h2>
+<p>The bottom-right panel plots the overlap integral ∫ψ_Aψ_B dτ for all four overlap types against separation (active type bold, others faint), each scaled by the same constant — the single largest value found across all four types over the whole range — so their relative sizes stay honest (s–s really is the strongest overlap at comparable separations) while keeping the numbers in a readable range. Two features are worth noticing:</p>
+<ul>
+<li><strong>s-p overlap starts at zero.</strong> An s and a p orbital centred on exactly the same point are orthogonal by symmetry, so S(0) = 0 — overlap has to build up as the atoms separate from zero, peak at some intermediate distance, then decay like every other curve.</li>
+<li><strong>Head-on p-p (σ) overlap goes negative at short range.</strong> Bring two p orbitals aimed at each other close enough and, under the standard sign convention, their overlap briefly becomes destructive before crossing over to the familiar constructive (bonding) regime at more typical bond lengths. This is real, tabulated two-centre-integral behaviour, not a mistake — see the in-page &quot;Model notes&quot; for the full explanation.</li>
+</ul>
+<h2>Reading the MO diagram</h2>
+<p>Because nuclear repulsion has been removed, there&#39;s no equilibrium bond length or well depth to show. Instead the MO diagram solves the proper two-orbital secular equation on a schematic energy scale: with on-site energy α=0 and resonance integral β=−S(R), the bonding and antibonding levels are E<sub>bond</sub> = −S/(1+S) and E<sub>anti</sub> = S/(1−S) — not the simpler α∓β you might expect. Those 1±S denominators aren&#39;t decoration: they produce a real, well-known asymmetry where the antibonding level always rises <em>more</em> than the bonding level falls, for the same overlap magnitude, and can shoot up steeply at very close range. The y-axis is symmetric about zero (the atomic-orbital reference, always dead centre) with its half-range capped at the 90th percentile of |level| across the whole separation range, per overlap type — so the split stays clearly visible at realistic separations like the C–C bond length, rather than being squeezed flat to make room for an extreme close-approach spike. When the level does run past the cap, a ▲/▼ marker with its actual value shows instead of clipping it away silently. Here S(R) is a separate integral, normalized to <em>its own</em> mode (bounded to roughly ±1) — deliberately not the max-of-all-four-scaled value plotted in the curve panel, since normalizing each mode to itself is what keeps the splitting a sensible, comparable shape regardless of which mode is selected (the shared-max scaling used in the curve panel would make weaker modes like p–p σ show almost no splitting here, which isn&#39;t the point of this diagram). This is a standard simplification (splitting proportional to overlap) used to keep the diagram meaningful without needing a full quantitative energy model for every orbital combination. When S(R) goes negative (see above), the diagram will honestly show the &quot;bonding&quot; combination sitting <em>above</em> the &quot;antibonding&quot; one — worth pausing on if you&#39;re using this to teach why bond strength isn&#39;t just &quot;more overlap always wins.&quot;</p>
+<p>Try &quot;Animate approach&quot; to watch the contour shapes, nodal surfaces, and overlap value all update together as the two atoms come together continuously.</p>
+
+          <!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +133,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

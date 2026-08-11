@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,18 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">Brownian Motion</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -60,16 +66,64 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">Brown's original 1827 experiment. A pollen grain moving randomly on the surface of water.</p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/brownian-motion-sim.html">Open the Brownian Motion simulation</a></p>
+      <!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent" data-prerendered-for="brownian-motion-sim"><!--prerender:notes:start-->
+<h2>Teaching notes</h2>
+<h3>Suggested use</h3>
+<p>Press <strong>Run</strong> with the default settings. All that&#39;s visible at first is a single large orange disc drifting around, leaving a dotted trail behind it — that&#39;s the pollen grain, and it&#39;s already being tracked. Watch the trail for a while before touching anything else. It jitters, doubles back, stalls, then lurches off somewhere else. Nothing here has been scripted to look random — this is exactly what a real pollen grain does under a microscope, exactly as Robert Brown first saw in 1827.</p>
+<p>Ask what&#39;s making it move like that before revealing the answer. Then click <strong>Show water molecules</strong>. The box fills with small, fast blue dots — this is what was invisible the whole time, and it&#39;s what&#39;s actually striking the pollen grain constantly from every direction. No single collision does anything dramatic to something so much bigger and heavier, but with hundreds of molecules arriving every second, there&#39;s always a small random imbalance in how many are hitting from which side at any instant — and it&#39;s that imbalance that produces the jiggle. Turn the water back off and the pollen grain keeps moving exactly as before; hiding the water only changes what&#39;s drawn, not the physics.</p>
+<p>Try the <strong>Pollen size</strong> slider. Shrink it towards the water molecules&#39; own size (drag it down) and the &quot;pollen&quot; starts darting around rapidly, behaving just like an ordinary water molecule. Grow it and the grain becomes slow and heavily damped — it barely drifts at all, even with the same bombardment going on. This is the size range Brown himself was working in: pollen grains happen to be big enough to see clearly under a microscope, yet light enough that molecular collisions still visibly move them. Much smaller and you couldn&#39;t see the particle at all; much larger and it wouldn&#39;t visibly jiggle.</p>
+<p><strong>Number of water molecules</strong> and <strong>Water molecule speed</strong> both change how vigorously the pollen grain gets jostled — more molecules, or faster ones, mean more frequent and more energetic collisions, and a busier-looking trail.</p>
+<h3>What is happening</h3>
+<p>Every particle in this simulation — water molecule or pollen grain — obeys the same physics: straight-line motion between collisions, and a genuine elastic collision (conserving both momentum and kinetic energy) whenever two particles touch or one hits a wall. Nothing about the pollen grain&#39;s motion is scripted; its jitter is the real, calculated outcome of many individual elastic collisions with the water molecules around it.</p>
+<p>What makes the pollen grain behave so differently from a water molecule is mass. At a given moment, every particle in the box shares, on average, the same kinetic energy — this is the <em>equipartition</em> of energy, and it&#39;s why a much heavier pollen grain ends up moving much more slowly than the water molecules jostling it: $\frac{1}{2}mv^2$ being roughly equal for both means a heavier particle needs a smaller $v$. A collision that sends a light water molecule bouncing back at full speed barely nudges a much heavier pollen grain — but with a great many water molecules arriving from every direction, those nudges don&#39;t always cancel out. At any instant there&#39;s a small net imbalance, and it&#39;s that imbalance, repeated relentlessly and randomly, that produces the visible jiggle.</p>
+<p>Brown himself, in 1827, was originally trying to work out whether the constant movement he saw in pollen grains suspended in water meant they were somehow alive. He ruled that out by showing dust and ground-up rock did the same thing — but he had no explanation for what was actually causing it, and neither did anyone else for nearly 80 years. Einstein&#39;s 1905 paper finally explained it exactly as this simulation shows: unseen, constantly colliding water molecules buffeting a much larger suspended particle from random directions. The genuinely remarkable part is what came next — because Einstein&#39;s theory made <em>quantitative</em> predictions about how far a grain should wander in a given time, those predictions could be tested. Jean Perrin did exactly that between 1908 and 1913, using real pollen-sized grains under a microscope, and the measurements matched Einstein&#39;s theory closely enough to yield one of the first solid experimental values for Avogadro&#39;s constant — turning &quot;atoms&quot; from a convenient calculating device into something whose existence and size had actually been measured.</p>
+<h3>Key relationship</h3>
+<p>The parameter that controls everything here is the mass ratio between the pollen grain and a single water molecule. Equipartition of energy links the two particles&#39; typical speeds by</p>
+<p>$$
+\frac{v_{\text{pollen}}}{v_{\text{water}}} = \sqrt{\frac{m_{\text{water}}}{m_{\text{pollen}}}}
+$$</p>
+<p>A pollen grain 100 times heavier than a water molecule moves, on average, only a tenth as fast — but &quot;a tenth as fast&quot; is still very much in motion, not stationary. The jiggle you see with the water hidden is the leftover signature of that motion after millions of individual, momentum-conserving collisions: no single collision matters, but their statistical imbalance, moment to moment, is real and measurable — which is exactly the insight Einstein and Perrin turned into hard evidence for the existence of atoms.</p>
+<h3>Suggested questions</h3>
+<p><strong>Q1.</strong> The pollen size slider is set so a pollen grain is 80 times heavier than a single water molecule. Using equipartition, roughly how many times slower does the pollen grain move than a water molecule, on average?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>$$
+\frac{v_{\text{pollen}}}{v_{\text{water}}} = \frac{1}{\sqrt{80}} \approx \frac{1}{8.9}
+$$</p>
+<p>So the pollen grain moves roughly 9 times slower than a water molecule, on average — despite being struck by them constantly. This is why the pollen grain drifts sedately across the box while the (hidden) water molecules would be a blur.</p>
+</details>
+
+<p><strong>Q2.</strong> A student watches the simulation with water molecules hidden and says &quot;the pollen grain&#39;s motion looks completely random, so nothing about what&#39;s happening is predictable or governed by a law.&quot; Using what you can see by revealing the water molecules, explain what&#39;s wrong with this claim.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Every individual collision between the pollen grain and a water molecule obeys exactly the same predictable law: conservation of momentum and kinetic energy, given each particle&#39;s mass and velocity at that instant. Nothing about any single collision is random or unpredictable — Newtonian mechanics determines the outcome exactly. What looks &quot;random&quot; is only the <em>net effect</em> of enormous numbers of these individually deterministic collisions arriving from unpredictable directions at unpredictable times; the randomness is a statistical property of the whole system, not a breakdown of the underlying physical law governing each collision.</p>
+</details>
+
+<p><strong>Q3.</strong> Explain, using the idea of equipartition of energy, why Brownian motion is only visible for particles within a fairly narrow range of sizes — not for individual molecules, and not for large visible objects like a grain of sand.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>An individual molecule is far too small to see directly under any ordinary microscope, whatever its motion — the effect is real at that scale but not observable. At the other extreme, equipartition means a much larger, heavier particle (like a grain of sand) moves so slowly on average, and is so hard to shift via individual molecular collisions, that any residual jiggle becomes too small to detect against its own size — it is effectively too heavily damped by its own inertia. Pollen grains sit in the size range where both conditions are satisfied at once: large enough to resolve under a microscope, yet light enough that the statistical imbalance in molecular bombardment still produces a visible, measurable displacement.</p>
+</details>
+
+          <!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +144,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

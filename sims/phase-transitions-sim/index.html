@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,18 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">State Changes</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -60,16 +66,40 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">Simulations of particles and their state changes.</p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/phase-transitions-sim.html">Open the State Changes simulation</a></p>
+      <!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent" data-prerendered-for="phase-transitions-sim"><!--prerender:notes:start-->
+<h2>Teaching Notes</h2>
+<h2>How to use</h2>
+<p>Move the target temperature slider to adjust the temperature (average kinetic energy) of the particles. As you increase it, you will see the particles begin to show liquid behaviour (moving past each other) and then gaseous behaviour (moving apart from each other).</p>
+<p>You can use the temperature sweep to automatically increase the temperature at a steady rate. This will also plot a heating curve on the graph. Please note that due to the small number of particles and 2D nature of the simulation, the heating curve will not look like the expected one.</p>
+<p>You can adjust the parameters using the sliders. The particle count will add or remove particles from the simulation. The interaction strength controls the force of attraction between the particles. Gravity helps keep the sold and liquid masses at the bottom of the simulation. Cohesion gently pulls the particles together to allow for condensation when decreasing the temperature.</p>
+<h2>How the simulation works</h2>
+<p> Every pair of particles interacts through the Lennard-Jones potential </p>
+<p> $$U(r) = 4ε[(\frac{σ}{r}\)^{12} − (\frac{σ}{r})^6],$$ 
+ which repels particles strongly at short range and attracts them weakly out to a few particle diameters. This is the standard model for how neutral atoms (like argon) actually interact, and it&#39;s the only force in the simulation — there is no separate &quot;solid&quot; or &quot;gas&quot; rule built in.</p>
+<p>The temperature slider doesn&#39;t move particles directly. It sets a target average kinetic energy, and a thermostat gently nudges the real kinetic energy toward that target each step — the same idea as a heat bath exchanging energy with the system. Positions then evolve under Newton&#39;s second law (velocity-Verlet integration), so everything you see — melting, flowing, evaporating — emerges from the competition between that thermal energy and the attractive forces between particles.</p>
+<p>State is classified using two physical order parameters, the same ones used in real molecular simulations: the Lindemann parameter δ, the root-mean-square displacement of particles from their original lattice sites (divided by the lattice spacing) — small in a solid, large once particles diffuse away from fixed sites — and the mean coordination number, how many neighbours each particle has within 1.5σ — around 6 in a close-packed solid or liquid, near zero once a particle is alone in the gas phase. Textbook references quote δ ≈ 0.1–0.15 as the bulk-solid melting threshold, but a cluster this small genuinely vibrates with much larger amplitude than a bulk crystal does even while its coordination stays fully intact (small clusters are floppier than bulk solids — a real finite-size effect, not an error), so that threshold was recalibrated against this simulation&#39;s own coordination data rather than borrowed directly from the literature.</p>
+<p>Mean coordination $< 2$ → gas (particles are mostly isolated)
+Coordination high and $δ < 1.0$ → solid (particles vibrate about fixed sites)
+Coordination high and $δ ≥ 1.0$ → liquid (particles flow past each other but stay cohesive)</p>
+<p>The temperature is also shown in Kelvin using argon&#39;s real Lennard-Jones parameters (ε/kB ≈ 120 K) to give a physical sense of scale. Because this is a small cluster of ~100 particles in a vacuum, not a bulk liquid at atmospheric pressure, the temperature at which it visibly melts or evaporates won&#39;t exactly match argon&#39;s textbook melting/boiling points — but the underlying physics (attraction vs. thermal energy) is exactly the same competition that sets those real transition temperatures.</p>
+<p>Particle count rebuilds the lattice at a new size (applied when you release the slider). Interaction strength (ε) scales how deep the attractive well is — turn it down to model a weakly-bound substance (like a noble gas) that melts and evaporates at low temperature, or up to model something more strongly bound (like a metal), which stays solid at much higher T. The temperature axis itself doesn&#39;t move when you change ε — that&#39;s the point: the same thermal energy now competes against a different bond strength. Gravity adds a constant downward force on top of the interparticle forces — turn it up and the solid/liquid packs down harder against the floor, turn it to zero and the cluster floats freely, held together by nothing but its own attraction. Start Temperature Sweep resets to a cold solid and then adds kinetic energy at a constant rate, mimicking a constant-power heater. Because the energy input is constant, any energy that goes into breaking intermolecular bonds during a phase transition isn&#39;t available to raise the kinetic temperature — so T* genuinely plateaus on the heating curve. The width of each plateau is proportional to the latent heat for that transition: in this Lennard-Jones system, evaporation absorbs roughly 20–25× more energy than melting, so the boiling plateau is much wider than the melting plateau, exactly as in real substances. </p>
+
+          <!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +120,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

@@ -54,12 +54,13 @@ header.site {
   font-weight: 700; font-size: 1.02rem; line-height: 1.6;
 }
 .nav-links { display: flex; gap: 2px; }
-.nav-links button {
+.nav-links a {
   font: inherit; background: none; border: none; color: var(--muted);
   padding: 8px 13px; border-radius: 6px; cursor: pointer; font-size: 0.94rem;
+  text-decoration: none;
 }
-.nav-links button:hover { background: var(--raised); color: var(--gold); }
-.nav-links button.active { color: var(--gold); font-weight: 600; }
+.nav-links a:hover { background: var(--raised); color: var(--gold); text-decoration: none; }
+.nav-links a.active { color: var(--gold); font-weight: 600; }
 
 .menu-btn { display: none; background: none; border: 1px solid var(--border);
   border-radius: 6px; padding: 7px 9px; cursor: pointer; }
@@ -79,11 +80,12 @@ h1 { font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.01em; margin-bottom
 /* ---------- Home ---------- */
 .actions { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; }
 .btn {
-  font: inherit; font-size: 0.94rem; font-weight: 500;
+  display: inline-block; font: inherit; font-size: 0.94rem; font-weight: 500;
   padding: 10px 18px; border-radius: 7px; cursor: pointer;
   border: 1px solid var(--accent); background: var(--accent); color: #fff;
+  text-decoration: none;
 }
-.btn:hover { background: var(--gold); text-decoration: none; }
+.btn:hover { background: var(--gold); color: #fff; text-decoration: none; }
 .btn.secondary { background: transparent; color: var(--gold); }
 .btn.secondary:hover { background: var(--raised); }
 
@@ -92,12 +94,12 @@ h1 { font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.01em; margin-bottom
 .plain-list { list-style: none; }
 .plain-list li { border-bottom: 1px solid var(--border); }
 .plain-list li:first-child { border-top: 1px solid var(--border); }
-.plain-list a, .plain-list button.linkish {
+.plain-list a, .plain-list a.linkish {
   display: flex; align-items: baseline; gap: 10px; width: 100%;
   font: inherit; text-align: left; background: none; border: none; cursor: pointer;
-  padding: 11px 4px; color: var(--text);
+  padding: 11px 4px; color: var(--text); text-decoration: none;
 }
-.plain-list a:hover, .plain-list button.linkish:hover { color: var(--gold); text-decoration: none; }
+.plain-list a:hover, .plain-list a.linkish:hover { color: var(--gold); text-decoration: none; }
 .plain-list .meta { color: var(--muted); font-size: 0.86rem; margin-left: auto; }
 
 /* ---------- Collapsible categories ---------- */
@@ -133,9 +135,9 @@ h1 { font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.01em; margin-bottom
 .item-row {
   display: flex; align-items: center; gap: 12px; width: 100%;
   font: inherit; text-align: left; background: none; border: none; cursor: pointer;
-  padding: 12px 2px; color: var(--text);
+  padding: 12px 2px; color: var(--text); text-decoration: none;
 }
-.item-row:hover { color: var(--gold); }
+.item-row:hover { color: var(--gold); text-decoration: none; }
 .item-row .item-main { flex: 1; min-width: 0; }
 .item-row .item-title { font-weight: 500; }
 .item-row .item-desc { font-size: 0.85rem; color: var(--muted); }
@@ -173,9 +175,17 @@ h1 { font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.01em; margin-bottom
 .back-link {
   background: none; border: none; font: inherit; cursor: pointer;
   color: var(--gold); font-weight: 600; font-size: 0.92rem;
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: center; gap: 6px; text-decoration: none;
+  flex: none; white-space: nowrap;
 }
-.viewer-bar .vtitle { font-weight: 600; }
+.back-link:hover { text-decoration: none; }
+/* The simulation's name is the <h1> of its page (it's the only real
+   heading a /sims/<id> route has), but it sits in the viewer bar, so
+   the global h1 size/margin are reset back to bar-sized here. */
+.viewer-bar .vtitle {
+  font-weight: 600; font-size: 1rem; line-height: 1.6;
+  letter-spacing: normal; margin: 0; min-width: 0;
+}
 .vdesc { margin: 10px 0 0; color: var(--muted); font-size: 0.92rem; }
 .fullscreen-btn {
   background: none; border: 1px solid var(--border); font: inherit; cursor: pointer;
@@ -184,6 +194,15 @@ h1 { font-size: 1.8rem; line-height: 1.2; letter-spacing: -0.01em; margin-bottom
 }
 .fullscreen-btn:hover { background: var(--raised); color: var(--gold); border-color: var(--gold); }
 .fullscreen-btn svg { flex: none; }
+
+/* Stands in for the simulation's iframe in the pre-rendered page, until
+   app.js swaps the real thing in (see build-seo-pages.js). Only ever
+   visible to a crawler, or to a visitor without JS. The frame it sits
+   in is full-bleed, so it needs the content column's own width back. */
+.sim-fallback {
+  max-width: var(--maxw); margin: 0 auto;
+  padding: 32px 24px; font-size: 0.95rem;
+}
 
 .viewer-frame:fullscreen,
 .viewer-frame:-webkit-full-screen {
@@ -349,7 +368,7 @@ footer.site .wrap { display: flex; justify-content: space-between; flex-wrap: wr
     flex-direction: column; padding: 8px;
   }
   .nav-links.open { display: flex; }
-  .nav-links button { text-align: left; width: 100%; }
+  .nav-links a { text-align: left; width: 100%; }
   .menu-btn { display: block; }
   h1 { font-size: 1.55rem; }
 }

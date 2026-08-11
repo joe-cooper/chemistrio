@@ -21,25 +21,35 @@ There are no automated tests, linter, or build/bundle command. The closest thing
 ### After adding or editing a simulation, resource, or page
 
 ```
-node scripts/build-seo-pages.js
+node assets/js/version-assets.js && node scripts/build-seo-pages.js
 ```
 
-This regenerates per-route static shells (`sims/index.html`, `sims/<id>/index.html`, `about/index.html`, `resources/index.html`), `robots.txt`, `sitemap.xml`, and `404.html` from `assets/js/data.js` and `index.html`. It has no dependencies beyond Node's built-ins. Run it before pushing whenever `simulations`/`resources` in `assets/js/data.js` or the `STATIC_PAGES` list changes.
+The second command regenerates the per-route static shells (`index.html` itself, `sims/index.html`, `sims/<id>/index.html`, `about/index.html`, `resources/index.html`), `robots.txt`, `sitemap.xml`, and `404.html` from `assets/js/data.js`, `assets/js/render.js`, `pages/*.html` and `simulations/notes/*.md`. Its only dependency beyond Node's built-ins is the vendored `assets/vendor/marked.min.js`. Run it before pushing whenever a simulation, resource, page fragment or teaching-notes file changes.
+
+Note that `index.html` is now both the build's template and one of its outputs. Every region the script fills is delimited by `<!--prerender:<name>:start-->` / `<!--prerender:<name>:end-->` markers and is rewritten wholesale on each run, so running the build repeatedly is safe and produces identical output. Don't remove those markers.
 
 ### Cache-busting asset versions
 
-`assets/js/version-assets.js` rewrites `href=`/`src=` query strings in `index.html` to `?v=<md5 of file>` for local `.css`/`.js` files. Run with `node assets/js/version-assets.js` after editing a versioned asset if you want the query string refreshed (external CDN URLs are skipped automatically).
+`assets/js/version-assets.js` rewrites `href=`/`src=` query strings in `index.html` to `?v=<md5 of file>` for local `.css`/`.js` files (external CDN URLs are skipped automatically). Run it *before* `build-seo-pages.js`, as above, so the refreshed query strings propagate from the shell into every generated route file in the same pass. Skipping it after editing `app.js`, `render.js` or `site.css` leaves returning visitors on a cached copy of the old asset against the new HTML.
 
 ## Architecture
 
 ### Site shell: a hand-rolled SPA
 
-`index.html` is the single shell for the whole site. `assets/js/app.js` is a client-side router driven entirely by the `PAGES` array at its top:
+`index.html` is the single shell for the whole site. `assets/js/app.js` is a client-side router driven entirely by the `PAGE_META` list in `assets/js/render.js`:
 
-- Ordinary content pages (home, sims, resources, about) are HTML fragments in `pages/*.html`, fetched over HTTP and mounted into `#pageMount`. Each `PAGES` entry maps an id → fragment path → optional `init()` callback (e.g. `renderSimCategories` populates the sims list from `data.js`).
+- Ordinary content pages (home, sims, resources, about) are HTML fragments in `pages/*.html`, fetched over HTTP and mounted into `#pageMount`. Each `PAGE_META` entry maps an id → fragment path; `PAGE_INITS` in `app.js` attaches the optional `init()` callback for that id (e.g. `renderSimCategories` populates the sims list from `data.js`).
 - Simulations render into a separate always-present `#page-viewer` section (not the fragment mount) as an `<iframe src="/simulations/<id>.html">`, since each simulation is a fully self-contained HTML file.
+- Every route's content is *also* baked into its static shell at build time (see below), so the first load of any URL needs no fetch and no JS. `app.js` spots this via the `data-prerendered-for` attributes on `#pageMount` / `#notesContent` and skips re-fetching what's already there; every later in-page navigation goes through the normal fetch path.
+- Navigation uses real `<a href>` elements, not `onclick` handlers. A single delegated click listener in `app.js` turns same-site anchor clicks into `pushState` navigations, so links stay crawlable without any extra wiring. Use an anchor for anything that navigates.
 - Routing is real History API paths (`/sims`, `/sims/<id>`, `/about#contact`, ...), not hashes — `parsePath()`/`navigate()`/`go()`/`openSim()` in `app.js`. `migrateLegacyHash()` does a one-time redirect for old `#sim/<id>`-style bookmarks.
-- To add a new top-level page: create `pages/<id>.html` (inner markup only, no wrapper) and add one entry to `PAGES` in `app.js`. Nothing else needs to change — nav bar and router both read that list.
+- To add a new top-level page: create `pages/<id>.html` (inner markup only, no wrapper) and add one entry to `PAGE_META` in `render.js`. Nav bar, router and static-shell build all read that list. Add an entry to `STATIC_PAGES` in `build-seo-pages.js` too, to give the route its own title and meta description.
+
+### Shared rendering: `assets/js/render.js`
+
+The functions that build the site's list markup (`simCategoriesHtml`, `featuredHtml`, `resourceCategoriesHtml`, `navHtml`) and that turn teaching-notes Markdown into HTML (`notesHtml`) live here, along with `PAGE_META`. Both runtimes use them: the browser via `app.js`, and Node via `scripts/build-seo-pages.js`. That's what stops the pre-rendered and client-rendered versions of a page drifting apart.
+
+Nothing in this file may touch `document`, `window` or `fetch`, and data is passed in as an argument rather than read off the `simulations`/`resources` globals — both so it stays `require()`-able under Node. It's exported with the same `if (typeof module !== "undefined")` guard `data.js` uses.
 
 ### Content data: `assets/js/data.js`
 
@@ -60,7 +70,11 @@ Teaching notes must adhere strictly to the writing style guidelines.
 
 Teaching notes should have a suggested use section for teachers, and an explanation that is accessible to students. For GCSE simulations, there should be a 'looking ahead' section that signposts relevant A-level content. Likewise, for A-Level simulations, the 'looking ahead' section should signpost pre-university and first-year undergraduate content.
 
-Markdown files in `simulations/notes/*.md`, fetched and rendered client-side via `marked` + KaTeX (loaded from CDN in `index.html`). `app.js`'s `protectMath()`/`restoreMath()` shield `$...$`/`$$...$$`/`\(...\)`/`\[...\]` spans from Markdown's backslash-escaping before handing off to KaTeX. A collapsible answer block uses raw HTML in the `.md` file:
+Markdown files in `simulations/notes/*.md`, rendered by `marked` and typeset by KaTeX. `render.js`'s `protectMath()`/`restoreMath()` shield `$...$`/`$$...$$`/`\(...\)`/`\[...\]` spans from Markdown's backslash-escaping (using U+E000/U+E001 placeholders) before KaTeX sees them.
+
+The Markdown-to-HTML step runs at build time as well as in the browser, so each `sims/<id>/index.html` ships its notes as real HTML — for most simulations this is the only substantial prose on the page, and it's what those pages can realistically rank for. Editing a `.md` file therefore needs a `build-seo-pages.js` run to show up for crawlers. KaTeX still runs client-side over the pre-rendered HTML; because its auto-render script is deferred and the pre-rendered path has no fetch to wait on, `typesetMath()` in `app.js` retries on the `load` event when `renderMathInElement` isn't available yet.
+
+A collapsible answer block uses raw HTML in the `.md` file:
 
 ```
 <details class="qa">
@@ -79,7 +93,17 @@ Shared guided-walkthrough engine. A simulation opts in by calling `ChemTour.init
 
 ### SEO / static shells (`scripts/build-seo-pages.js`)
 
-Because the SPA shell only has one `<title>`/meta-description, this script writes a byte-identical copy of `index.html` at each route's real path (e.g. `sims/<id>/index.html`) with that route's own title/description/canonical/OG tags swapped in, so crawlers and direct/refreshed loads see correct metadata before `app.js` boots and takes over. The route list comes from `STATIC_PAGES` (kept in sync by hand with `PAGES` in `app.js`) plus `simulations` from `data.js`. It also regenerates `robots.txt`, `sitemap.xml`, and `404.html` (GitHub Pages' catch-all fallback, a verbatim copy of `index.html`) from the same route list.
+A crawler that doesn't run JS (or runs it on a much later pass) would otherwise get an empty page at every URL, sharing one `<title>` across the whole site. This script writes a real static HTML file at each route's actual path (e.g. `sims/<id>/index.html`), built from the `index.html` shell, carrying that route's own:
+
+- `<title>`, meta description, canonical link and OG tags,
+- page content, inlined into `#pageMount` — or, for a simulation, its title as the page's `<h1>`, its description, and its teaching notes rendered from Markdown at build time,
+- nav bar, as real `<a href>` links.
+
+`app.js` still boots from that file and takes over exactly as before. The markup comes from `render.js`, the same module the browser uses.
+
+The route list is `STATIC_PAGES` (each entry's `id` must match a `PAGE_META` id in `render.js`) plus `simulations` from `data.js`. `robots.txt`, `sitemap.xml` and `404.html` are regenerated from the same list; `404.html` is GitHub Pages' catch-all fallback and stays deliberately content-free, since an unknown path has no route to pre-render.
+
+The pre-rendered `#viewerFrame` holds a plain link to `/simulations/<id>.html` as a stand-in for the iframe, so the simulation is reachable without JS. Those standalone simulation files are still separately indexable and carry no canonical pointing back at `/sims/<id>`, which is worth fixing if duplicate-content warnings show up in Search Console.
 
 ## Writing style for chemistry content (teaching notes, simulation copy, tours)
 

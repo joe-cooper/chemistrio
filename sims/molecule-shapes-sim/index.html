@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,18 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">Shapes of Molecules (VSEPR)</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -60,16 +66,85 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">Electron pairs repelling each other on a sphere, producing the linear, trigonal planar, tetrahedral, pyramidal, bent, trigonal bipyramidal and octahedral shapes. Atoms and lone pairs can be dragged out of place and relax back, and any combination of bonding and lone pairs can be built to see the shape it gives.</p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/molecule-shapes-sim.html">Open the Shapes of Molecules (VSEPR) simulation</a></p>
+      <!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent" data-prerendered-for="molecule-shapes-sim"><!--prerender:notes:start-->
+<h2>Teaching notes</h2>
+<h3>Suggested use</h3>
+<p>Open with methane, which is where the simulation starts. Before saying anything about rules, drag one of the hydrogens well away from where it sits and hold it there. The other three shift while you hold it, and when you let go the whole molecule springs back to exactly the arrangement it started in. Press <strong>Shake</strong> to throw all four off at once; it recovers just the same. Nothing in the code knows the word &quot;tetrahedral&quot; — the shape is what four mutually repelling charges settle into when they are free to move on a sphere.</p>
+<p>That is worth establishing before the shapes themselves, because it is the part students most often miss. A tetrahedron in a textbook looks like a fact to memorise. Here it is an outcome, and one you can disturb and watch re-form.</p>
+<p>Then work along the molecule row, which is in order of how many electron pairs the central atom has: one, two, three, four, five, six. Ask for a prediction before each click. Two useful pauses:</p>
+<p>At <strong>CH<sub>4</sub></strong>, ask why the four hydrogens do not simply sit at the corners of a square, 90&deg; apart. Most students will have drawn methane flat at some point. Nothing stops you dragging all four hydrogens roughly into a plane to try it — they will not stay.</p>
+<p>At <strong>NH<sub>3</sub></strong>, ask for the bond angle before revealing it. Ammonia has four electron pairs, exactly as methane does, so a reasonable first answer is 109.5&deg;. It reads 107&deg;. Water, with the same four pairs, reads 104.5&deg;. Those two numbers are the evidence that a lone pair is not simply a bonding pair without an atom on the end, and they are worth dwelling on before any explanation is offered.</p>
+<p><strong>PCl<sub>5</sub></strong> repays some time. It is the first molecule in the row with two different bond angles, and the reason is worth drawing out rather than stating: five points cannot be spread evenly over a sphere, so two of them have to be different from the other three.</p>
+<p>The last entry, <strong>AX<sub>n</sub>E<sub>m</sub></strong>, is not a substance. Two sliders set the number of bonding and lone pairs, up to six between them, and the model builds whatever those pairs settle into. It is the quickest way to work through the whole VSEPR table in one place, and it reaches the shapes that need five or six pairs — the see-saw at four bonding and one lone, the T-shape at three and two, the square plane at four and two — which are hard to picture from a flat diagram. Worth asking students to predict the shape from the two numbers before releasing the slider.</p>
+<p>Where the lone pairs sit is not looked up. The model costs every way of placing them on the arrangement and keeps the cheapest, which is how it puts a lone pair in a trigonal bipyramid on the equator rather than at a pole, and puts two in an octahedron opposite each other.</p>
+<p>Drag the empty space to turn any molecule round. Lone pairs can be dragged too, and they relax back like everything else.</p>
+<h3>Where the shapes come from</h3>
+<p>We start from one claim: the electron pairs around a central atom repel each other, so they end up as far apart as they can get. That is the whole of VSEPR, and everything in this simulation follows from it.</p>
+<p>For two pairs the answer is immediate. Two charges free to move on a sphere go to opposite poles, 180&deg; apart, and carbon dioxide is linear. Notice, though, what we are counting. Carbon in CO<sub>2</sub> has four bonding pairs, two in each double bond — but the two pairs of a C=O double bond point the same way, and cannot separate from each other. They act as a single region of charge. This is why we count <em>regions</em> rather than pairs, and it is the most common place for a prediction to go wrong.</p>
+<p>Three regions give a flat triangle at 120&deg;, as in BH<sub>3</sub>. Four is where it gets worth arguing about. If we stay in a plane, four charges give 90&deg; each. But we are not confined to a plane, and lifting two of them out of it lets all four get further apart: 109.5&deg;, the tetrahedral angle. You can test this directly in the simulation by dragging the hydrogens of methane towards a square arrangement and releasing them.</p>
+<p>So far every pair has held an atom, and the shape of the molecule has been the same as the arrangement of the pairs. Ammonia breaks that. Nitrogen has four pairs, so the pairs are still arranged tetrahedrally, but one of them is a lone pair with no atom on the end. When we name a shape we are describing where the <em>atoms</em> are, and three atoms plus a nitrogen make a trigonal pyramid, not a tetrahedron. Water is the same argument run twice: four pairs, tetrahedral arrangement, two atoms, and the shape we name is bent.</p>
+<h3>Lone pairs and bond angles</h3>
+<p>Ammonia is 107&deg; and water 104.5&deg;, both smaller than methane&#39;s 109.5&deg;, and all three have four electron pairs on the central atom. If the four pairs were equivalent the angle would be the same in all three, so they are not equivalent: a lone pair presses harder on its neighbours than a bonding pair does.</p>
+<p>Two things make that plausible. A bonding pair is held between two nuclei, so it is drawn away from the central atom; a lone pair is attracted by one nucleus only and stays closer in. And a bonding pair is stretched out along the bond, while a lone pair is fatter near the atom it belongs to. Both give a lone pair more presence close to the central atom, where the crowding is.</p>
+<p>Here we should be careful about what the simulation is and is not doing. For methane, carbon dioxide, borane, phosphorus pentachloride and sulfur hexafluoride the model is genuinely predicting: equal charges repelling on a sphere produce 109.5&deg;, 180&deg;, 120&deg;, and 90&deg; with 120&deg;, and it would produce them whatever we did. For ammonia and water it is not predicting. The strength of the lone pair has been set for each molecule to whatever reproduces the measured angle, because VSEPR tells us the angle should shrink but gives us no way of working out by how much. The shapes are a result; those two angles are an input.</p>
+<p>There is also more going on than lone pairs. Nitrogen trifluoride, NF<sub>3</sub>, has the same single lone pair as ammonia, so counting pairs predicts a similar angle. It is 102.5&deg;, noticeably tighter than ammonia&#39;s 107&deg;. Fluorine is far more electronegative than hydrogen and draws each bonding pair away from the nitrogen; with the bonding pairs held further off, they press on each other less and the lone pair wins more of the argument. Counting lone pairs cannot see this coming, because both molecules have exactly one.</p>
+<h3>Five electron pairs</h3>
+<p>Two, three, four and six pairs all have a symmetrical answer, and in every one of them each position is equivalent to every other. Five does not. Set the simulation to PCl<sub>5</sub> and look at the two angle readings: 90&deg; and 120&deg;. Three of the chlorines sit in a triangle round the middle, 120&deg; apart, and two sit above and below at 90&deg; to that triangle. The two axial positions and the three equatorial ones are genuinely different places to be, with different numbers of close neighbours.</p>
+<p>This is not a limitation of the model. There is no way to place five points evenly on a sphere, so the best arrangement has to be an uneven one. Six pairs recovers the symmetry: the octahedron of SF<sub>6</sub> puts every fluorine in an identical position with four neighbours at 90&deg; and one opposite at 180&deg;.</p>
+<h3>Looking ahead</h3>
+<p>The first thing that changes at university is the reason. VSEPR says electron pairs repel, and it is natural to read that as ordinary electrostatic repulsion between like charges. That is not really it. The dominant effect is the Pauli exclusion principle: two electrons with the same spin cannot occupy the same region, so pairs of electrons keep out of each other&#39;s way whether or not we account for their charge. The geometry VSEPR predicts is right far more often than the reason it gives for it.</p>
+<p>You will also meet a second language for the same shapes. Hybridisation describes methane&#39;s four equivalent bonds as sp<sup>3</sup>, boron&#39;s three as sp<sup>2</sup>, and carbon dioxide&#39;s two as sp — and Bent&#39;s rule, which says that s character concentrates in bonds to less electronegative atoms, handles the NF<sub>3</sub> problem above rather better than counting lone pairs does. Molecular orbital theory goes further again and treats the whole molecule at once, which is the only approach that explains why water is bent and beryllium hydride is linear in terms of orbital energies rather than repulsion. The molecular orbital simulations on this site are the starting point for that.</p>
+<p>It is worth knowing where VSEPR breaks, and phosphine is the clearest case. PH<sub>3</sub> has the same AX<sub>3</sub>E arrangement as ammonia, so VSEPR predicts something close to 107&deg;. The measured angle is 93.3&deg;, and H<sub>2</sub>S is 92&deg; against water&#39;s 104.5&deg;. These are close to 90&deg;, which is what you would expect if the bonds used almost pure p orbitals with the lone pair sitting in a largely unmixed s orbital. Going down a group, the s and p orbitals of the central atom become more different in energy and mix less, and the tetrahedral picture stops applying. VSEPR gives no hint that this is coming.</p>
+<h3>Suggested questions</h3>
+<p><strong>Q1.</strong> Carbon in CO<sub>2</sub> is surrounded by four bonding pairs of electrons. Methane&#39;s carbon is also surrounded by four. Why is one linear and the other tetrahedral?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>What matters is the number of <em>regions</em> of electron density, not the number of pairs. In CO<sub>2</sub> the two pairs of each C=O double bond point in the same direction and cannot get away from each other, so they behave as one region. Carbon therefore has two regions to separate, and two regions go to opposite sides: 180&deg;. Methane&#39;s four pairs are in four separate bonds pointing four different ways, so there are four regions to separate, and the best they can do in three dimensions is 109.5&deg;.</p>
+</details>
+
+<p><strong>Q2.</strong> Methane, ammonia and water all have four electron pairs on the central atom, but their bond angles are 109.5&deg;, 107&deg; and 104.5&deg;. Explain the trend.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>If all four pairs were equivalent, all three molecules would have the tetrahedral angle of 109.5&deg;, as methane does. The angle falls as bonding pairs are replaced by lone pairs, so a lone pair must repel more strongly than a bonding pair.</p>
+<p>A bonding pair is shared between two nuclei and so is pulled away from the central atom, while a lone pair is held by one nucleus only and stays closer in, where it crowds its neighbours more. Ammonia has one lone pair and drops by about 2.5&deg;; water has two and drops by about 5&deg;.</p>
+<p>Notice that this reasoning gives the right order but not the size of the drop. VSEPR tells us the angle should close, not by how much, which is why the measured values have to be looked up rather than worked out.</p>
+</details>
+
+<p><strong>Q3.</strong> PCl<sub>5</sub> has two different bond angles but SF<sub>6</sub> has only one kind of neighbouring angle. Explain why, and predict where a lone pair would sit in SF<sub>4</sub>, which has four bonding pairs and one lone pair.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Six points can be placed on a sphere so that every one has an identical set of neighbours, which is the octahedron: four neighbours at 90&deg; and one opposite at 180&deg;. Five points cannot be arranged evenly at all, so the best arrangement is the trigonal bipyramid, in which the three equatorial positions and the two axial positions are different from each other. The equatorial positions have two close neighbours at 120&deg; and two at 90&deg;; the axial positions have three at 90&deg;.</p>
+<p>A lone pair takes up more room than a bonding pair, so it will go wherever it is least crowded — the equatorial position, with only two neighbours at 90&deg; instead of three. This leaves SF<sub>4</sub> with the see-saw shape.</p>
+<p>You can check this on the AX<sub>n</sub>E<sub>m</sub> entry by setting four bonding pairs and one lone pair. Nothing tells the model which position to use; it tries them all and keeps the cheapest, and the lone pair ends up equatorial.</p>
+</details>
+
+<p><strong>Q4.</strong> PH<sub>3</sub> has one lone pair and three bonding pairs on the phosphorus, exactly as NH<sub>3</sub> does on the nitrogen. VSEPR therefore predicts a similar bond angle for both. Ammonia measures 107&deg; and phosphine measures 93.3&deg;. What does this tell us about the model?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>It tells us that VSEPR is a useful rule for predicting shapes but not a real account of bonding. Counting electron pairs correctly identifies both molecules as trigonal pyramidal, and for ammonia the predicted angle is close. For phosphine it is wrong by nearly 14&deg;, and nothing in the electron-pair counting warns us of it.</p>
+<p>An angle near 90&deg; is what we would expect if the three P&ndash;H bonds used almost pure p orbitals, which are at 90&deg; to one another, with the lone pair in a largely unmixed s orbital. In nitrogen the 2s and 2p orbitals are close enough in energy to mix thoroughly and give something near the tetrahedral arrangement; in phosphorus the 3s and 3p are further apart and mix much less. VSEPR has no way of knowing about orbital energies, so it cannot see this difference coming.</p>
+</details>
+
+          <!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +165,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,18 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">Collision Theory</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -60,16 +66,77 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">How concentration, temperature and surface area affect the rate of reaction shown using collision theory</p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/rates-collision-sim.html">Open the Collision Theory simulation</a></p>
+      <!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent" data-prerendered-for="rates-collision-sim"><!--prerender:notes:start-->
+<h2>Teaching notes</h2>
+<p>For a reaction to happen, particles must <strong>collide</strong> with each other — and even then, not every collision succeeds. This simulation has two tabs, each isolating one factor that raises the rate of reaction: <strong>Concentration</strong>, which raises how <em>often</em> particles collide, and <strong>Temperature</strong>, which raises both how often <em>and</em> how successfully they collide.</p>
+<p>Both tabs share the same reaction vessel and the same choice of reaction: <strong>A → B</strong> (a collision converts both particles to product, so the total particle count never changes) or <strong>2A → B</strong> (a collision converts one particle and removes the other, so the total falls over time — a deliberate simplification to make the 2:1 stoichiometry visible).</p>
+<h3>The Concentration tab</h3>
+<p>Every qualifying collision has the same fixed chance of reacting, set directly by the <strong>Collision success chance</strong> slider — this tab is entirely about how often collisions happen, not how likely each one is to succeed. There are two independent ways to raise concentration here: add more particles to the fixed-size box, or shrink the box itself with the <strong>Vessel volume</strong> slider while holding the particle count still. Both routes raise the same underlying quantity — particles per unit volume — and both raise the rate the same way.</p>
+<p><strong>Suggested use.</strong> Start with a modest particle count and press Run. Reset, then roughly double the particle count and compare — the rate readout should be noticeably higher. Reset again, and this time leave the particle count untouched but drag Vessel volume down instead; use &quot;Show previous run&quot; to overlay the two graphs and confirm they show the same kind of speed-up even though only one of the two controls moved.</p>
+<h3>The Temperature tab</h3>
+<p>Here, temperature drives <strong>both</strong> particle speed and collision success chance at once — the two-part explanation used in GCSE and A-level collision theory. Particle speed scales as √T (kinetic theory: average kinetic energy is proportional to T). Separately, the live <strong>Success chance</strong> readout follows an Arrhenius-style relationship with temperature and the <strong>Activation energy</strong> slider: only collisions energetic enough to clear that barrier react, and a hotter sample has a larger share of them.</p>
+<p>Both sliders here update live, without resetting the run — dragging Temperature mid-run rescales every particle already in the box, like heating a reaction that&#39;s already going. Activation energy behaves the same way, and lowering it <em>without</em> touching temperature is exactly what a catalyst does, which a later module will build on directly.</p>
+<p><strong>Suggested use.</strong> Start cold and press Run — reactions should be rare. Drag the temperature up while it&#39;s running and watch both effects happen together: particles visibly speed up, and the Success chance readout climbs. Reset, then try compensating for a temperature rise by also raising Activation energy, to show a high enough barrier can keep a reaction slow even when it&#39;s hot.</p>
+<h3>The Surface area tab</h3>
+<p>This tab looks and behaves quite differently from the other two, because the chemistry is different: a <strong>solid</strong> reactant (blue) sitting in a <strong>fluid</strong> reactant (teal), like marble chips in acid, rather than two gases mixing freely. The solid is always exactly <strong>100 particles</strong> — that never changes. Only how those 100 particles are <strong>arranged</strong> changes, via the <strong>Number of pieces</strong> slider.</p>
+<p>A fluid particle can only trigger a reaction with a solid particle it can physically touch — one on the exposed surface of a piece. Particles buried inside a block are shielded until the layers above them dissolve away, so a single lump erodes from the outside in rather than dissolving all at once. This is emergent from the geometry, not a shortcut: the simulation tracks which particles are on a boundary and recomputes that after every dissolution.</p>
+<p>The <strong>Exposed surface</strong> stat is the number to watch. Splitting the same 100 particles into more, smaller pieces exposes dramatically more surface for an identical amount of solid — that&#39;s the entire mechanism behind surface area&#39;s effect on rate, made visible directly rather than asserted.</p>
+<p><strong>Suggested use.</strong> Start with 1 piece (a single 10×10 block) and press Run — the reaction should be slow, since only the block&#39;s outer edge is reachable. Reset with the same fluid count and probability, but set pieces to something like 25 or 100, and compare: Exposed surface jumps enormously even though Solid remaining still starts at 100 either way, and the rate readout follows suit. Use &quot;Show previous run&quot; to overlay the two directly.</p>
+<h3>Key ideas</h3>
+<ul>
+<li>Rate of reaction depends on how often particles collide <strong>and</strong> what fraction of those collisions succeed.</li>
+<li>Concentration changes collision <em>frequency</em> only — the same underlying idea whether you get there by adding particles or shrinking the vessel.</li>
+<li>Temperature changes <em>both</em> frequency (via speed) and the <em>successful fraction</em> (via the energy barrier) — which is why raising temperature tends to have a much bigger effect on rate than raising concentration by a comparable amount.</li>
+<li>Surface area changes how much of a fixed amount of solid reactant is actually <em>available</em> to react at any moment — breaking a lump into pieces doesn&#39;t add any solid, it just exposes more of what&#39;s already there.</li>
+<li>A reaction slows over time as reactants are used up, regardless of which tab you&#39;re on, because there are fewer particles (or less exposed surface) left to react with.</li>
+<li>Activation energy is the height of the energy barrier a collision must clear. A catalyst works by lowering that barrier, not by heating anything.</li>
+</ul>
+<h3>Suggested questions</h3>
+<p><strong>Q1.</strong> On the Concentration tab, why does raising the particle count and lowering the vessel volume both increase the rate, even though one adds particles and the other doesn&#39;t?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Rate depends on concentration — particles per unit volume — not on the particle count or the volume alone. Adding particles to a fixed volume raises concentration; shrinking the volume around a fixed number of particles raises it exactly the same way. Both routes pack more particles into the same space, so collisions happen more often either way.</p>
+</details>
+
+<p><strong>Q2.</strong> On the Temperature tab, why does raising the temperature usually speed up a reaction by more than raising the concentration by a similar proportion?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Concentration only affects how often particles collide. Temperature affects that too — particles move faster — but it also raises the fraction of collisions with enough energy to succeed, and that second effect grows quickly (following the Arrhenius-style curve). The two effects multiply together, so a given percentage rise in temperature tends to produce a bigger jump in rate than the same percentage rise in concentration.</p>
+</details>
+
+<p><strong>Q3.</strong> If you raise the temperature on the Temperature tab, does the Success chance ever reach 100%?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>It gets close at the highest temperatures and lowest activation energies, but the simulation deliberately doesn&#39;t let it hit exactly 100% — even in energetic collisions, real reactions have other requirements (like the orientation of the collision) that this simulation doesn&#39;t model, so some collisions still fail even at high temperature.</p>
+</details>
+
+<p><strong>Q4.</strong> On the Surface area tab, two students both start with 100 solid particles, but one uses 1 piece and the other uses 100 pieces. Whose reaction finishes first, and why doesn&#39;t the <em>amount</em> of solid reactant matter here?</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>The 100-piece student&#39;s reaction finishes far faster, even though both started with exactly the same amount of solid. The amount of solid affects how much <em>product</em> eventually forms, not how fast the reaction runs — rate depends on the exposed surface available at any moment, and splitting the solid into many small pieces exposes almost all of it immediately, while a single lump only exposes its outer layer at first.</p>
+</details>
+
+
+          <!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +157,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

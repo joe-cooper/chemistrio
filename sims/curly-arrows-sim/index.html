@@ -19,7 +19,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
-<link rel="stylesheet" href="/assets/css/site.css?version=2026-08-04">
+<link rel="stylesheet" href="/assets/css/site.css?v=7f31cd9f">
 <script src="/assets/js/theme.js?v=f516d968"></script>
 </head>
 <body>
@@ -30,10 +30,14 @@
 
 <header class="site">
   <div class="wrap nav">
-    <div class="brand" onclick="go('home')">
+    <a class="brand" href="/">
       <span class="mark">chemistr.io</span>
-    </div>
-    <nav class="nav-links" id="navLinks"></nav>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
     <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
     </button>
@@ -42,16 +46,18 @@
 
 <main class="wrap">
 
-  <!-- Ordinary content pages (home, simulations, resources, ...) are
-       fetched from pages/<id>.html and mounted here. See PAGES in
-       assets/js/app.js. -->
-  <div class="page active" id="pageMount"></div>
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
-      <button class="back-link" onclick="go('sims')">&larr; Back to simulations</button>
-      <span class="vtitle" id="viewerTitle"></span>
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">Organic Mechanisms</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -60,16 +66,80 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">Interactive diagrams of organic reaction mechanisms on the A-Level syllabus and beyond. Shows the actual products for incorrect arrows.</p>
     <div class="viewer-layout">
-      <div class="viewer-frame" id="viewerFrame"></div>
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/curly-arrows-sim.html">Open the Organic Mechanisms simulation</a></p>
+      <!--prerender:frame:end--></div>
       <aside class="notes-sidebar" id="notesSidebar">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>
         </button>
         <div class="notes-body" id="notesBody">
-          <div class="notes-content prose" id="notesContent"></div>
+          <div class="notes-content prose" id="notesContent" data-prerendered-for="curly-arrows-sim"><!--prerender:notes:start-->
+<h2>Teaching notes</h2>
+<p>Choose a mechanism from the dropdown and draw the arrows for the next step before the simulation tells you anything. Click a lone pair or a bond to pick up an electron pair (it turns gold), then click the atom or bond that pair moves to.</p>
+<p>When you press <strong>Check mechanism</strong>, the simulation does not compare your answer against a stored picture of the right product. It takes the arrows you actually drew, moves the electrons exactly where you sent them, recounts every atom&#39;s bonds and lone pairs, works out the formal charges that result, and draws whatever molecule that turns out to be. Draw the wrong arrows and you get the product your arrows actually made.</p>
+<h3>Suggested use</h3>
+<p>Students can use the simulation individually to test their knowledge of the mechanisms, but it may be better suited to whole-class tasks. Students can offer suggestions about which arrows to draw and they can be checked to see if they are correct or not. The products of incorrect arrows are useful to show what curly arrows actually mean and to correct misconceptions.</p>
+<h2>Looking ahead</h2>
+<p>Curly arrows are a tool used by chemists to help understand organic reactions. The reaction mechanisms are deduced through other experiments, most often ones measuring the rate of reaction.</p>
+<h3>Key ideas</h3>
+<ul>
+<li>A curly arrow shows the movement of an electron pair. An arrow must start at an electron pair, either a bonding pair or a lone pair. It must end where an electron pair is expected, either in a bond or as a lone pair on an atom.</li>
+<li>Nearly every step is an electron-rich species attacking an electron-deficient species. Electron-rich species include atoms with lone pairs and C=C $\pi$ bonds. Electron-deficient species include carbons with a partial negative charge atached to electronegative atoms.</li>
+<li>Some reactions involve leaving groups, which form stable ions or molecules such as bromide or water.</li>
+<li>Aromatic rings substitute rather than add because of the extra stability afforded by the aromatic ring reforming.</li>
+</ul>
+<h3>Suggested questions</h3>
+<p><strong>Q1.</strong> A student draws the hydroxide lone pair attacking the carbon of bromomethane but forgets the second arrow. The simulation shows a carbon with five bonds and a negative charge. Explain why this structure cannot exist, and what the missing arrow was for.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Carbon is in the second period and is not capable of hypervalency, so it can have a maximum of 8 valence electrons. This means it can only make four bonds.</p>
+</details>
+
+<p><strong>Q2.</strong> Two students disagree about whether a particular halogenoalkane reacts with hydroxide by S<sub>N</sub>1 or S<sub>N</sub>2. Neither mechanism can be observed directly. Describe an experiment that would distinguish them, and explain why it works.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Measure how the initial rate changes when the hydroxide concentration is changed while the halogenoalkane concentration is held constant. In S<sub>N</sub>2 the hydroxide is present in the single, rate-determining step, so doubling its concentration doubles the rate and the reaction is second order overall. In S<sub>N</sub>1 the slow step is the ionisation of the C–Br bond, which happens before hydroxide is involved at all; adding more hydroxide only speeds up a step that was already fast, so the rate is unchanged and the reaction is first order, depending only on the halogenoalkane. The rate law is therefore evidence about the composition of the transition state of the slowest step, which is exactly what the two mechanisms disagree about.</p>
+</details>
+
+<p><strong>Q3.</strong> Explain why methanol reacts with HBr only in the presence of an acid, whereas 2-bromopropane ionises in water without any help. Refer to the leaving group in each case.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>A leaving group departs carrying an electron pair, so how readily it leaves depends on how stable it is as an anion holding that pair, which is what basicity measures. In 2-bromopropane the leaving group is bromide. HBr is an extremely strong acid, so bromide is a very weak base, entirely stable holding its extra pair, and it leaves without assistance. In methanol the leaving group would be hydroxide, a reasonably strong base that holds its electron pair reluctantly, so the substitution does not proceed. Protonating the oxygen first converts –OH into –OH₂⁺, so that the group leaving is neutral water. Water is a much weaker base than hydroxide (its conjugate acid H₃O⁺ is a strong acid), so it departs readily and the reaction can proceed. The acid does not attack anything itself; it simply exchanges a poor leaving group for a good one.</p>
+</details>
+
+<p><strong>Q4.</strong> Cyanide and methanal give an addition product, but hydroxide and ethanoyl chloride give a substitution product, even though the first step of both mechanisms is the same. Explain the difference.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Both nucleophiles attack the carbonyl carbon, and in both cases the C=O π electrons move onto oxygen, giving a negatively charged tetrahedral intermediate. What happens next depends on what that carbon is holding. In the methanal case the carbon carries two hydrogens, the nitrile group and the alkoxide, none of which is a viable leaving group, so the intermediate has no way to expel anything; the alkoxide simply takes a proton from an HCN molecule and the reaction stops at addition. In the ethanoyl chloride case the carbon carries a chlorine, and chloride is an excellent leaving group because HCl is a very strong acid and chloride is correspondingly stable as an anion. The alkoxide oxygen therefore pushes its lone pair back down to re-form the C=O π bond and ejects chloride, so overall the hydroxide has replaced the chlorine. Addition–elimination happens whenever the carbonyl carbon bears a group willing to leave.</p>
+</details>
+
+<p><strong>Q5.</strong> In the nitration of nitrobenzene, attack occurs at the 3 and 5 positions. In the nitration of methylbenzene it occurs at the 2, 4 and 6 positions. Explain both observations using the same argument.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>In each case the electrophile&#39;s attack leaves an intermediate whose positive charge is delocalised over three ring carbons: the two adjacent to the attacked carbon and the one opposite it. Attacking at position 2, 4 or 6 places one of those charged carbons on the substituted carbon itself; attacking at position 3 or 5 does not. The two substituents then differ in how they feel about that. A methyl group donates electron density into the ring, so having the positive charge delocalised onto the carbon it is attached to is stabilising, and attack at 2, 4 and 6 is favoured. A nitro group withdraws electron density strongly, so placing positive charge on the carbon it is attached to is severely destabilising; attack at 3 or 5 avoids this by keeping the charge on carbons the nitro group is not attached to, and those positions are favoured instead. The rule that electron-donating groups direct to 2, 4 and 6 while electron-withdrawing groups direct to 3 and 5 is just this argument applied twice.</p>
+</details>
+
+<p><strong>Q6.</strong> The simulation shows S<sub>N</sub>1 and E1 as two separate mechanisms, but their first step is identical. Explain what actually determines which product a flask of 2-bromopropane in water gives, and why the simulation&#39;s tidy separation is a simplification.</p>
+<details class="qa">
+<summary>Show answer</summary>
+
+<p>Both mechanisms begin with the same slow ionisation of the C–Br bond to give bromide and the same secondary carbocation. Since the water is not involved in that step, the carbocation has no memory of which mechanism it is supposedly following; the branching happens afterwards, when a water molecule approaches. If water uses a lone pair to attack the positively charged carbon directly, it acts as a nucleophile and the result is substitution. If it instead removes a hydrogen from an adjacent carbon, so that the C–H electrons form a π bond onto the cation, it acts as a base and the result is elimination. Both are available to the same carbocation at the same time, so a real flask produces a mixture of propan-2-ol and propene rather than one or the other. The proportions depend on conditions: higher temperatures and stronger, bulkier bases favour elimination. The simulation separates them only so each can be examined on its own.</p>
+</details>
+
+          <!--prerender:notes:end--></div>
         </div>
       </aside>
     </div>
@@ -90,7 +160,8 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=9c47502d"></script>
-<script src="/assets/js/app.js?v=626571b8"></script>
+<script src="/assets/js/data.js?v=be1f212f"></script>
+<script src="/assets/js/render.js?v=22aa0589"></script>
+<script src="/assets/js/app.js?v=fd473b46"></script>
 </body>
 </html>

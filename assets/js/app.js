@@ -1,113 +1,51 @@
 /* =========================================================
    PAGES
    The site shell (index.html) has a single mount point for
-   ordinary content pages. Each entry below points at an HTML
-   fragment (just the inner markup, no <section> wrapper) and an
-   optional init() to run once that fragment is in the DOM — e.g.
-   to populate a list from the data in data.js.
+   ordinary content pages. Each page points at an HTML fragment
+   (just the inner markup, no <section> wrapper) and an optional
+   init() to run once that fragment is in the DOM — e.g. to
+   populate a list from the data in data.js.
+
+   The list of pages themselves lives in PAGE_META in
+   assets/js/render.js, because scripts/build-seo-pages.js needs the
+   same list under Node and can't require() this file (it touches
+   `document` at load). Here we just attach each page's init().
 
    To add a new page (a quizzes page, a links page, ...):
      1. Create pages/<id>.html with the page's inner markup.
-     2. Add an entry here. Set hidden:true to leave it out of the
-        nav bar while still reachable at #<id>.
-   Nothing else needs to change — the nav bar and router are both
-   driven by this list.
+     2. Add an entry to PAGE_META in render.js. Set hidden:true to
+        leave it out of the nav bar while still reachable at /<id>.
+     3. If it needs to populate anything from data.js, add an init
+        below, keyed by the same id.
+   Nothing else needs to change — the nav bar, the router and the
+   static-shell build are all driven by that list.
    ========================================================= */
 
-const PAGES = [
-  { id: "home", label: "Home", fragment: "/pages/home.html", init: renderFeatured },
-  { id: "sims", label: "Simulations", fragment: "/pages/sims.html", init: renderSimCategories },
-  { id: "resources", label: "Resources", fragment: "/pages/resources.html", init: renderResourceCategories },
-  // { id: "quizzes", label: "Quizzes", fragment: "/pages/quizzes.html", init: renderQuizCategories },
-  { id: "about", label: "About", fragment: "/pages/about.html" }
+const PAGE_INITS = {
+  home: renderFeatured,
+  sims: renderSimCategories,
+  resources: renderResourceCategories
+};
 
-];
+const PAGES = PAGE_META.map(p => ({ ...p, init: PAGE_INITS[p.id] }));
 
 /* =========================================================
    RENDERING
+   The markup itself is built by the shared, DOM-free functions in
+   render.js (which the static-shell build also calls); the wrappers
+   here just put the result on the page.
    ========================================================= */
 
-function uniq(a){ return [...new Set(a)]; }
-
-// A sim shows a "New" badge for this many days after its `added` date.
-const NEW_BADGE_DAYS = 30;
-
-function isNewSim(s) {
-  if (!s.added) return false;
-  const ageMs = Date.now() - Date.parse(s.added);
-  return ageMs >= 0 && ageMs < NEW_BADGE_DAYS * 24 * 60 * 60 * 1000;
-}
-
-function newBadge(s) {
-  return isNewSim(s) ? `<span class="new-badge">New</span>` : "";
-}
-
 function renderSimCategories() {
-  const topics = uniq(simulations.map(s => s.topic));
-  const html = topics.map((topic, i) => {
-    const items = simulations.filter(s => s.topic === topic);
-    const rows = items.map(s => `
-      <li>
-        <button class="item-row" onclick="openSim('${s.id}')">
-          <span class="item-main">
-            <span class="item-title">${s.title}</span>${newBadge(s)}<br>
-            <span class="item-desc">${s.desc}</span>
-          </span>
-          <span class="level-tag">${s.level}</span>
-          <span class="open-hint">Open &rarr;</span>
-        </button>
-      </li>`).join("");
-    return `
-      <details class="category" ${i === 0 ? "open" : ""}>
-        <summary>
-          <span class="arrow">&#9654;</span>
-          <span>${topic}</span>
-          <span class="count">${items.length} simulation${items.length>1?"s":""}</span>
-        </summary>
-        <ul class="cat-list">${rows}</ul>
-      </details>`;
-  }).join("");
-  document.getElementById("simCategories").innerHTML = html;
+  document.getElementById("simCategories").innerHTML = simCategoriesHtml(simulations);
 }
 
 function renderResourceCategories() {
-  const html = resources.map((g, i) => {
-    const rows = g.items.map(it => `
-      <li>
-        <div class="res-row">
-          <span class="item-main">
-            <span class="item-title">${it.title}</span><br>
-            <span class="item-desc">${it.desc}</span>
-          </span>
-          ${it.url
-            ? `<a class="dl" href="${it.url}" target="_blank" rel="noopener">${it.type}</a>`
-            : it.file
-            ? `<a class="dl" href="${it.file}" download>${it.type}</a>`
-            : `<span class="dl disabled" title="Add a file path in the data to enable">${it.type}</span>`}
-        </div>
-      </li>`).join("");
-    return `
-      <details class="category" ${i === 0 ? "open" : ""}>
-        <summary>
-          <span class="arrow">&#9654;</span>
-          <span>${g.topic}</span>
-          <span class="count">${g.items.length} item${g.items.length>1?"s":""}</span>
-        </summary>
-        <ul class="cat-list">${rows}</ul>
-      </details>`;
-  }).join("");
-  document.getElementById("resourceCategories").innerHTML = html;
+  document.getElementById("resourceCategories").innerHTML = resourceCategoriesHtml(resources);
 }
 
 function renderFeatured() {
-  const featured = simulations.filter(s => s.featured);
-  document.getElementById("featuredList").innerHTML = featured.map(s => `
-    <li>
-      <button class="linkish" onclick="openSim('${s.id}')">
-        <span>${s.title}</span>${newBadge(s)}
-        <span class="meta">${s.topic} · ${s.level}</span>
-      </button>
-    </li>`).join("");
+  document.getElementById("featuredList").innerHTML = featuredHtml(simulations);
 }
 
 /* ---------- Simulation viewer ---------- */
@@ -143,7 +81,13 @@ function renderSim(id) {
   showViewer();
 }
 
-/* ---------- Teaching notes (Markdown + LaTeX) ---------- */
+/* ---------- Teaching notes (Markdown + LaTeX) ----------
+   Turning the Markdown into HTML (including the placeholder dance
+   that shields LaTeX from marked's backslash-escaping) lives in
+   render.js, so scripts/build-seo-pages.js can bake exactly the same
+   HTML into each simulation's static page for crawlers. What's left
+   here is the browser-only half: fetching the file and running KaTeX
+   over the result. */
 const MATH_DELIMITERS = [
   { left: "$$", right: "$$", display: true },
   { left: "$", right: "$", display: false },
@@ -151,23 +95,21 @@ const MATH_DELIMITERS = [
   { left: "\\[", right: "\\]", display: true }
 ];
 
-/* Marked applies CommonMark backslash-escaping (e.g. "\," -> ",") before
-   KaTeX ever sees the markdown, which mangles LaTeX spacing macros like
-   \, \; \! \\. Swap math spans out for placeholders before marked runs,
-   then restore the untouched original text for KaTeX to render. */
-const MATH_SPAN_RE = /\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$(?:\\.|[^\$\\\n])*\$/g;
-
-function protectMath(md) {
-  const store = [];
-  const protectedMd = md.replace(MATH_SPAN_RE, (match) => {
-    store.push(match);
-    return `${store.length - 1}`;
-  });
-  return { protectedMd, store };
-}
-
-function restoreMath(html, store) {
-  return html.replace(/(\d+)/g, (_, idx) => store[Number(idx)]);
+/* KaTeX's auto-render script is deferred, so on a pre-rendered page —
+   where the notes are already in the DOM and there's no fetch to wait
+   on — this can run before renderMathInElement exists. Deferred scripts
+   have all run by the load event, so retry there rather than silently
+   leaving the maths as raw $...$ text. */
+function typesetMath(el) {
+  if (window.renderMathInElement) {
+    renderMathInElement(el, { delimiters: MATH_DELIMITERS, throwOnError: false });
+  } else if (document.readyState !== "complete") {
+    window.addEventListener("load", () => {
+      if (window.renderMathInElement) {
+        renderMathInElement(el, { delimiters: MATH_DELIMITERS, throwOnError: false });
+      }
+    }, { once: true });
+  }
 }
 
 async function loadNotes(s) {
@@ -182,16 +124,21 @@ async function loadNotes(s) {
     return;
   }
   sidebar.style.display = "";
+  // The static shell for /sims/<id> already carries this simulation's
+  // notes, rendered at build time. On the first load of that page
+  // there's nothing to fetch: typeset what's there and stop.
+  if (content.dataset.prerenderedFor === s.id) {
+    delete content.dataset.prerenderedFor;
+    typesetMath(content);
+    return;
+  }
   content.innerHTML = "<p>Loading notes&hellip;</p>";
   try {
     const res = await fetch(s.notes);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const md = await res.text();
-    const { protectedMd, store } = protectMath(md);
-    content.innerHTML = restoreMath(marked.parse(protectedMd), store);
-    if (window.renderMathInElement) {
-      renderMathInElement(content, { delimiters: MATH_DELIMITERS, throwOnError: false });
-    }
+    content.innerHTML = notesHtml(md, marked);
+    typesetMath(content);
   } catch (err) {
     content.innerHTML = "<p>Teaching notes couldn't be loaded.</p>";
   }
@@ -299,11 +246,20 @@ async function renderPage(id, section) {
   const token = ++navToken;
 
   document.getElementById("page-viewer").classList.remove("active");
-  const html = pageCache[page.id] !== undefined ? pageCache[page.id] : await fetchFragment(page);
+  const mount = document.getElementById("pageMount");
+
+  // The static shell for this route already contains its fragment,
+  // rendered at build time, so the very first render of it has
+  // nothing to fetch and nothing to replace — just run the init.
+  const prerendered = mount.dataset.prerenderedFor === page.id;
+  if (prerendered) delete mount.dataset.prerenderedFor;
+
+  const html = prerendered
+    ? null
+    : (pageCache[page.id] !== undefined ? pageCache[page.id] : await fetchFragment(page));
   if (token !== navToken) return;
 
-  const mount = document.getElementById("pageMount");
-  mount.innerHTML = html;
+  if (!prerendered) mount.innerHTML = html;
   mount.classList.add("active");
   document.body.dataset.page = page.id;
   if (page.id === "home") window.homeBg && window.homeBg.start();
@@ -311,7 +267,7 @@ async function renderPage(id, section) {
   if (page.init) page.init();
   document.title = page.id === "home" ? "chemistr.io | Chemistry Simulations and Resources" : `${page.label} | chemistr.io`;
 
-  document.querySelectorAll(".nav-links button").forEach(b =>
+  document.querySelectorAll(".nav-links [data-nav]").forEach(b =>
     b.classList.toggle("active", b.dataset.nav === page.id));
   document.getElementById("navLinks").classList.remove("open");
 
@@ -333,16 +289,17 @@ function showViewer() {
   document.getElementById("page-viewer").classList.add("active");
   document.body.dataset.page = "viewer";
   window.homeBg && window.homeBg.stop();
-  document.querySelectorAll(".nav-links button").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".nav-links [data-nav]").forEach(b => b.classList.remove("active"));
   document.querySelector('[data-nav="sims"]').classList.add("active");
   window.scrollTo({ top: 0 });
 }
 
+// The static shells already carry the nav markup (real <a> links, so
+// crawlers can follow them), so this normally has nothing to do. It
+// stays as the fallback for any page served without it.
 function renderNav() {
-  document.getElementById("navLinks").innerHTML = PAGES
-    .filter(p => !p.hidden)
-    .map(p => `<button data-nav="${p.id}" onclick="go('${p.id}')">${p.label}</button>`)
-    .join("");
+  const nav = document.getElementById("navLinks");
+  if (!nav.querySelector("[data-nav]")) nav.innerHTML = navHtml(PAGES);
 }
 
 function toggleMenu() {
