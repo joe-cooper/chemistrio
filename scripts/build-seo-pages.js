@@ -37,9 +37,19 @@
 
 const fs = require("fs");
 const path = require("path");
+const { execFileSync } = require("child_process");
 
 const ROOT = path.join(__dirname, "..");
 const SITE_URL = "https://www.chemistr.io";
+const SITE_NAME = "chemistr.io";
+const LANG = "en-GB";
+const LICENSE_URL = "https://creativecommons.org/licenses/by-nc-sa/4.0/";
+const OG_DIR = "assets/img/og";
+const OG_WIDTH = 1200;
+const OG_HEIGHT = 630;
+// Search results cut a <title> off around here. Titles over this get
+// listed at the end of the build so they can be given a `seoTitle`.
+const TITLE_LIMIT = 60;
 
 const { simulations, resources } = require(path.join(ROOT, "assets/js/data.js"));
 const R = require(path.join(ROOT, "assets/js/render.js"));
@@ -49,26 +59,65 @@ const { marked } = require(path.join(ROOT, "assets/vendor/marked.min.js"));
 // simulations still count as "new" (see NEW_BADGE_DAYS in render.js).
 const NOW = Date.now();
 
-// Static pages besides Home (which is index.html itself: its <head> is
-// hand-maintained there and this script only fills in its body). The
-// page ids come from PAGE_META in render.js, which is also what drives
-// the nav bar and the router.
-const STATIC_PAGES = [
-  { id: "sims", path: "/sims", title: "Simulations - chemistr.io",
-    description: "Browse free interactive chemistry simulations for GCSE and A-level, covering kinetic theory, kinetics, equilibrium, acids and bases, quantum chemistry and organic mechanisms." },
-  { id: "resources", path: "/resources", title: "Resources - chemistr.io",
-    description: "Chemistry teaching resources and links, including extension material for the Cambridge Chemistry Challenge and UK Chemistry Olympiad." },
-  { id: "about", path: "/about", title: "About - chemistr.io",
-    description: "About chemistr.io: free chemistry simulations and teaching notes made by a UK chemistry teacher, plus how to get in touch or support the site." },
-];
+// Every route's title and description come from PAGE_META / the
+// simulation helpers in render.js, which app.js also uses to set them
+// on the document as you navigate. Keeping one copy is what stops the
+// generated <title> and the one the SPA writes from disagreeing.
+const STATIC_PAGES = R.PAGE_META
+  .filter(p => p.id !== "home")
+  .map(p => ({ id: p.id, path: `/${p.id}`, title: p.title, description: p.description }));
 
 function escapeAttr(s) {
   return String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function truncate(s, max) {
-  if (s.length <= max) return s;
-  return s.slice(0, max - 1).trimEnd() + "…";
+// Titles, descriptions and level formatting live in render.js so the
+// SPA sets exactly the same values as are baked in here.
+const { normLevel, simTitle, simDescription, truncateText: truncate } = R;
+
+/* ---------- Last-modified dates ----------
+   Taken from the last commit that touched a route's own source files,
+   not their mtime: on a fresh clone every mtime is checkout time,
+   which would tell crawlers the whole site changed at once. */
+
+const dateCache = new Map();
+
+function fileDate(rel) {
+  if (!rel) return null;
+  if (dateCache.has(rel)) return dateCache.get(rel);
+  const abs = path.join(ROOT, rel);
+  let date = null;
+  if (fs.existsSync(abs)) {
+    try {
+      const out = execFileSync("git", ["log", "-1", "--format=%cs", "--", rel],
+        { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+      if (out) date = out;
+    } catch (e) { /* not a git repo, or git unavailable */ }
+    // Uncommitted or untracked (a brand-new simulation): fall back to
+    // the file's own mtime so it still gets a plausible date.
+    if (!date) date = fs.statSync(abs).mtime.toISOString().slice(0, 10);
+  }
+  dateCache.set(rel, date);
+  return date;
+}
+
+function lastmodOf(rels) {
+  const dates = rels.map(fileDate).filter(Boolean).sort();
+  return dates.length ? dates[dates.length - 1] : null;
+}
+
+function stripLeadingSlash(p) { return p ? p.replace(/^\//, "") : p; }
+
+function simSources(sim) {
+  return [stripLeadingSlash(sim.file), stripLeadingSlash(sim.notes), "assets/js/data.js"];
+}
+
+/* ---------- Open Graph images ---------- */
+
+function ogImage(name) {
+  const rel = `${OG_DIR}/${name}.png`;
+  const file = fs.existsSync(path.join(ROOT, rel)) ? rel : `${OG_DIR}/default.png`;
+  return fs.existsSync(path.join(ROOT, file)) ? `${SITE_URL}/${file}` : null;
 }
 
 const template = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
@@ -119,7 +168,152 @@ const VIEWER_DESC_RE = /<p class="vdesc" id="viewerDesc"[^>]*>[\s\S]*?<\/p>/;
 const NOTES_SIDEBAR_RE = /<aside class="notes-sidebar" id="notesSidebar"[^>]*>/;
 const NOTES_CONTENT_RE = /<div class="notes-content prose" id="notesContent"[^>]*>/;
 
-function renderHead(html, route) {
+/* ---------- Structured data ----------
+   One @graph per page rather than several loose blocks, so the nodes
+   can reference each other by @id (every page's WebPage points at the
+   same WebSite and Organization). The site has no named author — the
+   About page is deliberately anonymous — so the Organization stands
+   as author and publisher rather than inventing a Person. */
+
+function orgNode() {
+  return {
+    "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
+    name: SITE_NAME,
+    url: `${SITE_URL}/`,
+    description: "Free interactive chemistry simulations and teaching notes for GCSE, A-level and pre-university chemistry.",
+  };
+}
+
+function websiteNode() {
+  return {
+    "@type": "WebSite",
+    "@id": `${SITE_URL}/#website`,
+    url: `${SITE_URL}/`,
+    name: SITE_NAME,
+    publisher: { "@id": `${SITE_URL}/#organization` },
+    inLanguage: LANG,
+  };
+}
+
+function webPageNode(route, extra) {
+  const url = SITE_URL + route.path;
+  return Object.assign({
+    "@type": "WebPage",
+    "@id": `${url}#webpage`,
+    url,
+    name: route.title,
+    description: route.description,
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+    inLanguage: LANG,
+    license: LICENSE_URL,
+  }, extra || {});
+}
+
+function breadcrumbNode(route, trail) {
+  return {
+    "@type": "BreadcrumbList",
+    "@id": `${SITE_URL}${route.path}#breadcrumb`,
+    itemListElement: trail.map(([name, p], i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name,
+      item: SITE_URL + (p === "/" ? "/" : p),
+    })),
+  };
+}
+
+function simResourceNode(sim, route) {
+  const url = SITE_URL + route.path;
+  const image = ogImage(sim.id);
+  const modified = lastmodOf(simSources(sim));
+  const node = {
+    "@type": "LearningResource",
+    "@id": `${url}#resource`,
+    name: sim.title,
+    url,
+    description: sim.desc,
+    learningResourceType: "Interactive simulation",
+    educationalLevel: normLevel(sim.level),
+    about: { "@type": "Thing", name: "Chemistry" },
+    teaches: sim.topic,
+    audience: { "@type": "EducationalAudience", educationalRole: "student" },
+    inLanguage: LANG,
+    isAccessibleForFree: true,
+    license: LICENSE_URL,
+    author: { "@id": `${SITE_URL}/#organization` },
+    publisher: { "@id": `${SITE_URL}/#organization` },
+    isPartOf: { "@id": `${SITE_URL}/#website` },
+  };
+  if (image) node.image = image;
+  if (sim.added) node.datePublished = sim.added;
+  if (modified) node.dateModified = modified;
+  return node;
+}
+
+function jsonLdFor(route, sim) {
+  const graph = [orgNode(), websiteNode()];
+  if (sim) {
+    graph.push(
+      webPageNode(route, {
+        breadcrumb: { "@id": `${SITE_URL}${route.path}#breadcrumb` },
+        mainEntity: { "@id": `${SITE_URL}${route.path}#resource` },
+      }),
+      breadcrumbNode(route, [["Home", "/"], ["Simulations", "/sims"], [sim.title, route.path]]),
+      simResourceNode(sim, route));
+  } else if (route.id === "home") {
+    graph.push(webPageNode(route));
+  } else {
+    graph.push(
+      webPageNode(route, { breadcrumb: { "@id": `${SITE_URL}${route.path}#breadcrumb` } }),
+      breadcrumbNode(route, [["Home", "/"], [route.navName || route.title, route.path]]));
+    if (route.id === "sims") {
+      graph.push({
+        "@type": "ItemList",
+        "@id": `${SITE_URL}${route.path}#simulations`,
+        name: "Chemistry simulations",
+        numberOfItems: simulations.length,
+        itemListElement: simulations.map((s, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          name: s.title,
+          url: `${SITE_URL}/sims/${s.id}`,
+        })),
+      });
+    }
+  }
+  return { "@context": "https://schema.org", "@graph": graph };
+}
+
+// "<" is escaped so a description containing "</script>" can't end the
+// block early. JSON is not HTML-escaped otherwise: inside a JSON-LD
+// script element, &amp; and friends would be read literally.
+function jsonLdScript(data) {
+  const json = JSON.stringify(data, null, 2).replace(/</g, "\\u003c");
+  return `<script type="application/ld+json">\n${json}\n</script>`;
+}
+
+/* ---------- Head ---------- */
+
+function headExtras(route, sim) {
+  const image = ogImage(sim ? sim.id : "default");
+  const lines = [];
+  if (image) {
+    const alt = sim
+      ? `Screenshot of the ${sim.title} chemistry simulation`
+      : `${SITE_NAME} — free interactive chemistry simulations`;
+    lines.push(
+      `<meta property="og:image" content="${escapeAttr(image)}">`,
+      `<meta property="og:image:width" content="${OG_WIDTH}">`,
+      `<meta property="og:image:height" content="${OG_HEIGHT}">`,
+      `<meta property="og:image:alt" content="${escapeAttr(alt)}">`,
+      `<meta name="twitter:image" content="${escapeAttr(image)}">`);
+  }
+  lines.push(jsonLdScript(jsonLdFor(route, sim)));
+  return "\n" + lines.join("\n") + "\n";
+}
+
+function renderHead(html, route, sim) {
   const url = SITE_URL + route.path;
   const title = escapeAttr(route.title);
   const description = escapeAttr(truncate(route.description, 300));
@@ -129,7 +323,9 @@ function renderHead(html, route) {
   html = html.replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${title}">`);
   html = html.replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${description}">`);
   html = html.replace(/<meta property="og:url" content="[^"]*">/, `<meta property="og:url" content="${escapeAttr(url)}">`);
-  return html;
+  // A picture of the simulation is worth showing at full width.
+  html = html.replace(/<meta name="twitter:card" content="[^"]*">/, `<meta name="twitter:card" content="summary_large_image">`);
+  return replaceBetween(html, "head", headExtras(route, sim));
 }
 
 // The nav is the same on every route; app.js only adds the `active`
@@ -158,6 +354,11 @@ function pageFragment(id) {
 // building on the first run's content.
 function blankShell() {
   let html = renderNav(template);
+  // Reset the head regions renderHead() writes, so 404.html (which
+  // skips renderHead entirely) doesn't inherit whatever route was
+  // built into index.html on the previous run.
+  html = replaceBetween(html, "head", "");
+  html = html.replace(/<meta name="twitter:card" content="[^"]*">/, `<meta name="twitter:card" content="summary">`);
   html = setStartTag(html, PAGE_MOUNT_RE, `<div class="page active" id="pageMount">`);
   html = replaceBetween(html, "page", "");
   html = setStartTag(html, VIEWER_RE, `<section class="viewer" id="page-viewer">`);
@@ -171,9 +372,7 @@ function blankShell() {
 }
 
 function renderStaticPage(route) {
-  // Home keeps index.html's own hand-written <head>.
-  let html = blankShell();
-  if (route.id !== "home") html = renderHead(html, route);
+  let html = renderHead(blankShell(), route);
 
   // Content page visible, simulation viewer empty and hidden.
   html = setStartTag(html, PAGE_MOUNT_RE,
@@ -182,13 +381,18 @@ function renderStaticPage(route) {
   return html;
 }
 
-function renderSimPage(sim) {
-  const route = {
+function simRoute(sim) {
+  return {
+    id: sim.id,
     path: `/sims/${sim.id}`,
-    title: `${sim.title} - chemistr.io`,
-    description: sim.desc,
+    title: simTitle(sim),
+    description: simDescription(sim),
   };
-  let html = renderHead(blankShell(), route);
+}
+
+function renderSimPage(sim) {
+  const route = simRoute(sim);
+  let html = renderHead(blankShell(), route, sim);
 
   // Content page empty and hidden, simulation viewer visible.
   html = setStartTag(html, PAGE_MOUNT_RE, `<div class="page" id="pageMount">`);
@@ -233,9 +437,19 @@ function writeFile(relPath, html) {
 
 /* ---------- Build ---------- */
 
-// Home is index.html itself: same body treatment as every other page,
-// but its hand-written <head> is left exactly as it is.
-writeFile("index.html", renderStaticPage({ id: "home", path: "/" }));
+// Home is index.html itself. Its title and description stay
+// hand-written there; they're read back out of the template so the
+// rest of the head (canonical, OG tags, structured data) can be
+// generated from the same values as every other route.
+const HOME_ROUTE = {
+  id: "home",
+  path: "/",
+  title: R.pageMeta("home").title,
+  description: R.pageMeta("home").description,
+  sources: ["pages/home.html", "assets/js/data.js"],
+};
+
+writeFile("index.html", renderStaticPage(HOME_ROUTE));
 
 STATIC_PAGES.forEach(route => {
   writeFile(path.join(route.path.replace(/^\//, ""), "index.html"), renderStaticPage(route));
@@ -249,17 +463,42 @@ simulations.forEach(sim => {
 fs.writeFileSync(path.join(ROOT, "robots.txt"),
   `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 
-const sitemapUrls = ["/", ...STATIC_PAGES.map(r => r.path), ...simulations.map(s => `/sims/${s.id}`)];
+// <lastmod> per URL, from the last commit touching that route's own
+// sources, so a changed simulation or notes file is what prompts a
+// recrawl rather than every URL claiming to have changed at once.
+const sitemapEntries = [
+  { path: "/", lastmod: lastmodOf(HOME_ROUTE.sources) },
+  ...STATIC_PAGES.map(r => ({
+    path: r.path,
+    lastmod: lastmodOf(r.sources || [`pages/${r.id}.html`, "assets/js/data.js"]),
+  })),
+  ...simulations.map(s => ({ path: `/sims/${s.id}`, lastmod: lastmodOf(simSources(s)) })),
+];
+
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n` +
   `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-  sitemapUrls.map(p => `  <url><loc>${SITE_URL}${p}</loc></url>`).join("\n") +
+  sitemapEntries.map(e =>
+    `  <url><loc>${SITE_URL}${e.path}</loc>` +
+    (e.lastmod ? `<lastmod>${e.lastmod}</lastmod>` : "") +
+    `</url>`).join("\n") +
   `\n</urlset>\n`;
 fs.writeFileSync(path.join(ROOT, "sitemap.xml"), sitemap);
 console.log("wrote robots.txt");
-console.log("wrote sitemap.xml (" + sitemapUrls.length + " URLs)");
+console.log("wrote sitemap.xml (" + sitemapEntries.length + " URLs, " +
+  sitemapEntries.filter(e => e.lastmod).length + " with lastmod)");
 
 // GitHub Pages fallback: served (with a 404 status) for any path with
 // no matching static file, so the SPA's own router can take over. An
 // unknown path has no route metadata and no content to pre-render, so
 // this is the bare shell, straight from the template.
 writeFile("404.html", blankShell());
+
+// Titles longer than this get cut off in search results. Report rather
+// than fail: the fix is a judgement call about wording, and it's a
+// `seoTitle` in data.js for a simulation (see the notes there).
+const longTitles = [HOME_ROUTE, ...STATIC_PAGES, ...simulations.map(simRoute)]
+  .filter(r => r.title.length > TITLE_LIMIT);
+if (longTitles.length) {
+  console.log(`\n${longTitles.length} title(s) over ${TITLE_LIMIT} chars and likely to be truncated:`);
+  longTitles.forEach(r => console.log(`  ${String(r.title.length).padStart(3)}  ${r.path}  ${r.title}`));
+}

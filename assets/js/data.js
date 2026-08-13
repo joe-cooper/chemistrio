@@ -10,6 +10,12 @@
      - tour: true to show a "Take the tour" button in the viewer bar
        for a simulation that calls ChemTour.init(...) in its own
        script (see assets/js/tour.js).
+     - seoTitle: a shorter stand-in for `title`, used only in the
+       <title> tag that scripts/build-seo-pages.js generates. Set it
+       when the real title would push that tag past ~60 characters
+       and get truncated in search results; the on-page heading and
+       the site's own lists always use `title`. The build prints a
+       warning listing any titles that are still over.
      - notes: path to a Markdown file with teaching notes for the
        viewer's "Teaching notes" panel (leave "" to hide the panel).
        LaTeX is supported inside notes files: use $...$ for inline
@@ -63,24 +69,24 @@ const simulations = [
   { id:"buffer-sim", title:"Buffer Solutions", topic:"Acids & Bases", level:"A-level",
     desc:"Add acid or base to a buffer and to two unbuffered comparisons at once, and watch how much less the buffer's pH changes.", featured:true, file:"/simulations/buffer-sim.html",
     notes:"/simulations/notes/buffer-sim.md", added:"2026-07-27", tour:true },
-  { id:"weak-acid-sim", title:"Weak Acid pH — Approximation vs Exact", topic:"Acids & Bases", level:"A-level",
+  { id:"weak-acid-sim", title:"Weak Acid pH — Approximation vs Exact", seoTitle:"Weak Acid pH Calculations", topic:"Acids & Bases", level:"A-level",
     desc:"Compare the simplifying assumption [H+]=[A-], [HA]=[HA]0 against the exact pH for a weak acid. Ka and acid concentration can be varied.", featured:true, file:"/simulations/weak-acid-sim.html",
     notes:"/simulations/notes/weak-acid-sim.md", added:"2026-07-27" },
     { id:"curly-arrows-sim", title:"Organic Mechanisms", topic:"Organic", level:"A-Level",
     desc:"Interactive diagrams of organic reaction mechanisms on the A-Level syllabus and beyond. Shows the actual products for incorrect arrows.", featured:true, file:"/simulations/curly-arrows-sim.html", notes:"/simulations/notes/curly-arrows-sim.md" },
-    { id:"ao-density-sim", title:"Atomic Orbitals Density", topic:"Quantum", level:"Pre-University",
+    { id:"ao-density-sim", title:"Atomic Orbitals Density", seoTitle:"Atomic Orbitals", topic:"Quantum", level:"Pre-University",
     desc:"Density plots of atomic orbitals as electron positions are sampled.", file:"/simulations/ao-density-sim.html",
     notes:"/simulations/notes/ao-density-sim.md" },
-    { id:"mo-formation-sim", title:"Molecular Orbital Formation - Hydrogen", topic:"Quantum", level:"Pre-University",
+    { id:"mo-formation-sim", title:"Molecular Orbital Formation - Hydrogen", seoTitle:"Molecular Orbitals: Hydrogen", topic:"Quantum", level:"Pre-University",
     desc:"Formation of molecular orbitals from two 1s orbitals for hydrogen and helium molecules.", file:"/simulations/mo-formation-sim.html",
     notes:"/simulations/notes/mo-formation-sim.md", added:"2026-07-23" },
-    { id:"mo-formation-sp-sim", title:"Molecular Orbital Formation - s and p Orbitals", topic:"Quantum", level:"Pre-University",
+    { id:"mo-formation-sp-sim", title:"Molecular Orbital Formation - s and p Orbitals", seoTitle:"Molecular Orbitals: s and p", topic:"Quantum", level:"Pre-University",
     desc:"Formation of molecular orbitals from two 1s and 2p orbitals.", file:"/simulations/mo-formation-sp-sim.html",
     notes:"/simulations/notes/mo-formation-sp-sim.md", added:"2026-07-23" },
-    { id:"mo-formation-homonuclear-sim", title:"Molecular Orbital Formation - Homonuclear Diatomic Molecules", topic:"Quantum", level:"Pre-University",
+    { id:"mo-formation-homonuclear-sim", title:"Molecular Orbital Formation - Homonuclear Diatomic Molecules", seoTitle:"Molecular Orbitals: Homonuclear", topic:"Quantum", level:"Pre-University",
     desc:"Molecular orbital diagrams for H₂ and the Period 2 homonuclear diatomic molecules.", featured:true, file:"/simulations/mo-formation-homonuclear-sim.html",
     notes:"/simulations/notes/mo-formation-homonuclear-sim.md", added:"2026-07-23" },
-    { id:"mo-formation-heteronuclear-sim", title:"Molecular Orbital Formation - Heteronuclear Diatomic Molecules", topic:"Quantum", level:"Pre-University",
+    { id:"mo-formation-heteronuclear-sim", title:"Molecular Orbital Formation - Heteronuclear Diatomic Molecules", seoTitle:"Molecular Orbitals: Heteronuclear", topic:"Quantum", level:"Pre-University",
     desc:"Molecular orbital diagrams for Period 2 heteronuclear diatomic molecules.",  file:"/simulations/mo-formation-heteronuclear-sim.html",
     notes:"/simulations/notes/mo-formation-heteronuclear-sim.md", added:"2026-07-24" },
 ];

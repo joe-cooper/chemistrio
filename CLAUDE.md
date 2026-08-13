@@ -47,7 +47,9 @@ Note that `index.html` is now both the build's template and one of its outputs. 
 
 ### Shared rendering: `assets/js/render.js`
 
-The functions that build the site's list markup (`simCategoriesHtml`, `featuredHtml`, `resourceCategoriesHtml`, `navHtml`) and that turn teaching-notes Markdown into HTML (`notesHtml`) live here, along with `PAGE_META`. Both runtimes use them: the browser via `app.js`, and Node via `scripts/build-seo-pages.js`. That's what stops the pre-rendered and client-rendered versions of a page drifting apart.
+The functions that build the site's list markup (`simCategoriesHtml`, `featuredHtml`, `resourceCategoriesHtml`, `navHtml`), turn teaching-notes Markdown into HTML (`notesHtml`), and compose each route's `<title>` and meta description (`simTitle`, `simDescription`, and the `title`/`description` on each `PAGE_META` entry) all live here. Both runtimes use them: the browser via `app.js`, and Node via `scripts/build-seo-pages.js`. That's what stops the pre-rendered and client-rendered versions of a page drifting apart.
+
+Titles matter particularly here. `app.js` sets `document.title` on every navigation, including on boot, so a search engine that renders the page indexes whatever the SPA leaves behind rather than what the build wrote. If the two disagree the generated title is silently thrown away — which is exactly what used to happen. `setMeta()` in `app.js` is the only place the document's title, description and canonical are written, and it takes its values from here.
 
 Nothing in this file may touch `document`, `window` or `fetch`, and data is passed in as an argument rather than read off the `simulations`/`resources` globals — both so it stays `require()`-able under Node. It's exported with the same `if (typeof module !== "undefined")` guard `data.js` uses.
 
@@ -101,7 +103,24 @@ A crawler that doesn't run JS (or runs it on a much later pass) would otherwise 
 
 `app.js` still boots from that file and takes over exactly as before. The markup comes from `render.js`, the same module the browser uses.
 
-The route list is `STATIC_PAGES` (each entry's `id` must match a `PAGE_META` id in `render.js`) plus `simulations` from `data.js`. `robots.txt`, `sitemap.xml` and `404.html` are regenerated from the same list; `404.html` is GitHub Pages' catch-all fallback and stays deliberately content-free, since an unknown path has no route to pre-render.
+The route list is derived from `PAGE_META` in `render.js` plus `simulations` from `data.js`. `robots.txt`, `sitemap.xml` and `404.html` are regenerated from the same list; `404.html` is GitHub Pages' catch-all fallback and stays deliberately content-free (no content, no structured data), since an unknown path has no route to pre-render.
+
+Each page also gets:
+
+- JSON-LD, as a single `@graph` so nodes can cross-reference by `@id`. Every page carries `Organization` + `WebSite` + `WebPage`; simulations add `BreadcrumbList` and a `LearningResource` (level, topic, licence, dates, image); `/sims` adds an `ItemList` of all simulations. The site has no named author by choice, so the `Organization` is author and publisher — don't invent a `Person`.
+- `og:image` / `twitter:image` pointing at `assets/img/og/<id>.png`, with `twitter:card` set to `summary_large_image`. Pages with no image of their own fall back to `og/default.png`.
+- `<lastmod>` in the sitemap, from the last commit that touched that route's own sources (`git log -1 --format=%cs`), falling back to mtime for anything uncommitted. Deliberately not mtime alone: on a fresh clone that would claim every URL changed at once.
+
+Titles are `<name> Simulation | <level> Chemistry`, with no brand — the level suffix alone is ~26 characters against the ~60 a search result shows. The build prints any titles still over 60 at the end; the fix is a `seoTitle` in `data.js`. The four molecular-orbital simulations are knowingly over, because truncating the displayed title is better than dropping "Molecular Orbitals" from it.
+
+### OG images (`scripts/build-og-images.js`)
+
+Screenshots every simulation at 1200x630 into `assets/img/og/`, plus `default.png` from the homepage. It starts its own static server and headless Edge (via CDP — the `--screenshot` flag silently produces nothing on these pages) and stops both afterwards. Set `CHROME_BIN` to use a different browser. It's not part of the normal build; run it when a simulation's appearance changes, and commit the PNGs:
+
+```
+node scripts/build-og-images.js                   # all of them
+node scripts/build-og-images.js buffer-sim        # just one
+```
 
 The pre-rendered `#viewerFrame` holds a plain link to `/simulations/<id>.html` as a stand-in for the iframe, so the simulation is reachable without JS. Those standalone simulation files are still separately indexable and carry no canonical pointing back at `/sims/<id>`, which is worth fixing if duplicate-content warnings show up in Search Console.
 

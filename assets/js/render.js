@@ -20,12 +20,24 @@
    ========================================================= */
 
 const PAGE_META = [
-  { id: "home", label: "Home", fragment: "/pages/home.html" },
-  { id: "sims", label: "Simulations", fragment: "/pages/sims.html" },
-  { id: "resources", label: "Resources", fragment: "/pages/resources.html" },
-  // { id: "quizzes", label: "Quizzes", fragment: "/pages/quizzes.html" },
-  { id: "about", label: "About", fragment: "/pages/about.html" }
+  { id: "home", label: "Home", fragment: "/pages/home.html",
+    title: "chemistr.io | Chemistry Simulations and Resources",
+    description: "Free interactive chemistry simulations and teaching notes for GCSE, A-level and Pre-University Chemistry: kinetics, equilibrium, acids and bases, quantum and organic mechanisms." },
+  { id: "sims", label: "Simulations", fragment: "/pages/sims.html",
+    title: "Chemistry Simulations for GCSE and A-level | chemistr.io",
+    description: "Browse free interactive chemistry simulations for GCSE, A-level and pre-university, covering kinetic theory, rates, equilibrium, acids and bases, bonding, quantum chemistry and organic mechanisms." },
+  { id: "resources", label: "Resources", fragment: "/pages/resources.html",
+    title: "Chemistry Teaching Resources | chemistr.io",
+    description: "Chemistry teaching resources and links, including extension material for the Cambridge Chemistry Challenge and UK Chemistry Olympiad." },
+  // { id: "quizzes", label: "Quizzes", fragment: "/pages/quizzes.html", title: "...", description: "..." },
+  { id: "about", label: "About", fragment: "/pages/about.html",
+    title: "About chemistr.io | Free Chemistry Simulations",
+    description: "About chemistr.io: free chemistry simulations and teaching notes made by a UK chemistry teacher, plus how to get in touch or support the site." }
 ];
+
+function pageMeta(id) {
+  return PAGE_META.find(p => p.id === id) || PAGE_META[0];
+}
 
 function uniq(a){ return [...new Set(a)]; }
 
@@ -49,6 +61,59 @@ function isNewSim(s, now) {
 
 function newBadge(s, now) {
   return isNewSim(s, now) ? `<span class="new-badge">New</span>` : "";
+}
+
+/* ---------- Page titles and descriptions ----------
+   Shared because both runtimes write them: the build bakes them into
+   each route's <head>, and app.js sets the same values on the document
+   as you navigate. They have to agree — a search engine that renders
+   the page reads the title app.js leaves behind, so if this drifts,
+   the generated one is silently thrown away.
+
+   The format leads with the simulation's name, the word "simulation"
+   and the teaching level, and drops the brand: the level suffix alone
+   is ~26 characters and a search result shows about 60, so there isn't
+   room for all three. */
+
+const DESCRIPTION_LIMIT = 160;
+
+// The one origin every canonical URL points at, whatever host the page
+// is actually being served from (a preview URL, the apex domain, a
+// local server). scripts/build-seo-pages.js has its own copy as
+// SITE_URL; they must match.
+const CANONICAL_ORIGIN = "https://www.chemistr.io";
+
+// data.js has both "A-level" and "A-Level"; normalise for display.
+function normLevel(level) {
+  return String(level).replace(/^a-level$/i, "A-level");
+}
+
+// Cuts at a word boundary rather than mid-word.
+function truncateText(s, max) {
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max - 1);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd() + "…";
+}
+
+function simTitle(sim) {
+  return `${sim.seoTitle || sim.title} Simulation | ${normLevel(sim.level)} Chemistry`;
+}
+
+// The `desc` fields are written for the site's own listings and several
+// are far shorter than a search result will show, so a standard tail is
+// appended where there's room. Two lengths are tried before giving up,
+// since dropping the "teaching notes" clause is usually enough to fit.
+function simDescription(sim) {
+  // Not every `desc` ends in a full stop; without one the appended
+  // sentence runs straight on from it.
+  const base = String(sim.desc || "").trim().replace(/([^.!?…])$/, "$1.");
+  const level = normLevel(sim.level);
+  const withNotes = ` Free interactive ${level} chemistry simulation with teaching notes.`;
+  const plain = ` Free interactive ${level} chemistry simulation.`;
+  if (sim.notes && base.length + withNotes.length <= DESCRIPTION_LIMIT) return base + withNotes;
+  if (base.length + plain.length <= DESCRIPTION_LIMIT) return base + plain;
+  return truncateText(base, DESCRIPTION_LIMIT);
 }
 
 /* ---------- Lists ----------
@@ -165,8 +230,9 @@ function notesHtml(md, markedLib) {
    Same dual-use trick as assets/js/data.js. */
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    PAGE_META, NEW_BADGE_DAYS,
-    uniq, pagePath, simPath, isNewSim, newBadge,
+    PAGE_META, NEW_BADGE_DAYS, DESCRIPTION_LIMIT, CANONICAL_ORIGIN,
+    uniq, pagePath, simPath, pageMeta, isNewSim, newBadge,
+    normLevel, truncateText, simTitle, simDescription,
     simCategoriesHtml, resourceCategoriesHtml, featuredHtml, navHtml,
     MATH_SPAN_RE, protectMath, restoreMath, notesHtml
   };

@@ -48,11 +48,26 @@ function renderFeatured() {
   document.getElementById("featuredList").innerHTML = featuredHtml(simulations);
 }
 
+/* ---------- Document metadata ----------
+   The static shell for a route already carries the right title,
+   description and canonical (see scripts/build-seo-pages.js). These
+   keep them right through in-page navigation as well, and — more to
+   the point — stop this script from overwriting the generated title
+   with a different one on boot. A search engine that renders the page
+   indexes whatever title it finds afterwards, so the two must agree. */
+function setMeta(title, description, canonicalPath) {
+  document.title = title;
+  const desc = document.querySelector('meta[name="description"]');
+  if (desc && description) desc.setAttribute("content", description);
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical) canonical.setAttribute("href", CANONICAL_ORIGIN + canonicalPath);
+}
+
 /* ---------- Simulation viewer ---------- */
 function renderSim(id) {
   const s = simulations.find(x => x.id === id);
   if (!s) { renderPage("home"); return; }
-  document.title = `${s.title} - chemistr.io`;
+  setMeta(simTitle(s), simDescription(s), simPath(s.id));
   document.getElementById("viewerTitle").textContent = s.title;
   document.getElementById("viewerDesc").textContent = s.desc || "";
   const frame = document.getElementById("viewerFrame");
@@ -265,7 +280,7 @@ async function renderPage(id, section) {
   if (page.id === "home") window.homeBg && window.homeBg.start();
   else window.homeBg && window.homeBg.stop();
   if (page.init) page.init();
-  document.title = page.id === "home" ? "chemistr.io | Chemistry Simulations and Resources" : `${page.label} | chemistr.io`;
+  setMeta(page.title, page.description, pagePath(page.id));
 
   document.querySelectorAll(".nav-links [data-nav]").forEach(b =>
     b.classList.toggle("active", b.dataset.nav === page.id));
