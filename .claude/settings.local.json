@@ -53,7 +53,23 @@
       "Bash(curl -s -o /dev/null -m 15 -w \"apex: %{http_code} -> %{redirect_url}\\\\n\" \"https://chemistr.io/sims/buffer-sim\")",
       "Bash(curl -s -m 15 \"https://chemistr.io/\")",
       "Bash(node -)",
-      "Bash(node --check scripts/build-seo-pages.js)"
+      "Bash(node --check scripts/build-seo-pages.js)",
+      "Bash(node -e \"require\\('./assets/js/data.js'\\).simulations.filter\\(s=>!s.notes\\).forEach\\(s=>console.log\\('  '+s.id\\)\\)\")",
+      "Bash(export CDP_PORT=9336)",
+      "Bash(node C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/perf.js http://localhost:8770/ home)",
+      "Bash(node C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/perf.js http://localhost:8770/sims/buffer-sim/ 'sim page, notes closed')",
+      "Bash(CLICK='#notesToggle' node C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/perf.js http://localhost:8770/sims/ao-density-sim/ 'sim page, after opening notes')",
+      "Bash(CPU=6 node C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/perf.js http://localhost:8770/ 'home \\(animation ON\\)')",
+      "Bash(CPU=6 node C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/perf.js http://localhost:8770/sims/ 'sims list \\(animation OFF\\)')",
+      "Bash(CPU=6 node C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/perf.js http://localhost:8770/about/ 'about \\(animation OFF\\)')",
+      "Bash(node --check assets/js/app.js)",
+      "Bash(CLICK='#notesToggle' node __TRACKED_VAR__/perf.js http://localhost:8770/sims/ao-density-sim/ 'prerendered notes opened')",
+      "Bash(export EXPR=\"\\(async\\(\\)=>{ *)",
+      "Bash(node C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/shot.js http://localhost:8770/sims/?cb=__TRACKED_VAR__ C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/nav.png)",
+      "Bash(unset EXPR)",
+      "Bash(CLICK='#notesToggle' node C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/shot.js http://localhost:8770/sims/ao-density-sim/?cb=__TRACKED_VAR__ C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/notes-open.png)",
+      "Bash(export CLICK='#notesToggle')",
+      "Bash(node C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/shot.js http://localhost:8770/sims/ao-density-sim/?cb=__TRACKED_VAR__ C:/Users/Joe/AppData/Local/Temp/claude/c--Users-Joe-Documents-chemistrio/a28d3fa8-b0d0-405e-9508-45a82fdad7d4/scratchpad/notes-math.png)"
     ],
     "additionalDirectories": [
       "\\tmp"

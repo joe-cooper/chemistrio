@@ -96,6 +96,70 @@ function renderSim(id) {
   showViewer();
 }
 
+/* ---------- Third-party assets, loaded on demand ----------
+   KaTeX and marked used to sit in the shell's <head> as four CDN
+   requests on every route, with the KaTeX stylesheet render-blocking
+   even on pages with no maths on them at all. They're vendored now
+   (assets/vendor) and pulled in only at the moment something actually
+   needs them:
+
+     - marked, only when notes have to be fetched and parsed. The
+       pre-rendered path already has its HTML, so it never loads it.
+     - KaTeX, only when the notes panel is first opened. The panel is
+       collapsed to max-height:0 until then, so nothing is on screen to
+       typeset and there's no flash to avoid by loading it sooner.
+
+   A route with no notes, or whose notes are never opened, now loads
+   neither.
+
+   The version on each URL is only a cache key: these files are fetched
+   from JS, so version-assets.js (which rewrites the shell's own href/src
+   attributes) never sees them. Bump the relevant one by hand when a
+   vendored file is upgraded, or returning visitors keep the old copy. */
+const KATEX_VERSION = "0.16.11";
+const MARKED_VERSION = "12.0.2";
+const VENDOR = {
+  katexCss: `/assets/vendor/katex/katex.min.css?v=${KATEX_VERSION}`,
+  katexJs: `/assets/vendor/katex/katex.min.js?v=${KATEX_VERSION}`,
+  katexAutoRender: `/assets/vendor/katex/auto-render.min.js?v=${KATEX_VERSION}`,
+  marked: `/assets/vendor/marked.min.js?v=${MARKED_VERSION}`
+};
+
+const assetLoads = {};
+
+function loadAsset(url, kind) {
+  if (assetLoads[url]) return assetLoads[url];
+  assetLoads[url] = new Promise((resolve, reject) => {
+    let el;
+    if (kind === "css") {
+      el = document.createElement("link");
+      el.rel = "stylesheet";
+      el.href = url;
+    } else {
+      el = document.createElement("script");
+      el.src = url;
+    }
+    el.onload = resolve;
+    el.onerror = () => reject(new Error("failed to load " + url));
+    document.head.appendChild(el);
+  });
+  return assetLoads[url];
+}
+
+function ensureMarked() {
+  return window.marked ? Promise.resolve() : loadAsset(VENDOR.marked, "js");
+}
+
+// auto-render calls into katex, so that has to be in place first.
+async function ensureKatex() {
+  if (window.renderMathInElement) return;
+  await Promise.all([
+    loadAsset(VENDOR.katexCss, "css"),
+    loadAsset(VENDOR.katexJs, "js")
+  ]);
+  await loadAsset(VENDOR.katexAutoRender, "js");
+}
+
 /* ---------- Teaching notes (Markdown + LaTeX) ----------
    Turning the Markdown into HTML (including the placeholder dance
    that shields LaTeX from marked's backslash-escaping) lives in
@@ -110,20 +174,19 @@ const MATH_DELIMITERS = [
   { left: "\\[", right: "\\]", display: true }
 ];
 
-/* KaTeX's auto-render script is deferred, so on a pre-rendered page —
-   where the notes are already in the DOM and there's no fetch to wait
-   on — this can run before renderMathInElement exists. Deferred scripts
-   have all run by the load event, so retry there rather than silently
-   leaving the maths as raw $...$ text. */
-function typesetMath(el) {
-  if (window.renderMathInElement) {
+// Typesets once per set of notes. Guarded by a flag rather than by
+// checking the DOM, because running KaTeX twice over the same element
+// would re-parse its own output.
+async function typesetMath(el) {
+  if (el.dataset.typeset === "done") return;
+  el.dataset.typeset = "done";
+  try {
+    await ensureKatex();
     renderMathInElement(el, { delimiters: MATH_DELIMITERS, throwOnError: false });
-  } else if (document.readyState !== "complete") {
-    window.addEventListener("load", () => {
-      if (window.renderMathInElement) {
-        renderMathInElement(el, { delimiters: MATH_DELIMITERS, throwOnError: false });
-      }
-    }, { once: true });
+  } catch (err) {
+    // Leaving the maths as plain $...$ text is a better outcome than
+    // throwing here and taking the rest of the page down with it.
+    delete el.dataset.typeset;
   }
 }
 
@@ -141,28 +204,34 @@ async function loadNotes(s) {
   sidebar.style.display = "";
   // The static shell for /sims/<id> already carries this simulation's
   // notes, rendered at build time. On the first load of that page
-  // there's nothing to fetch: typeset what's there and stop.
+  // there's nothing to fetch. Either way the maths waits until the
+  // panel is opened (see toggleNotes).
   if (content.dataset.prerenderedFor === s.id) {
     delete content.dataset.prerenderedFor;
-    typesetMath(content);
+    delete content.dataset.typeset;
     return;
   }
   content.innerHTML = "<p>Loading notes&hellip;</p>";
+  delete content.dataset.typeset;
   try {
+    await ensureMarked();
     const res = await fetch(s.notes);
     if (!res.ok) throw new Error("HTTP " + res.status);
     const md = await res.text();
     content.innerHTML = notesHtml(md, marked);
-    typesetMath(content);
   } catch (err) {
     content.innerHTML = "<p>Teaching notes couldn't be loaded.</p>";
   }
 }
 
+// Opening the panel is what pulls KaTeX in — see the note above
+// ASSET_VERSION. Nothing is visible until this runs, so there's no
+// point loading it any earlier.
 function toggleNotes() {
   const sidebar = document.getElementById("notesSidebar");
   const open = sidebar.classList.toggle("open");
   document.getElementById("notesToggle").setAttribute("aria-expanded", String(open));
+  if (open) typesetMath(document.getElementById("notesContent"));
 }
 
 /* =========================================================
