@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-chemistr.io — a static site of free interactive chemistry simulations and teaching notes (GCSE/A-level/pre-university), deployed to GitHub Pages (custom domain via `CNAME`, `www.chemistr.io`). No build step, no package manager, no framework: plain HTML/CSS/vanilla JS served as static files.
+chemistr.io — a static site of free interactive chemistry simulations and teaching notes (GCSE/A-level/pre-university), deployed to GitHub Pages (custom domain via `CNAME`, the apex `chemistr.io`; `www.chemistr.io` 301s to it). No build step, no package manager, no framework: plain HTML/CSS/vanilla JS served as static files.
+
+The canonical origin is the apex and lives in one place, `CANONICAL_ORIGIN` in `assets/js/render.js`; `build-seo-pages.js` reads it from there. GitHub Pages also 301s `/sims/<id>` to `/sims/<id>/`, so canonicals, `og:url`, the sitemap and the structured data all use the trailing-slash form (`canonicalUrl()`), while in-page links keep the slashless form — those never hit the network, because `app.js` turns them into `pushState` navigations.
 
 ## Running locally
 
@@ -43,7 +45,7 @@ Note that `index.html` is now both the build's template and one of its outputs. 
 - Every route's content is *also* baked into its static shell at build time (see below), so the first load of any URL needs no fetch and no JS. `app.js` spots this via the `data-prerendered-for` attributes on `#pageMount` / `#notesContent` and skips re-fetching what's already there; every later in-page navigation goes through the normal fetch path.
 - Navigation uses real `<a href>` elements, not `onclick` handlers. A single delegated click listener in `app.js` turns same-site anchor clicks into `pushState` navigations, so links stay crawlable without any extra wiring. Use an anchor for anything that navigates.
 - Routing is real History API paths (`/sims`, `/sims/<id>`, `/about#contact`, ...), not hashes — `parsePath()`/`navigate()`/`go()`/`openSim()` in `app.js`. `migrateLegacyHash()` does a one-time redirect for old `#sim/<id>`-style bookmarks.
-- To add a new top-level page: create `pages/<id>.html` (inner markup only, no wrapper) and add one entry to `PAGE_META` in `render.js`. Nav bar, router and static-shell build all read that list. Add an entry to `STATIC_PAGES` in `build-seo-pages.js` too, to give the route its own title and meta description.
+- To add a new top-level page: create `pages/<id>.html` (inner markup only, no wrapper) and add one entry to `PAGE_META` in `render.js`, including its `title` and `description`. Nav bar, router and static-shell build all read that list — `STATIC_PAGES` in `build-seo-pages.js` is derived from it, so there's nothing to keep in sync by hand.
 
 ### Shared rendering: `assets/js/render.js`
 
@@ -68,7 +70,7 @@ Each `simulations/<id>.html` is a standalone document (own `<head>`, own inline 
 
 ### Teaching notes
 
-Teaching notes must adhere strictly to the writing style guidelines.
+Teaching notes must adhere strictly to the writing style guidelines. Only generate teaching notes when explicitly asked to.
 
 Teaching notes should have a suggested use section for teachers, and an explanation that is accessible to students. For GCSE simulations, there should be a 'looking ahead' section that signposts relevant A-level content. Likewise, for A-Level simulations, the 'looking ahead' section should signpost pre-university and first-year undergraduate content.
 
@@ -90,6 +92,8 @@ The answer, in **Markdown** with $LaTeX$ if needed.
 Blank lines around the answer content are required for the Markdown parser to still process it as Markdown rather than swallowing it as opaque HTML.
 
 ### Tours (`assets/js/tour.js`)
+
+Only generate tours or walkthroughs when explicitly asked to.
 
 Shared guided-walkthrough engine. A simulation opts in by calling `ChemTour.init([...])` with an array of steps (`target` CSS selector or `null` for a centered card, `title`, `body`, optional `before(dir)` to drive the sim's own controls by dispatching real `input` events). When run standalone it injects its own trigger button; when embedded in the site viewer, the parent's "Walk me through" button calls `ChemTour.start()` directly across the iframe boundary.
 
@@ -122,7 +126,9 @@ node scripts/build-og-images.js                   # all of them
 node scripts/build-og-images.js buffer-sim        # just one
 ```
 
-The pre-rendered `#viewerFrame` holds a plain link to `/simulations/<id>.html` as a stand-in for the iframe, so the simulation is reachable without JS. Those standalone simulation files are still separately indexable and carry no canonical pointing back at `/sims/<id>`, which is worth fixing if duplicate-content warnings show up in Search Console.
+The pre-rendered `#viewerFrame` holds a plain link to `/simulations/<id>.html` as a stand-in for the iframe, so the simulation is reachable without JS.
+
+Those standalone simulation files are indexable pages in their own right and would otherwise compete with `/sims/<id>` while carrying none of the teaching notes, so the build writes a canonical into each one pointing back at its route, and normalises `<html lang>` to `en-GB`. It edits the source files in place (they're served directly, so the tag has to be in them), reports which it changed, and is idempotent — a second run reports zero.
 
 ## Writing style for chemistry content (teaching notes, simulation copy, tours)
 

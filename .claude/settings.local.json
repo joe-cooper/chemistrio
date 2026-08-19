@@ -45,7 +45,15 @@
       "Bash(node cdp-check2.mjs 1600 900 final-wide-open.png click)",
       "Bash(node cdp-check2.mjs 1600 900 width-match-1600.png click)",
       "Bash(node cdp-check2.mjs 1024 900 width-match-1024.png click)",
-      "Bash(node cdp-check2.mjs 480 900 width-match-mobile.png click)"
+      "Bash(node cdp-check2.mjs 480 900 width-match-mobile.png click)",
+      "Bash(node assets/js/version-assets.js)",
+      "Bash(node scripts/build-seo-pages.js)",
+      "Bash(git rm *)",
+      "Bash(curl -s -o /dev/null -m 15 -w \"www:  %{http_code} -> %{redirect_url}\\\\n\" \"https://www.chemistr.io/sims/buffer-sim\")",
+      "Bash(curl -s -o /dev/null -m 15 -w \"apex: %{http_code} -> %{redirect_url}\\\\n\" \"https://chemistr.io/sims/buffer-sim\")",
+      "Bash(curl -s -m 15 \"https://chemistr.io/\")",
+      "Bash(node -)",
+      "Bash(node --check scripts/build-seo-pages.js)"
     ],
     "additionalDirectories": [
       "\\tmp"

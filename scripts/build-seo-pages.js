@@ -40,7 +40,14 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 
 const ROOT = path.join(__dirname, "..");
-const SITE_URL = "https://www.chemistr.io";
+
+const { simulations, resources } = require(path.join(ROOT, "assets/js/data.js"));
+const R = require(path.join(ROOT, "assets/js/render.js"));
+const { marked } = require(path.join(ROOT, "assets/vendor/marked.min.js"));
+
+// Apex, not www: see CANONICAL_ORIGIN in render.js. Taken from there
+// rather than redeclared, so the two can't drift.
+const SITE_URL = R.CANONICAL_ORIGIN;
 const SITE_NAME = "chemistr.io";
 const LANG = "en-GB";
 const LICENSE_URL = "https://creativecommons.org/licenses/by-nc-sa/4.0/";
@@ -50,10 +57,6 @@ const OG_HEIGHT = 630;
 // Search results cut a <title> off around here. Titles over this get
 // listed at the end of the build so they can be given a `seoTitle`.
 const TITLE_LIMIT = 60;
-
-const { simulations, resources } = require(path.join(ROOT, "assets/js/data.js"));
-const R = require(path.join(ROOT, "assets/js/render.js"));
-const { marked } = require(path.join(ROOT, "assets/vendor/marked.min.js"));
 
 // Frozen once so every route in a single build agrees about which
 // simulations still count as "new" (see NEW_BADGE_DAYS in render.js).
@@ -197,7 +200,7 @@ function websiteNode() {
 }
 
 function webPageNode(route, extra) {
-  const url = SITE_URL + route.path;
+  const url = R.canonicalUrl(route.path);
   return Object.assign({
     "@type": "WebPage",
     "@id": `${url}#webpage`,
@@ -213,18 +216,18 @@ function webPageNode(route, extra) {
 function breadcrumbNode(route, trail) {
   return {
     "@type": "BreadcrumbList",
-    "@id": `${SITE_URL}${route.path}#breadcrumb`,
+    "@id": `${R.canonicalUrl(route.path)}#breadcrumb`,
     itemListElement: trail.map(([name, p], i) => ({
       "@type": "ListItem",
       position: i + 1,
       name,
-      item: SITE_URL + (p === "/" ? "/" : p),
+      item: R.canonicalUrl(p),
     })),
   };
 }
 
 function simResourceNode(sim, route) {
-  const url = SITE_URL + route.path;
+  const url = R.canonicalUrl(route.path);
   const image = ogImage(sim.id);
   const modified = lastmodOf(simSources(sim));
   const node = {
@@ -256,8 +259,8 @@ function jsonLdFor(route, sim) {
   if (sim) {
     graph.push(
       webPageNode(route, {
-        breadcrumb: { "@id": `${SITE_URL}${route.path}#breadcrumb` },
-        mainEntity: { "@id": `${SITE_URL}${route.path}#resource` },
+        breadcrumb: { "@id": `${R.canonicalUrl(route.path)}#breadcrumb` },
+        mainEntity: { "@id": `${R.canonicalUrl(route.path)}#resource` },
       }),
       breadcrumbNode(route, [["Home", "/"], ["Simulations", "/sims"], [sim.title, route.path]]),
       simResourceNode(sim, route));
@@ -265,19 +268,19 @@ function jsonLdFor(route, sim) {
     graph.push(webPageNode(route));
   } else {
     graph.push(
-      webPageNode(route, { breadcrumb: { "@id": `${SITE_URL}${route.path}#breadcrumb` } }),
+      webPageNode(route, { breadcrumb: { "@id": `${R.canonicalUrl(route.path)}#breadcrumb` } }),
       breadcrumbNode(route, [["Home", "/"], [route.navName || route.title, route.path]]));
     if (route.id === "sims") {
       graph.push({
         "@type": "ItemList",
-        "@id": `${SITE_URL}${route.path}#simulations`,
+        "@id": `${R.canonicalUrl(route.path)}#simulations`,
         name: "Chemistry simulations",
         numberOfItems: simulations.length,
         itemListElement: simulations.map((s, i) => ({
           "@type": "ListItem",
           position: i + 1,
           name: s.title,
-          url: `${SITE_URL}/sims/${s.id}`,
+          url: R.canonicalUrl(`/sims/${s.id}`),
         })),
       });
     }
@@ -314,7 +317,7 @@ function headExtras(route, sim) {
 }
 
 function renderHead(html, route, sim) {
-  const url = SITE_URL + route.path;
+  const url = R.canonicalUrl(route.path);
   const title = escapeAttr(route.title);
   const description = escapeAttr(truncate(route.description, 300));
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`);
@@ -478,7 +481,7 @@ const sitemapEntries = [
 const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n` +
   `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
   sitemapEntries.map(e =>
-    `  <url><loc>${SITE_URL}${e.path}</loc>` +
+    `  <url><loc>${R.canonicalUrl(e.path)}</loc>` +
     (e.lastmod ? `<lastmod>${e.lastmod}</lastmod>` : "") +
     `</url>`).join("\n") +
   `\n</urlset>\n`;
@@ -490,8 +493,68 @@ console.log("wrote sitemap.xml (" + sitemapEntries.length + " URLs, " +
 // GitHub Pages fallback: served (with a 404 status) for any path with
 // no matching static file, so the SPA's own router can take over. An
 // unknown path has no route metadata and no content to pre-render, so
-// this is the bare shell, straight from the template.
-writeFile("404.html", blankShell());
+// this is the bare shell. It also drops the canonical link — inherited
+// from the template, it would have pointed every crawled dead URL at
+// the homepage — and asks not to be indexed in its own right.
+function render404() {
+  const title = "Page not found | chemistr.io";
+  const description = "Page not found on chemistr.io.";
+  let html = blankShell();
+  // The canonical and og:url would otherwise still say "/", pointing
+  // every crawled dead URL at the homepage.
+  html = html.replace(/\s*<link rel="canonical" href="[^"]*">/, "");
+  html = html.replace(/\s*<meta property="og:url" content="[^"]*">/, "");
+  html = html.replace(/<meta name="description" content="[^"]*">/,
+    `<meta name="robots" content="noindex">\n<meta name="description" content="${description}">`);
+  html = html.replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`);
+  html = html.replace(/<meta property="og:title" content="[^"]*">/, `<meta property="og:title" content="${title}">`);
+  html = html.replace(/<meta property="og:description" content="[^"]*">/, `<meta property="og:description" content="${description}">`);
+  return html;
+}
+
+writeFile("404.html", render404());
+
+/* ---------- Standalone simulation files ----------
+   Each simulations/<id>.html is a complete, indexable page in its own
+   right, and the pre-rendered #viewerFrame links straight to it. Left
+   alone they compete with /sims/<id> for the same searches while
+   carrying none of the teaching notes, so each one gets a canonical
+   pointing back at its route. Written into the source files (rather
+   than generated alongside them) because these are hand-authored pages
+   that are also served directly; the edit is idempotent, so re-running
+   the build changes nothing once they're in place. */
+function updateSimulationFiles() {
+  const changed = [];
+  simulations.filter(s => s.file).forEach(sim => {
+    const rel = stripLeadingSlash(sim.file);
+    const abs = path.join(ROOT, rel);
+    if (!fs.existsSync(abs)) {
+      console.log(`  ! ${rel} is missing (referenced by "${sim.id}")`);
+      return;
+    }
+    const before = fs.readFileSync(abs, "utf8");
+    let html = before;
+
+    const canonical = `<link rel="canonical" href="${R.canonicalUrl(`/sims/${sim.id}`)}">`;
+    if (/<link rel="canonical"[^>]*>/.test(html)) {
+      html = html.replace(/<link rel="canonical"[^>]*>/, canonical);
+    } else if (/<\/title>/.test(html)) {
+      html = html.replace(/<\/title>/, `</title>\n${canonical}`);
+    } else {
+      console.log(`  ! ${rel} has no <title> to anchor the canonical to`);
+      return;
+    }
+
+    // These files disagree about lang; the site is UK-curriculum.
+    html = html.replace(/<html lang="[^"]*">/, `<html lang="${LANG}">`);
+
+    if (html !== before) { fs.writeFileSync(abs, html); changed.push(rel); }
+  });
+  console.log(`updated ${changed.length} simulation file(s) with canonical/lang`);
+  changed.forEach(f => console.log("  " + f));
+}
+
+updateSimulationFiles();
 
 // Titles longer than this get cut off in search results. Report rather
 // than fail: the fix is a judgement call about wording, and it's a

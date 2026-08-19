@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://www.chemistr.io/sitemap.xml
+Sitemap: https://chemistr.io/sitemap.xml

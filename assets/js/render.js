@@ -41,6 +41,19 @@ function pageMeta(id) {
 
 function uniq(a){ return [...new Set(a)]; }
 
+/* Everything from data.js goes through this before being interpolated
+   into markup. Topic names like "Acids & Bases" were previously written
+   out with a bare "&", which is invalid HTML, and a resource URL with a
+   query string produced a bare "&" in an href. Nothing in data.js is
+   pre-encoded, so there's no double-escaping to worry about. */
+function esc(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function pagePath(id) { return id === "home" ? "/" : "/" + id; }
 
 function simPath(id) { return "/sims/" + id; }
@@ -77,11 +90,27 @@ function newBadge(s, now) {
 
 const DESCRIPTION_LIMIT = 160;
 
-// The one origin every canonical URL points at, whatever host the page
-// is actually being served from (a preview URL, the apex domain, a
-// local server). scripts/build-seo-pages.js has its own copy as
-// SITE_URL; they must match.
-const CANONICAL_ORIGIN = "https://www.chemistr.io";
+/* The one origin every canonical URL points at, whatever host the page
+   is actually being served from (a preview URL, www, a local server).
+   scripts/build-seo-pages.js has its own copy as SITE_URL; they must
+   match.
+
+   This is the apex, not www: CNAME is `chemistr.io`, and GitHub Pages
+   301s www.chemistr.io to it. Pointing canonicals at www — as they used
+   to — aimed every one of them at a URL that redirects away. */
+const CANONICAL_ORIGIN = "https://chemistr.io";
+
+/* GitHub Pages serves /sims/<id> from /sims/<id>/index.html and 301s
+   the slashless form to the trailing-slash one, so the trailing-slash
+   URL is the one that actually resolves. Canonicals, og:url, the
+   sitemap and the structured data all use it; a canonical that itself
+   redirects is a wasted signal. In-page links deliberately keep the
+   slashless form — they never hit the network, because app.js turns
+   them into pushState navigations. */
+function canonicalUrl(routePath) {
+  if (routePath === "/") return CANONICAL_ORIGIN + "/";
+  return CANONICAL_ORIGIN + routePath.replace(/\/?$/, "/");
+}
 
 // data.js has both "A-level" and "A-Level"; normalise for display.
 function normLevel(level) {
@@ -128,12 +157,12 @@ function simCategoriesHtml(simulations, now) {
     const items = simulations.filter(s => s.topic === topic);
     const rows = items.map(s => `
       <li>
-        <a class="item-row" href="${simPath(s.id)}">
+        <a class="item-row" href="${esc(simPath(s.id))}">
           <span class="item-main">
-            <span class="item-title">${s.title}</span>${newBadge(s, now)}<br>
-            <span class="item-desc">${s.desc}</span>
+            <span class="item-title">${esc(s.title)}</span>${newBadge(s, now)}<br>
+            <span class="item-desc">${esc(s.desc)}</span>
           </span>
-          <span class="level-tag">${s.level}</span>
+          <span class="level-tag">${esc(s.level)}</span>
           <span class="open-hint">Open &rarr;</span>
         </a>
       </li>`).join("");
@@ -141,7 +170,7 @@ function simCategoriesHtml(simulations, now) {
       <details class="category" ${i === 0 ? "open" : ""}>
         <summary>
           <span class="arrow">&#9654;</span>
-          <span>${topic}</span>
+          <span>${esc(topic)}</span>
           <span class="count">${items.length} simulation${items.length>1?"s":""}</span>
         </summary>
         <ul class="cat-list">${rows}</ul>
@@ -155,21 +184,21 @@ function resourceCategoriesHtml(resources) {
       <li>
         <div class="res-row">
           <span class="item-main">
-            <span class="item-title">${it.title}</span><br>
-            <span class="item-desc">${it.desc}</span>
+            <span class="item-title">${esc(it.title)}</span><br>
+            <span class="item-desc">${esc(it.desc)}</span>
           </span>
           ${it.url
-            ? `<a class="dl" href="${it.url}" target="_blank" rel="noopener">${it.type}</a>`
+            ? `<a class="dl" href="${esc(it.url)}" target="_blank" rel="noopener">${esc(it.type)}</a>`
             : it.file
-            ? `<a class="dl" href="${it.file}" download>${it.type}</a>`
-            : `<span class="dl disabled" title="Add a file path in the data to enable">${it.type}</span>`}
+            ? `<a class="dl" href="${esc(it.file)}" download>${esc(it.type)}</a>`
+            : `<span class="dl disabled" title="Add a file path in the data to enable">${esc(it.type)}</span>`}
         </div>
       </li>`).join("");
     return `
       <details class="category" ${i === 0 ? "open" : ""}>
         <summary>
           <span class="arrow">&#9654;</span>
-          <span>${g.topic}</span>
+          <span>${esc(g.topic)}</span>
           <span class="count">${g.items.length} item${g.items.length>1?"s":""}</span>
         </summary>
         <ul class="cat-list">${rows}</ul>
@@ -180,9 +209,9 @@ function resourceCategoriesHtml(resources) {
 function featuredHtml(simulations, now) {
   return simulations.filter(s => s.featured).map(s => `
     <li>
-      <a class="linkish" href="${simPath(s.id)}">
-        <span>${s.title}</span>${newBadge(s, now)}
-        <span class="meta">${s.topic} &middot; ${s.level}</span>
+      <a class="linkish" href="${esc(simPath(s.id))}">
+        <span>${esc(s.title)}</span>${newBadge(s, now)}
+        <span class="meta">${esc(s.topic)} &middot; ${esc(s.level)}</span>
       </a>
     </li>`).join("");
 }
@@ -190,7 +219,7 @@ function featuredHtml(simulations, now) {
 function navHtml(pages) {
   return pages
     .filter(p => !p.hidden)
-    .map(p => `<a data-nav="${p.id}" href="${pagePath(p.id)}">${p.label}</a>`)
+    .map(p => `<a data-nav="${esc(p.id)}" href="${esc(pagePath(p.id))}">${esc(p.label)}</a>`)
     .join("");
 }
 
@@ -230,8 +259,8 @@ function notesHtml(md, markedLib) {
    Same dual-use trick as assets/js/data.js. */
 if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    PAGE_META, NEW_BADGE_DAYS, DESCRIPTION_LIMIT, CANONICAL_ORIGIN,
-    uniq, pagePath, simPath, pageMeta, isNewSim, newBadge,
+    PAGE_META, NEW_BADGE_DAYS, DESCRIPTION_LIMIT, CANONICAL_ORIGIN, canonicalUrl,
+    uniq, esc, pagePath, simPath, pageMeta, isNewSim, newBadge,
     normLevel, truncateText, simTitle, simDescription,
     simCategoriesHtml, resourceCategoriesHtml, featuredHtml, navHtml,
     MATH_SPAN_RE, protectMath, restoreMath, notesHtml

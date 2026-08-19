@@ -60,7 +60,7 @@ function setMeta(title, description, canonicalPath) {
   const desc = document.querySelector('meta[name="description"]');
   if (desc && description) desc.setAttribute("content", description);
   const canonical = document.querySelector('link[rel="canonical"]');
-  if (canonical) canonical.setAttribute("href", CANONICAL_ORIGIN + canonicalPath);
+  if (canonical) canonical.setAttribute("href", canonicalUrl(canonicalPath));
 }
 
 /* ---------- Simulation viewer ---------- */
