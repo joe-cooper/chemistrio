@@ -1366,16 +1366,19 @@ function lonePairDotPositions(atom, angle){
   ];
 }
 
-// Returns { get(atomId): {x,y} } — the click/anchor position used for
-// a given lone pair (its outermost, currently-visible dot pair).
+// Returns { [atomId]: [{x,y,angle}, ...] } — one anchor per lone pair on
+// that atom, in the same order lonePairAngles lays them out, which is
+// also the order they're rendered in. An arrow's tailLpIndex indexes
+// straight into this array, so the curve starts at the exact pair the
+// student clicked rather than at whichever one happens to be last.
 function buildLonePairAnchors(atoms, bonds){
   const map = {};
   atoms.forEach(a=>{
     if (a.lp<=0) return;
-    const angles = lonePairAngles(a.id, atoms, bonds, a.lp);
-    const outerAngle = angles[angles.length-1];
-    const dots = lonePairDotPositions(a, outerAngle);
-    map[a.id] = { x:(dots[0].x+dots[1].x)/2, y:(dots[0].y+dots[1].y)/2, angle: outerAngle };
+    map[a.id] = lonePairAngles(a.id, atoms, bonds, a.lp).map(angle=>{
+      const dots = lonePairDotPositions(a, angle);
+      return { x:(dots[0].x+dots[1].x)/2, y:(dots[0].y+dots[1].y)/2, angle };
+    });
   });
   return map;
 }
@@ -1514,17 +1517,19 @@ function renderMolecule(svg, atoms, bonds, opts){
   atoms.forEach(a=>{
     if (a.lp<=0) return;
     const angles = lonePairAngles(a.id, atoms, bonds, a.lp);
-    angles.forEach((angle)=>{
+    angles.forEach((angle, lpIndex)=>{
       const dots = lonePairDotPositions(a, angle);
       const g = el('g',{class:'lp-group'});
       if (opts.interactive){
-        // Every lone pair on this atom is a valid, equivalent arrow tail —
-        // the engine only tracks a lone-pair *count* per atom, not which
-        // specific pair was used — so all of them are clickable, and
-        // selecting any one highlights all of them together.
-        if (opts.selection && opts.selection.type==='lonepair' && opts.selection.id===a.id) g.classList.add('selected');
+        // Every lone pair on this atom is an equivalent arrow tail as far
+        // as the chemistry goes — the engine only tracks a lone-pair
+        // *count* per atom — but the drawing should still come from the
+        // pair actually clicked, so each one is selected and highlighted
+        // individually by its index rather than as a group.
+        if (opts.selection && opts.selection.type==='lonepair' && opts.selection.id===a.id
+            && opts.selection.lpIndex===lpIndex) g.classList.add('selected');
         const hitR = el('circle',{cx:(dots[0].x+dots[1].x)/2, cy:(dots[0].y+dots[1].y)/2, r:10, class:'lp-hit'});
-        hitR.addEventListener('click', ()=>opts.onLonePairClick(a.id));
+        hitR.addEventListener('click', ()=>opts.onLonePairClick(a.id, lpIndex));
         g.appendChild(hitR);
       }
       const symbolType = electronSymbols ? electronSymbols[a.id] : 'dot';
@@ -1697,7 +1702,18 @@ function drawArrow(svg, arrow, atoms, bonds, markerId, ring){
   const excludeBonds = new Set();
   let autoHeadBond = null;
   if (arrow.tailType==='lonepair'){
-    tail = anchors[arrow.tailAtom] || getAtom(atoms, arrow.tailAtom);
+    // tailLpIndex is the specific pair the student clicked. It's clamped
+    // rather than trusted outright: an arrow authored in a mechanism's
+    // expectedArrows carries no index at all, and a state whose lone-pair
+    // count has since dropped could leave a stored index past the end —
+    // in both cases the outermost pair is the sensible stand-in.
+    const atomAnchors = anchors[arrow.tailAtom];
+    if (atomAnchors && atomAnchors.length){
+      const i = Number.isInteger(arrow.tailLpIndex) ? arrow.tailLpIndex : atomAnchors.length-1;
+      tail = atomAnchors[Math.min(Math.max(i,0), atomAnchors.length-1)];
+    } else {
+      tail = getAtom(atoms, arrow.tailAtom);
+    }
     excludeAtoms.add(arrow.tailAtom);
     // If the lone pair's atom is already bonded to the head atom (e.g.
     // re-forming a π bond, incrementing a single bond to a double), that
@@ -1860,9 +1876,10 @@ function renderReactant(){
     selection: pendingTail,
     lewisMode,
     ring: currentMechanism().ring,
-    onLonePairClick(atomId){
-      if (pendingTail && pendingTail.type==='lonepair' && pendingTail.id===atomId){ pendingTail=null; }
-      else { pendingTail = {type:'lonepair', id:atomId}; }
+    onLonePairClick(atomId, lpIndex){
+      if (pendingTail && pendingTail.type==='lonepair' && pendingTail.id===atomId
+          && pendingTail.lpIndex===lpIndex){ pendingTail=null; }
+      else { pendingTail = {type:'lonepair', id:atomId, lpIndex}; }
       renderReactant();
     },
     onRingArcClick(atomId){
@@ -1887,7 +1904,7 @@ function renderReactant(){
           // for "this pair becomes part of this bond") rather than at
           // headAtom's center. The chemistry itself only ever needs
           // headAtom, which is unaffected.
-          arrows.push({ tailType:'lonepair', tailAtom:pendingTail.id, headAtom, headBondId:bondId });
+          arrows.push({ tailType:'lonepair', tailAtom:pendingTail.id, tailLpIndex:pendingTail.lpIndex, headAtom, headBondId:bondId });
           pendingTail = null;
           stepSolved = false;
           nextStepBtn.style.display = 'none';
@@ -1928,7 +1945,7 @@ function renderReactant(){
     },
     onAtomClick(atomId){
       if (!pendingTail) return; // atoms are only valid arrow heads, and only once a tail is chosen
-      const arrow = pendingTail.type==='lonepair' ? { tailType:'lonepair', tailAtom:pendingTail.id, headAtom:atomId }
+      const arrow = pendingTail.type==='lonepair' ? { tailType:'lonepair', tailAtom:pendingTail.id, tailLpIndex:pendingTail.lpIndex, headAtom:atomId }
         : pendingTail.type==='ringArc' ? { tailType:'ringArc', tailAtom:pendingTail.id, headAtom:atomId }
         : { tailType:'bond', tailBond:pendingTail.id, headAtom:atomId };
       arrows.push(arrow);
