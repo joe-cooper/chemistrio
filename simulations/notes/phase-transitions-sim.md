@@ -12,7 +12,8 @@ You can adjust the parameters using the sliders. The particle count will add or 
 
  Every pair of particles interacts through the Lennard-Jones potential 
  
- $$U(r) = 4ε[(\frac{σ}{r}\)^{12} − (\frac{σ}{r})^6],$$ 
+ $$U(r) = 4ε[(\frac{σ}{r})^{12} − (\frac{σ}{r})^6],$$
+  
  which repels particles strongly at short range and attracts them weakly out to a few particle diameters. This is the standard model for how neutral atoms (like argon) actually interact, and it's the only force in the simulation — there is no separate "solid" or "gas" rule built in.
 
 The temperature slider doesn't move particles directly. It sets a target average kinetic energy, and a thermostat gently nudges the real kinetic energy toward that target each step — the same idea as a heat bath exchanging energy with the system. Positions then evolve under Newton's second law (velocity-Verlet integration), so everything you see — melting, flowing, evaporating — emerges from the competition between that thermal energy and the attractive forces between particles.

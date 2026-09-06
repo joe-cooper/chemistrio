@@ -1,0 +1,26 @@
+# Local editor / OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.vscode/
+.idea/
+*.swp
+*~
+
+# Machine-local Claude Code settings (paths and permissions are per-machine)
+.claude/settings.local.json
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Jekyll build output (GitHub Pages builds server-side; never commit these)
+_site/
+.jekyll-cache/
+.sass-cache/
+
+# Scratch / working files
+*.log
+scratch/
+tmp/

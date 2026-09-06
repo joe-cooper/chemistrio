@@ -130,7 +130,7 @@ const TUBE_TOP = 92, TUBE_BOT = 122;
 const TUBE_H = TUBE_BOT - TUBE_TOP;
 const H = TUBE_BOT + 30;
 const PLUG_W = 18;
-let dpr = Math.min(window.devicePixelRatio || 1, 2);
+let dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
 
 // The tube is drawn at whatever width the card actually renders at (not a
 // fixed logical width), so the canvas's pixel buffer always matches its
@@ -505,7 +505,7 @@ let rT;
 window.addEventListener('resize', () => {
   clearTimeout(rT);
   rT = setTimeout(() => {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
     const oldInnerL = WALL_L + PLUG_W, oldInnerR = WALL_R - PLUG_W;
     sizeCanvas();
     const newInnerL = WALL_L + PLUG_W, newInnerR = WALL_R - PLUG_W;

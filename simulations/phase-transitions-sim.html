@@ -642,7 +642,15 @@
   // with the controls-panel column via the equal-width grid above), the same locked-aspect
   // technique used by this site's other particle-box simulations (e.g. mb-sim.html).
   const LOGICAL_W = BOX_W * PXP, LOGICAL_H = BOX_H * PXP;
-  const simDpr = Math.min(window.devicePixelRatio || 1, 2);
+  // Re-read on resize rather than caching once: the site viewer
+  // raises the effective ratio while the simulation is zoomed in
+  // full screen, then fires a resize (see setSimPixelRatio() in
+  // app.js). The redraw has to allocate the backing store at the
+  // new value, or the zoom just stretches the old bitmap.
+  let simDpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  window.addEventListener('resize', () => {
+    simDpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  });
   function sizeSimCanvas() {
     const w = canvas.clientWidth || LOGICAL_W;
     const h = w * LOGICAL_H / LOGICAL_W;

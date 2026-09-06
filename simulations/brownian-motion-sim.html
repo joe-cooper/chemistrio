@@ -99,14 +99,14 @@
     </div>
   </div>
 
-  <div class="note">
+  <!-- <div class="note">
     <span class="marker">Model</span>
     <div>
       <p>This is Robert Brown's original 1827 observation: a single, large, heavy pollen grain (orange) suspended among a great many small, fast-moving water molecules (blue) — hidden by default, exactly as they'd be invisible under Brown's microscope. Every collision here is a genuine elastic collision that conserves momentum and kinetic energy, using each particle's actual mass; nothing about the pollen grain's motion is scripted or randomised directly. Its dotted trail — on by default — shows where it's actually been.</p>
       <p>Click <b>Show water molecules</b> to reveal what's really going on: a constant hail of tiny, fast molecules striking the pollen grain from every direction. No single collision does anything dramatic, but with so many arriving at once, there's always a small random imbalance — and it's that imbalance, moment to moment, that produces the jiggle you see when the water is hidden again.</p>
       <p><b>Pollen size</b> is the parameter that matters most. Every particle shares, on average, the same kinetic energy — so a bigger, heavier pollen grain moves proportionally slower (speed ∝ 1/√mass) but is also proportionally harder to push around once moving. Shrink it down towards the water molecules' own size and it starts jittering rapidly like an ordinary molecule. Grow it and it becomes slow and heavily damped, barely drifting despite constant bombardment — exactly why real Brownian motion is only visible for particles in a fairly narrow size range: big enough to see under a microscope, but light enough that molecular collisions still visibly move it.</p>
     </div>
-  </div>
+  </div> -->
 
 </div>
 
@@ -139,7 +139,15 @@
     sDisp: document.getElementById('sDisp'),
   };
   const bctx = el.box.getContext('2d');
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // Re-read on resize rather than caching once: the site viewer
+  // raises the effective ratio while the simulation is zoomed in
+  // full screen, then fires a resize (see setSimPixelRatio() in
+  // app.js). The redraw has to allocate the backing store at the
+  // new value, or the zoom just stretches the old bitmap.
+  let dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  window.addEventListener('resize', () => {
+    dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  });
 
   function cssVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 

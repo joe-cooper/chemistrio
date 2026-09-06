@@ -728,11 +728,15 @@
   function setupResize(cv) {
     function resize() {
       const rect = cv.getBoundingClientRect();
-      const dpr  = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr  = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
       cv.width   = Math.round(rect.width  * dpr);
       cv.height  = Math.round(rect.height * dpr);
     }
     new ResizeObserver(resize).observe(cv);
+    // A ResizeObserver only fires when the element's CSS box changes, so
+    // it misses a change in device pixel ratio on its own -- which is
+    // what the site viewer does when it zooms in full screen.
+    window.addEventListener('resize', resize);
     resize();
   }
   setupResize(canvas);

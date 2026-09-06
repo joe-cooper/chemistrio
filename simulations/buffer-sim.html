@@ -334,7 +334,15 @@
   ].forEach(id => el[id] = document.getElementById(id));
   const bctx = el.beakers.getContext('2d');
   const gctx = el.graph.getContext('2d');
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // Re-read on resize rather than caching once: the site viewer
+  // raises the effective ratio while the simulation is zoomed in
+  // full screen, then fires a resize (see setSimPixelRatio() in
+  // app.js). The redraw has to allocate the backing store at the
+  // new value, or the zoom just stretches the old bitmap.
+  let dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  window.addEventListener('resize', () => {
+    dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  });
   function cssVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 
   function populateSysSelect(){

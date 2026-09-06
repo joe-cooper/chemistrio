@@ -195,8 +195,8 @@
 <p>You can adjust the parameters using the sliders. The particle count will add or remove particles from the simulation. The interaction strength controls the force of attraction between the particles. Gravity helps keep the sold and liquid masses at the bottom of the simulation. Cohesion gently pulls the particles together to allow for condensation when decreasing the temperature.</p>
 <h2>How the simulation works</h2>
 <p> Every pair of particles interacts through the Lennard-Jones potential </p>
-<p> $$U(r) = 4ε[(\frac{σ}{r}\)^{12} − (\frac{σ}{r})^6],$$ 
- which repels particles strongly at short range and attracts them weakly out to a few particle diameters. This is the standard model for how neutral atoms (like argon) actually interact, and it&#39;s the only force in the simulation — there is no separate &quot;solid&quot; or &quot;gas&quot; rule built in.</p>
+<p> $$U(r) = 4ε[(\frac{σ}{r})^{12} − (\frac{σ}{r})^6],$$</p>
+<p> which repels particles strongly at short range and attracts them weakly out to a few particle diameters. This is the standard model for how neutral atoms (like argon) actually interact, and it&#39;s the only force in the simulation — there is no separate &quot;solid&quot; or &quot;gas&quot; rule built in.</p>
 <p>The temperature slider doesn&#39;t move particles directly. It sets a target average kinetic energy, and a thermostat gently nudges the real kinetic energy toward that target each step — the same idea as a heat bath exchanging energy with the system. Positions then evolve under Newton&#39;s second law (velocity-Verlet integration), so everything you see — melting, flowing, evaporating — emerges from the competition between that thermal energy and the attractive forces between particles.</p>
 <p>State is classified using two physical order parameters, the same ones used in real molecular simulations: the Lindemann parameter δ, the root-mean-square displacement of particles from their original lattice sites (divided by the lattice spacing) — small in a solid, large once particles diffuse away from fixed sites — and the mean coordination number, how many neighbours each particle has within 1.5σ — around 6 in a close-packed solid or liquid, near zero once a particle is alone in the gas phase. Textbook references quote δ ≈ 0.1–0.15 as the bulk-solid melting threshold, but a cluster this small genuinely vibrates with much larger amplitude than a bulk crystal does even while its coordination stays fully intact (small clusters are floppier than bulk solids — a real finite-size effect, not an error), so that threshold was recalibrated against this simulation&#39;s own coordination data rather than borrowed directly from the literature.</p>
 <p>Mean coordination $< 2$ → gas (particles are mostly isolated)
@@ -226,8 +226,8 @@ Coordination high and $δ ≥ 1.0$ → liquid (particles flow past each other bu
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=bde5a2f5"></script>
+<script src="/assets/js/data.js?v=91c8a9d2"></script>
 <script src="/assets/js/render.js?v=a9d765de"></script>
-<script src="/assets/js/app.js?v=f175f50c"></script>
+<script src="/assets/js/app.js?v=cde70bae"></script>
 </body>
 </html>

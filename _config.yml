@@ -1,0 +1,25 @@
+# GitHub Pages (Jekyll) configuration.
+#
+# The site itself is plain static HTML/CSS/JS — nothing here is used to build
+# it. This file exists only to keep repository files that are not part of the
+# published site out of the deployed output. Anything listed under `exclude`
+# stays in the repo and in git history, but is not copied to chemistr.io.
+#
+# Note: `exclude` replaces Jekyll's defaults rather than adding to them, so any
+# default worth keeping has to be repeated here.
+#
+# Files and directories beginning with `.` or `_` are dropped by Jekyll
+# automatically, which is why `.claude/` and `.gitignore` need no entry.
+
+exclude:
+  - CLAUDE.md              # instructions for Claude Code, not site content
+  - README.md
+  - scripts/               # build tooling, run manually before pushing
+  - assets/js/version-assets.js   # Node cache-busting script, never loaded by a page
+  - node_modules/
+  - Gemfile
+  - Gemfile.lock
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/

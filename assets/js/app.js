@@ -483,12 +483,75 @@ function centerTransform(iframe) {
   return 'translate(' + (-iframe.offsetWidth / 2) + 'px, ' + (-iframe.offsetHeight / 2) + 'px)';
 }
 
+/* A canvas doesn't survive the zoom above the way HTML text does. The
+   browser re-rasterises the iframe's DOM layer at the composited
+   scale, so a simulation's own headings, buttons and readouts stay
+   sharp; a canvas is a fixed-size bitmap, allocated once at
+   `cssWidth * devicePixelRatio` device pixels, so `scale()` stretches
+   that bitmap and every canvas-drawn tick label and axis title goes
+   soft.
+
+   Every simulation already sizes its canvases from
+   window.devicePixelRatio and redraws on `resize`, so rather than
+   teaching each of them separately about zoom, shadow that one
+   property inside the iframe with the ratio the canvas is actually
+   displayed at and fire a resize. `__simDprCap` lifts the
+   `Math.min(dpr, 2)` guard the simulations apply to it — that guard
+   is there to stop a high-DPI phone allocating an enormous backing
+   store, and would otherwise clamp the zoomed value too.
+
+   Re-applying this on every simHeight report would feed back on
+   itself, since the resize makes the simulation report its height
+   again, so it's a no-op unless the ratio actually changed. */
+function setSimPixelRatio(iframe, scale) {
+  // A loose threshold on purpose: a sub-1% difference in backing
+  // resolution is invisible, and reacting to every one of them would
+  // keep the resize/report cycle alive instead of letting it settle.
+  if (Math.abs((iframe.__simScale || 1) - scale) < 0.01) return;
+  iframe.__simScale = scale;
+  try {
+    const win = iframe.contentWindow;
+    if (!win) return;
+    // devicePixelRatio is an *own* property of the window object rather
+    // than an inherited one, so deleting the override destroys it
+    // instead of uncovering the original. Keep the native descriptor
+    // and put it back on the way out.
+    const native = win.__nativeDPR ||
+      (win.__nativeDPR = Object.getOwnPropertyDescriptor(win, 'devicePixelRatio'));
+    if (!native || !native.get) return;
+    // Below about 1x there is nothing to sharpen: the simulation is
+    // being shrunk to fit, and minification is forgiving on its own.
+    if (scale <= 1.01) {
+      Object.defineProperty(win, 'devicePixelRatio', native);
+      delete win.__simDprCap;
+    } else {
+      Object.defineProperty(win, 'devicePixelRatio', {
+        configurable: true,
+        // Rounded up to a whole ratio rather than used exactly. The
+        // zoomed iframe lands on fractional device pixels, and the exact
+        // ratio doesn't divide evenly into them, so a backing store
+        // sized pixel-for-pixel still gets resampled on its way to the
+        // screen -- enough to soften 10px axis labels even though the
+        // resolution is nominally right. Supersampling and letting the
+        // compositor minify is far more forgiving than matching the size
+        // and hoping the grids line up. Reads through to the native
+        // getter rather than a value cached at zoom time, so moving the
+        // window to a display of a different density is still picked up.
+        get: function () { return Math.ceil(native.get.call(win) * scale); }
+      });
+      win.__simDprCap = 4;
+    }
+    win.dispatchEvent(new win.Event('resize'));
+  } catch (err) { /* cross-origin iframe — can't reach in, so leave it */ }
+}
+
 function applyFullscreenZoom(iframe, height) {
   const naturalW = getNaturalContentWidth(iframe);
   if (!naturalW) {
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.transform = centerTransform(iframe);
+    setSimPixelRatio(iframe, 1);
     return;
   }
   iframe.style.width = naturalW + 'px';
@@ -501,6 +564,7 @@ function applyFullscreenZoom(iframe, height) {
   const box = document.getElementById('viewerFrame').getBoundingClientRect();
   const scale = Math.min(box.width / naturalW, box.height / height);
   iframe.style.transform = centerTransform(iframe) + ' scale(' + scale + ')';
+  setSimPixelRatio(iframe, scale);
 }
 
 document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -525,6 +589,7 @@ function onFullscreenChange() {
   } else {
     iframe.style.width = '100%';
     iframe.style.transform = 'none';
+    setSimPixelRatio(iframe, 1);
   }
 }
 

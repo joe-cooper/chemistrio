@@ -385,7 +385,15 @@
     resetBtn: document.getElementById('resetBtn')
   };
   const ctx = el.scene.getContext('2d');
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // Re-read on resize rather than caching once: the site viewer
+  // raises the effective ratio while the simulation is zoomed in
+  // full screen, then fires a resize (see setSimPixelRatio() in
+  // app.js). The redraw has to allocate the backing store at the
+  // new value, or the zoom just stretches the old bitmap.
+  let dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  window.addEventListener('resize', () => {
+    dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  });
 
   // ---------- theme-aware colour cache ----------
   // getComputedStyle is too slow to call per atom per frame, so the tokens
