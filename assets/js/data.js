@@ -60,6 +60,8 @@ const simulations = [
     desc:"Animated diffusion tube for the reaction between hydrogen chloride and ammonia. Temperature, air particles and reactant particles can be adjusted.", file:"/simulations/diffusion-tube-sim.html", notes:"/simulations/notes/diffusion-tube-sim.md" },
   { id:"brownian-motion-sim", title:"Brownian Motion", topic:"Kinetic Theory of Matter", level:"GCSE",
     desc:"Brown's 1827 experiment of a pollen grain moving on the surface of water.", file:"/simulations/brownian-motion-sim.html", notes:"/simulations/notes/brownian-motion-sim.md", added:"2026-08-04" },
+  { id:"giant-structures-sim", title:"Simple Molecules and Giant Structures", seoTitle:"Molecules vs Giant Structures", topic:"Bonding & Structure", level:"GCSE",
+    desc:"A simple, 2D illustration of the different between simple and giant structures.Zoom out from a single particle to a whole crystal, side by side, and trace the connections between particles through the lattice.", file:"/simulations/giant-structures-sim.html", notes:"", added:"2026-09-13" },
   { id:"molecule-shapes-sim", title:"Shapes of Molecules (VSEPR)", topic:"Bonding & Structure", level:"A-level",
     desc:"Shapes of simple molecules up to six electron pairs. Electron pairs can be moved to show their repulsion. Bond angles and geometries calculated using VSEPR theory.", featured:true, file:"/simulations/molecule-shapes-sim.html",
     notes:"/simulations/notes/molecule-shapes-sim.md", added:"2026-08-06", tour:true },

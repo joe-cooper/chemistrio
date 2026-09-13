@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simple Molecules and Giant Structures</title>
+<link rel="canonical" href="https://chemistr.io/sims/giant-structures-sim/">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<link rel="stylesheet" href="../assets/css/sim.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  /* Element colours. Light-mode overrides keep the pale atoms (H, Mg)
+     legible against the lighter canvas background. */
+  :root{
+    --H:#e8ecf2; --O:#ff5d5d; --C:#9aa7b8; --Ar:#6fd0ff; --I:#b07cff;
+    --Si:#d9a86b; --Na:#c98cff; --Cl:#5ed17a; --Mg:#b8c2cf; --E:#ffd166;
+    --hl:#ffb347; --atom-edge:rgba(0,0,0,.35); --weak:rgba(139,150,165,.55); --label:#0d1117;
+  }
+  :root[data-theme="light"]{
+    --H:#c3cbd6; --O:#d64545; --C:#7b8898; --Ar:#1f9fd6; --I:#7a4fd6;
+    --Si:#b8843e; --Na:#8a4fd6; --Cl:#2e9e4f; --Mg:#7f8a99; --E:#c48a00;
+    --hl:#d97a1a; --atom-edge:rgba(0,0,0,.25); --weak:rgba(95,107,122,.6); --label:#0d1117;
+  }
+  .tagline{max-width:420px;}
+
+  .stage{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+  @media(max-width:860px){.stage{grid-template-columns:1fr;}}
+  .panel .card-label{margin-bottom:10px;}
+  .panel select{width:100%;margin-bottom:10px;}
+  .panel canvas{cursor:crosshair;aspect-ratio:1/1;}
+  .legend{display:flex;gap:6px 14px;margin-top:10px;font-size:12px;color:var(--muted);flex-wrap:wrap;min-height:18px;}
+  .ldot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle;border:1px solid var(--atom-edge);}
+
+  .stats{grid-template-columns:repeat(2,1fr);}
+  .stat .v{font-size:15px;line-height:1.2;}
+  .stat .v small{font-family:var(--font);font-size:11px;color:var(--muted);font-weight:400;display:block;margin-top:3px;}
+
+  .headline{min-height:0;}
+  .caveat{min-height:38px;}
+
+  .controls{display:flex;flex-wrap:wrap;gap:16px 26px;align-items:flex-end;}
+  .toggle-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .ctl-run .btn{padding:9px 14px;}
+
+  .kbd-hint{font-size:11.5px;color:var(--muted-dim);margin-top:8px;flex-basis:100%;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header></header>
+
+  <div class="stage" id="stage"></div>
+
+  <!-- controls -->
+  <div class="controls">
+    <div class="slider-row" id="zoomRow">
+      <div class="slider-head"><span class="ctl-label">Zoom</span><span class="val" id="zoomVal">1×</span></div>
+      <input type="range" id="zoomSlider" min="0" max="1000" step="1" value="0">
+    </div>
+
+    <div class="toggle-row">
+      <button type="button" class="chip-toggle active" id="weakToggle">Weak forces between molecules</button>
+      <button type="button" class="chip-toggle active" id="labelToggle">Labels</button>
+    </div>
+
+    <div class="ctl-run">
+      <button class="btn btn-run" id="zoomInBtn">Zoom in to one particle</button>
+      <button class="btn btn-ghost" id="zoomOutBtn">Zoom out</button>
+      <button class="btn btn-ghost" id="clearBtn">Clear highlights</button>
+    </div>
+    <div class="kbd-hint">Scroll on a picture to zoom. Click any atom to light up everything joined to it by strong bonds.</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- geometry ----------
+  // Everything is laid out in "world units"; one unit is roughly the
+  // spacing between neighbouring molecules in a molecular solid. The
+  // giant lattices use a smaller spacing so that at full zoom-out the
+  // two panels show a similar-sized patch of each substance.
+  const HW_MIN = 0.7;    // half-width of the view at full zoom-in, world units
+  const HW_MAX = 18;     // ...and at full zoom-out
+  const ZOOM_ANIM_MS = 5500;
+
+  // Each atom: relative position within the molecule (world units) and element.
+  // Each bond: [atomA, atomB, order].
+  const SUBSTANCES = {
+    argon: { name:"Argon", formula:"Ar", kind:"molecular", cls:"Monatomic — single atoms",
+      lattice:"hex", a:0.72, rotate:false,
+      atoms:[{el:"Ar",r:0.30,x:0,y:0}], bonds:[],
+      meaning:"Ar means one atom. In argon the atom <b>is</b> the particle: nothing is bonded to anything." },
+    oxygen: { name:"Oxygen", formula:"O₂", kind:"molecular", cls:"Simple molecular",
+      lattice:"square", a:1.0, rotate:true,
+      atoms:[{el:"O",r:0.20,x:-0.22,y:0},{el:"O",r:0.20,x:0.22,y:0}], bonds:[[0,1,2]],
+      meaning:"O₂ means one molecule: two O atoms held together by a strong covalent bond. Each molecule is a separate object." },
+    water: { name:"Water", formula:"H₂O", kind:"molecular", cls:"Simple molecular",
+      lattice:"square", a:1.05, rotate:true,
+      atoms:[{el:"O",r:0.21,x:0,y:0.08},{el:"H",r:0.12,x:-0.28,y:-0.14},{el:"H",r:0.12,x:0.28,y:-0.14}], bonds:[[0,1,1],[0,2,1]],
+      meaning:"H₂O means one molecule: two H atoms and one O atom, joined by strong covalent bonds. You can point to a single H₂O." },
+    co2: { name:"Carbon dioxide", formula:"CO₂", kind:"molecular", cls:"Simple molecular",
+      lattice:"square", a:1.45, rotate:true,
+      atoms:[{el:"C",r:0.19,x:0,y:0},{el:"O",r:0.20,x:-0.42,y:0},{el:"O",r:0.20,x:0.42,y:0}], bonds:[[0,1,2],[0,2,2]],
+      meaning:"CO₂ means one molecule: one C atom and two O atoms. Each molecule is a separate object with edges." },
+    methane: { name:"Methane", formula:"CH₄", kind:"molecular", cls:"Simple molecular",
+      lattice:"square", a:1.12, rotate:true,
+      atoms:[{el:"C",r:0.19,x:0,y:0},{el:"H",r:0.12,x:-0.27,y:-0.27},{el:"H",r:0.12,x:0.27,y:-0.27},{el:"H",r:0.12,x:0.27,y:0.27},{el:"H",r:0.12,x:-0.27,y:0.27}],
+      bonds:[[0,1,1],[0,2,1],[0,3,1],[0,4,1]],
+      meaning:"CH₄ means one molecule: one C atom and four H atoms. Each molecule is a separate object." },
+    iodine: { name:"Iodine", formula:"I₂", kind:"molecular", cls:"Simple molecular",
+      lattice:"square", a:1.35, rotate:true,
+      atoms:[{el:"I",r:0.27,x:-0.32,y:0},{el:"I",r:0.27,x:0.32,y:0}], bonds:[[0,1,1]],
+      meaning:"I₂ means one molecule: two I atoms held together by a strong covalent bond. The molecules are only weakly attracted to each other." },
+
+    diamond: { name:"Diamond", formula:"C", kind:"giant", cls:"Giant covalent",
+      lattice:"diamond", a:0.62, r:0.14, el:"C",
+      meaning:"C is just the element. There is no “diamond molecule”: every carbon atom is bonded to four others, and that carries on to the edge of the crystal. (Drawn flat here; in the real crystal the four bonds point to the corners of a tetrahedron.)" },
+    silica: { name:"Silicon dioxide", formula:"SiO₂", kind:"giant", cls:"Giant covalent",
+      lattice:"silica", a:0.86, rSi:0.16, rO:0.12,
+      meaning:"SiO₂ is a <b>ratio</b>, not a molecule: one Si for every two O throughout the crystal. There is no SiO₂ particle you can point to." },
+    nacl: { name:"Sodium chloride", formula:"NaCl", kind:"giant", cls:"Giant ionic",
+      lattice:"checker", a:0.50, rNa:0.13, rCl:0.21,
+      meaning:"NaCl is a <b>ratio</b>, not a molecule: one Na⁺ for every Cl⁻. Every ion is attracted to all its oppositely charged neighbours, and that continues to the edge of the crystal." },
+    magnesium: { name:"Magnesium", formula:"Mg", kind:"giant", cls:"Giant metallic",
+      lattice:"hex", a:0.50, r:0.205, el:"Mg", electrons:true,
+      meaning:"Mg is just the element. The metal is a single lattice of Mg²⁺ ions held together by a sea of delocalised electrons that belongs to the whole piece of metal." },
+  };
+  const ORDER = ["argon","oxygen","water","co2","methane","iodine","diamond","silica","nacl","magnesium"];
+  const ELEMENT_NAMES = { H:"Hydrogen", O:"Oxygen", C:"Carbon", Ar:"Argon", I:"Iodine", Si:"Silicon", Na:"Sodium ion", Cl:"Chloride ion", Mg:"Magnesium ion" };
+  const ION_LABELS = { Na:"Na⁺", Cl:"Cl⁻", Mg:"Mg²⁺" };
+
+  // Bond-graph distances within each molecule, precomputed by BFS so the
+  // highlight can spread atom to atom exactly as it does across a lattice.
+  for(const key in SUBSTANCES){
+    const s = SUBSTANCES[key];
+    if(s.kind!=="molecular") continue;
+    const n = s.atoms.length;
+    const adj = Array.from({length:n}, ()=>[]);
+    for(const [a,b] of s.bonds){ adj[a].push(b); adj[b].push(a); }
+    s.molR = Math.max(...s.atoms.map(a=>Math.hypot(a.x,a.y)+a.r));
+    s.dist = [];
+    for(let src=0; src<n; src++){
+      const d = new Array(n).fill(Infinity); d[src]=0;
+      const q=[src];
+      while(q.length){ const u=q.shift(); for(const v of adj[u]) if(d[v]===Infinity){ d[v]=d[u]+1; q.push(v); } }
+      s.dist.push(d);
+    }
+  }
+
+  function cssVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function hash(i,j,k){
+    let h = (Math.imul(i,73856093) ^ Math.imul(j,19349663) ^ Math.imul(k|0,83492791)) | 0;
+    h = Math.imul(h ^ (h>>>13), 0x5bd1e995); h ^= h>>>15;
+    return (h>>>0)/4294967296;
+  }
+  function fmt(n){ return n.toLocaleString('en-GB'); }
+
+  // ---------- shared state ----------
+  let dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  window.addEventListener('resize', ()=>{ dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2); });
+
+  let hw = HW_MIN;              // current view half-width, world units
+  let showWeak = true, showLabels = true;
+  let zoomAnim = null;          // {from,to,t0} in log(hw) space
+  let rafId = null, lastTs = null;
+
+  // ---------- panels ----------
+  const stage = document.getElementById('stage');
+  const panels = [makePanel('A','water'), makePanel('B','silica')];
+
+  function makePanel(id, subKey){
+    const card = document.createElement('div');
+    card.className = 'card panel';
+    card.innerHTML = `
+      <div class="card-label"><span id="name${id}"></span><span class="right" id="cls${id}"></span></div>
+      <select id="sel${id}" aria-label="Substance for the ${id==='A'?'left':'right'} picture">
+        <optgroup label="Single atoms / simple molecules">
+          ${ORDER.filter(k=>SUBSTANCES[k].kind==='molecular').map(k=>`<option value="${k}">${SUBSTANCES[k].name} (${SUBSTANCES[k].formula})</option>`).join('')}
+        </optgroup>
+        <optgroup label="Giant structures">
+          ${ORDER.filter(k=>SUBSTANCES[k].kind==='giant').map(k=>`<option value="${k}">${SUBSTANCES[k].name} (${SUBSTANCES[k].formula})</option>`).join('')}
+        </optgroup>
+      </select>
+      <canvas id="cv${id}" aria-label="Zoomable picture of the structure of the chosen substance"></canvas>
+      <div class="legend" id="leg${id}"></div>
+      <div class="stats">
+        <div class="stat"><span class="k">Atoms in view</span><span class="v" id="atoms${id}">0</span></div>
+        <div class="stat accent"><span class="k">Separate pieces in view</span><span class="v" id="pieces${id}">0</span></div>
+      </div>
+      <div class="headline" id="mean${id}"></div>
+      <div class="caveat" id="hl${id}"></div>`;
+    stage.appendChild(card);
+    const P = {
+      id, sub: SUBSTANCES[subKey],
+      cv: card.querySelector('#cv'+id), sel: card.querySelector('#sel'+id),
+      name: card.querySelector('#name'+id), cls: card.querySelector('#cls'+id),
+      leg: card.querySelector('#leg'+id), atoms: card.querySelector('#atoms'+id),
+      pieces: card.querySelector('#pieces'+id), mean: card.querySelector('#mean'+id),
+      hlMsg: card.querySelector('#hl'+id),
+      size: 300, hits: [], hl: null, electrons: null, lastCounts: null,
+    };
+    P.ctx = P.cv.getContext('2d');
+    P.sel.value = subKey;
+    P.sel.addEventListener('change', ()=>{ setSubstance(P, P.sel.value); });
+    P.cv.addEventListener('click', e=>{
+      const rect = P.cv.getBoundingClientRect();
+      onPick(P, (e.clientX-rect.left)*(P.size/rect.width), (e.clientY-rect.top)*(P.size/rect.height));
+    });
+    P.cv.addEventListener('wheel', e=>{
+      e.preventDefault();
+      zoomAnim = null;
+      setHw(hw * Math.exp(e.deltaY*0.0015));
+    }, {passive:false});
+    setSubstance(P, subKey, true);
+    return P;
+  }
+
+  function setSubstance(P, key, silent){
+    P.sub = SUBSTANCES[key];
+    P.hl = null;
+    P.electrons = null;
+    P.name.textContent = P.sub.name + ' (' + P.sub.formula + ')';
+    P.cls.textContent = P.sub.cls;
+    P.mean.innerHTML = P.sub.meaning;
+    const els = P.sub.kind==='molecular'
+      ? [...new Set(P.sub.atoms.map(a=>a.el))]
+      : (P.sub.lattice==='silica' ? ['Si','O'] : P.sub.lattice==='checker' ? ['Na','Cl'] : [P.sub.el]);
+    P.leg.innerHTML = els.map(el=>`<span><span class="ldot" style="background:var(--${el})"></span>${ELEMENT_NAMES[el]}</span>`).join('')
+      + (P.sub.electrons ? `<span><span class="ldot" style="background:var(--E);width:6px;height:6px"></span>Delocalised electron</span>` : '');
+    if(!silent){ render(); ensureLoop(); }
+  }
+
+  // ---------- zoom ----------
+  function setHw(v){
+    hw = Math.min(HW_MAX, Math.max(HW_MIN, v));
+    const f = Math.log(hw/HW_MIN)/Math.log(HW_MAX/HW_MIN);
+    el.zoomSlider.value = Math.round(f*1000);
+    el.zoomVal.textContent = (HW_MAX/hw).toFixed(HW_MAX/hw<10?1:0) + '×';
+    render();
+  }
+  function animateZoomTo(target){
+    zoomAnim = { from: Math.log(hw), to: Math.log(target), t0: performance.now() };
+    ensureLoop();
+  }
+
+  // ---------- picking / highlight ----------
+  function onPick(P, x, y){
+    let best=null, bd=Infinity;
+    for(const h of P.hits){
+      const dx=h.x-x, dy=h.y-y, d=dx*dx+dy*dy;
+      const lim = Math.max(h.r, 7); // small atoms still get a usable target
+      if(d < lim*lim && d < bd){ bd=d; best=h; }
+    }
+    if(!best) return;
+    P.hl = { site: best.site, front: 0, maxDepth: 0 };
+    render(); ensureLoop();
+  }
+
+  // Depth in the strong-bond graph from the highlighted origin, or
+  // Infinity for anything not joined to it. This is what separates a
+  // molecule from a giant structure: for a molecule the graph runs out
+  // after a couple of steps; for a lattice it never does.
+  function depthFrom(sub, o, s){
+    switch(sub.lattice){
+      case 'square': case 'hex':
+        if(sub.kind==='molecular'){
+          if(o.i!==s.i || o.j!==s.j) return Infinity;
+          return sub.dist[o.k][s.k];
+        }
+        // giant metal on a hex lattice: hex (axial) distance
+        { const dq=s.i-o.i, dr=s.j-o.j; return (Math.abs(dq)+Math.abs(dr)+Math.abs(dq+dr))/2; }
+      case 'diamond': case 'checker':
+        return Math.abs(s.i-o.i)+Math.abs(s.j-o.j);
+      case 'silica': {
+        // Si sites are k=0; O on the edge to the right (k=1) or below (k=2).
+        const siEnds = t => t.k===0 ? [[t.i,t.j]] : t.k===1 ? [[t.i,t.j],[t.i+1,t.j]] : [[t.i,t.j],[t.i,t.j+1]];
+        let best=Infinity;
+        for(const [oi,oj] of siEnds(o)) for(const [si,sj] of siEnds(s))
+          best = Math.min(best, 2*(Math.abs(si-oi)+Math.abs(sj-oj)));
+        return best + (o.k?1:0) + (s.k?1:0);
+      }
+    }
+    return Infinity;
+  }
+
+  // ---------- rendering ----------
+  function sizePanels(){
+    for(const P of panels){
+      const w = P.cv.parentElement.clientWidth - 24; // card padding
+      P.size = Math.max(120, w);
+      P.cv.style.height = P.size+'px';
+      P.cv.width = Math.round(P.size*dpr);
+      P.cv.height = Math.round(P.size*dpr);
+    }
+  }
+
+  function render(){
+    for(const P of panels) renderPanel(P);
+  }
+
+  function renderPanel(P){
+    const ctx = P.ctx, S = P.size, sub = P.sub;
+    const scale = S/(2*hw);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,S,S);
+
+    const hits = [];
+    const counts = { atoms:0, byEl:{}, pieces:0, hlAtoms:0, maxDepth:0, maxDepthInView:0 };
+    const front = P.hl ? P.hl.front : -1;
+    const paths = {}, dimPaths = {};   // element -> Path2D of atoms (lit / not lit)
+    const edgePath = new Path2D();
+    const bondPath = new Path2D(), bondHlPath = new Path2D();
+    const weakPath = new Path2D();
+    const hlPath = new Path2D();
+    const labels = [];
+    const margin = 0.6*scale;
+    const inView = (x,y)=> x>-margin && x<S+margin && y>-margin && y<S+margin;
+    const inCount = (x,y)=> x>=0 && x<=S && y>=0 && y<=S;
+    const sx = x => S/2 + x*scale, sy = y => S/2 + y*scale;
+
+    // noCount: drawn and clickable, but left out of the tallies (the
+    // shared O and Cl⁻ are counted with the Si / Na⁺ they belong to).
+    function addAtom(el, x, y, r, site, noCount){
+      const X=sx(x), Y=sy(y), R=r*scale;
+      if(!inView(X,Y)) return null;
+      if(R>2.5){ edgePath.moveTo(X+R,Y); edgePath.arc(X,Y,R,0,Math.PI*2); }
+      hits.push({x:X,y:Y,r:R,site});
+      const counted = inCount(X,Y);
+      if(counted && !noCount){ counts.atoms++; counts.byEl[el]=(counts.byEl[el]||0)+1; }
+      let d = Infinity, lit = false;
+      if(P.hl){
+        d = depthFrom(sub, P.hl.site, site);
+        if(d!==Infinity && counted) counts.maxDepthInView = Math.max(counts.maxDepthInView, d);
+        lit = d<=front;
+        if(lit){
+          if(counted && !noCount) counts.hlAtoms++;
+          const RR=R+Math.max(1.5,0.045*scale); hlPath.moveTo(X+RR,Y); hlPath.arc(X,Y,RR,0,Math.PI*2);
+        }
+      }
+      const bucket = (P.hl && !lit) ? dimPaths : paths;
+      if(!bucket[el]) bucket[el]=new Path2D();
+      bucket[el].moveTo(X+R,Y); bucket[el].arc(X,Y,R,0,Math.PI*2);
+      return {X,Y,R,d,lit,counted};
+    }
+    function addBond(A,B,order,hl){
+      if(!A||!B) return;
+      const p = hl ? bondHlPath : bondPath;
+      if(order===2){
+        const dx=B.X-A.X, dy=B.Y-A.Y, L=Math.hypot(dx,dy)||1, ox=-dy/L*0.05*scale, oy=dx/L*0.05*scale;
+        p.moveTo(A.X+ox,A.Y+oy); p.lineTo(B.X+ox,B.Y+oy);
+        p.moveTo(A.X-ox,A.Y-oy); p.lineTo(B.X-ox,B.Y-oy);
+      } else { p.moveTo(A.X,A.Y); p.lineTo(B.X,B.Y); }
+    }
+
+    const a = sub.a;
+    const n = Math.ceil(hw/a)+2;
+
+    if(sub.kind==='molecular'){
+      const hex = sub.lattice==='hex';
+      const rowH = hex ? a*Math.sqrt(3)/2 : a;
+      const nj = Math.ceil(hw/rowH)+2;
+      for(let j=-nj;j<=nj;j++) for(let i=-n;i<=n;i++){
+        const jit = 0.05*a;
+        const cx = (hex ? (i + (j&1 ? 0.5 : 0))*a : i*a) + (hash(i,j,7)-0.5)*jit;
+        const cy = j*rowH + (hash(i,j,11)-0.5)*jit;
+        const th = sub.rotate ? hash(i,j,3)*Math.PI*2 : 0;
+        const c=Math.cos(th), s=Math.sin(th);
+        // Dashed lines to the right/below neighbours: the weak forces
+        // between molecules. Drawn centre to centre; the atoms cover the
+        // middle so only the gap between molecules shows a line.
+        if(showWeak && scale>22 && !hex){
+          const X=sx(cx), Y=sy(cy), g=sub.molR*scale, A=a*scale;
+          if(inView(X,Y) && A>2*g+4){
+            weakPath.moveTo(X+g,Y); weakPath.lineTo(X+A-g,Y);
+            weakPath.moveTo(X,Y+g); weakPath.lineTo(X,Y+A-g);
+          }
+        }
+        const drawn = [];
+        if(inCount(sx(cx),sy(cy))) counts.pieces++;
+        for(let k=0;k<sub.atoms.length;k++){
+          const at = sub.atoms[k];
+          const x = cx + at.x*c - at.y*s, y = cy + at.x*s + at.y*c;
+          const A = addAtom(at.el, x, y, at.r, {i,j,k});
+          drawn.push(A);
+          if(A && showLabels && scale>60) labels.push({A,text:at.el});
+        }
+        for(const [p,q,o] of sub.bonds){
+          const A=drawn[p], B=drawn[q];
+          addBond(A,B,o, A&&B&&A.d<=front&&B.d<=front);
+        }
+      }
+    } else if(sub.lattice==='diamond'){
+      // A square net, puckered a little so it reads as a network rather
+      // than graph paper: alternate columns sit slightly up/down.
+      const pos = (i,j)=>[i*a + (j&1?0.06:-0.06)*a, j*a + (i&1?0.06:-0.06)*a];
+      const cache = new Map();
+      const get = (i,j)=>{ const key=i+','+j; if(cache.has(key)) return cache.get(key); const [x,y]=pos(i,j); const A=addAtom(sub.el,x,y,sub.r,{i,j,k:0}); cache.set(key,A); return A; };
+      for(let j=-n;j<=n;j++) for(let i=-n;i<=n;i++){
+        const A=get(i,j); if(!A) continue;
+        if(A.counted) counts.pieces=1;
+        if(showLabels && scale>60) labels.push({A,text:'C'});
+        const B=get(i+1,j), C=get(i,j+1);
+        addBond(A,B,1, B&&A.d<=front&&B.d<=front);
+        addBond(A,C,1, C&&A.d<=front&&C.d<=front);
+      }
+    } else if(sub.lattice==='silica'){
+      const cache = new Map();
+      const get = (i,j)=>{ const key=i+','+j; if(cache.has(key)) return cache.get(key); const A=addAtom('Si',i*a,j*a,sub.rSi,{i,j,k:0}); cache.set(key,A); return A; };
+      for(let j=-n;j<=n;j++) for(let i=-n;i<=n;i++){
+        const A=get(i,j); if(!A) continue;
+        if(A.counted) counts.pieces=1;
+        if(showLabels && scale>60) labels.push({A,text:'Si'});
+        const B=get(i+1,j), C=get(i,j+1);
+        if(A.counted){ counts.atoms+=2; counts.byEl.O=(counts.byEl.O||0)+2; if(A.lit) counts.hlAtoms+=2; }
+        const OH = addAtom('O',(i+0.5)*a,j*a,sub.rO,{i,j,k:1},true);
+        const OV = addAtom('O',i*a,(j+0.5)*a,sub.rO,{i,j,k:2},true);
+        if(OH){ addBond(A,OH,1,A.d<=front&&OH.d<=front); addBond(OH,B,1,B&&OH.d<=front&&B.d<=front); if(showLabels&&scale>60) labels.push({A:OH,text:'O'}); }
+        if(OV){ addBond(A,OV,1,A.d<=front&&OV.d<=front); addBond(OV,C,1,C&&OV.d<=front&&C.d<=front); if(showLabels&&scale>60) labels.push({A:OV,text:'O'}); }
+      }
+    } else if(sub.lattice==='checker'){
+      for(let j=-n;j<=n;j++) for(let i=-n;i<=n;i++){
+        const na = ((i+j)&1)===0;
+        const A = addAtom(na?'Na':'Cl', i*a, j*a, na?sub.rNa:sub.rCl, {i,j,k:0}, !na);
+        if(A && A.counted){ counts.pieces=1; if(na){ counts.atoms++; counts.byEl.Cl=(counts.byEl.Cl||0)+1; if(A.lit) counts.hlAtoms++; } }
+        if(A && showLabels && scale>60) labels.push({A,text:ION_LABELS[na?'Na':'Cl'], small:na});
+      }
+    } else if(sub.lattice==='hex'){
+      const rowH = a*Math.sqrt(3)/2;
+      const nj = Math.ceil(hw/rowH)+2, ni = n + Math.ceil(nj/2);
+      for(let j=-nj;j<=nj;j++) for(let i=-ni;i<=ni;i++){
+        // axial coords (i,j) -> offset layout, so hex distance works
+        const x = (i + j*0.5)*a, y = j*rowH;
+        if(Math.abs(x)>hw+a) continue;
+        const A = addAtom(sub.el, x, y, sub.r, {i,j,k:0});
+        if(A && A.counted) counts.pieces=1;
+        if(A && showLabels && scale>60) labels.push({A,text:ION_LABELS[sub.el]});
+      }
+    }
+
+    // ---- paint ----
+    ctx.strokeStyle = cssVar('--border-soft'); ctx.lineWidth = 2; ctx.strokeRect(0,0,S,S);
+
+    if(showWeak && sub.kind==='molecular'){
+      ctx.save(); ctx.setLineDash([Math.max(2,0.05*scale), Math.max(3,0.06*scale)]);
+      ctx.strokeStyle = cssVar('--weak'); ctx.lineWidth = Math.max(1, 0.02*scale); ctx.stroke(weakPath); ctx.restore();
+    }
+    ctx.lineCap='round';
+    ctx.save(); if(P.hl) ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = cssVar('--muted'); ctx.lineWidth = Math.max(1, 0.06*scale); ctx.stroke(bondPath);
+    for(const elName in dimPaths){ ctx.fillStyle = cssVar('--'+elName); ctx.fill(dimPaths[elName]); }
+    ctx.restore();
+    ctx.strokeStyle = cssVar('--hl'); ctx.lineWidth = Math.max(1.5, 0.06*scale); ctx.stroke(bondHlPath);
+    for(const elName in paths){ ctx.fillStyle = cssVar('--'+elName); ctx.fill(paths[elName]); }
+    ctx.strokeStyle = cssVar('--atom-edge'); ctx.lineWidth = 1; ctx.stroke(edgePath);
+    if(P.hl){ ctx.strokeStyle = cssVar('--hl'); ctx.lineWidth = Math.max(1.5, 0.035*scale); ctx.stroke(hlPath); }
+
+    if(sub.electrons){ drawElectrons(P, scale, sx, sy); }
+
+    if(labels.length){
+      ctx.fillStyle = cssVar('--label'); ctx.textAlign='center'; ctx.textBaseline='middle';
+      for(const L of labels){
+        const fs = Math.max(8, Math.min(L.A.R*1.1, 18));
+        ctx.font = `600 ${fs}px ${cssVar('--font')}`;
+        ctx.globalAlpha = (P.hl && !L.A.lit) ? 0.45 : 1;
+        ctx.fillText(L.text, L.A.X, L.A.Y+fs*0.05);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    P.hits = hits;
+    P.lastCounts = counts;
+    if(P.hl) P.hl.maxDepth = counts.maxDepthInView;
+    updatePanelStats(P, counts);
+  }
+
+  function drawElectrons(P, scale, sx, sy){
+    if(scale < 18) return; // too small to see; only the ions register
+    if(!P.electrons){
+      const R = 12, a = P.sub.a, area = (2*R)*(2*R), perAtom = a*a*Math.sqrt(3)/2;
+      const N = Math.round(1.2*area/perAtom);
+      P.electrons = { R, list: Array.from({length:N}, ()=>({ x:(Math.random()*2-1)*R, y:(Math.random()*2-1)*R, th:Math.random()*Math.PI*2 })) };
+    }
+    const ctx = P.ctx, S = P.size, E = P.electrons;
+    const path = new Path2D(), r = Math.max(1.2, 0.035*scale);
+    for(const e of E.list){
+      const X=sx(e.x), Y=sy(e.y);
+      if(X<-4||X>S+4||Y<-4||Y>S+4) continue;
+      path.moveTo(X+r,Y); path.arc(X,Y,r,0,Math.PI*2);
+    }
+    ctx.fillStyle = cssVar('--E'); ctx.fill(path);
+  }
+  function stepElectrons(dt){
+    for(const P of panels){
+      if(!P.electrons) continue;
+      const E=P.electrons, v=0.35, a=P.sub.a, rowH=a*Math.sqrt(3)/2, keep=P.sub.r+0.04;
+      for(const e of E.list){
+        e.th += (Math.random()-0.5)*2.5*Math.sqrt(dt*6);
+        e.x += Math.cos(e.th)*v*dt; e.y += Math.sin(e.th)*v*dt;
+        if(e.x>E.R) e.x-=2*E.R; else if(e.x<-E.R) e.x+=2*E.R;
+        if(e.y>E.R) e.y-=2*E.R; else if(e.y<-E.R) e.y+=2*E.R;
+        // Keep out of the ions: find the nearest lattice site and push
+        // the electron back to its surface, then send it off sideways.
+        const j0=Math.round(e.y/rowH), i0=Math.round(e.x/a - j0*0.5);
+        let bx=0, by=0, bd=Infinity;
+        for(let dj=-1;dj<=1;dj++) for(let di=-1;di<=1;di++){
+          const cx=(i0+di + (j0+dj)*0.5)*a, cy=(j0+dj)*rowH, d=Math.hypot(e.x-cx,e.y-cy);
+          if(d<bd){ bd=d; bx=cx; by=cy; }
+        }
+        if(bd<keep){
+          const nx=(e.x-bx)/(bd||1e-6), ny=(e.y-by)/(bd||1e-6);
+          e.x=bx+nx*keep; e.y=by+ny*keep;
+          e.th = Math.atan2(ny,nx) + (Math.random()<0.5?1:-1)*Math.PI/2*(0.6+Math.random()*0.8);
+        }
+      }
+    }
+  }
+
+  function updatePanelStats(P, c){
+    const sub = P.sub;
+    P.atoms.innerHTML = fmt(c.atoms) + (sub.kind==='giant' && sub.lattice!=='diamond' && sub.lattice!=='hex'
+      ? `<small>${Object.keys(c.byEl).map(e=>(ION_LABELS[e]||e)+' '+fmt(c.byEl[e]||0)).join(', ')}${ratioText(sub)}</small>` : '');
+    if(sub.kind==='molecular'){
+      const unit = sub.atoms.length===1 ? 'atom' : 'molecule';
+      P.pieces.innerHTML = fmt(c.pieces) + `<small>${c.pieces===1 ? 'one '+unit : 'separate '+unit+'s'}, each with its own edges</small>`;
+    } else {
+      P.pieces.innerHTML = '1' + `<small>one piece, and it carries on past the edge of the view</small>`;
+    }
+    // highlight message
+    if(!P.hl){ P.hlMsg.textContent = 'Click an atom to see how far the strong bonds reach.'; return; }
+    if(sub.kind==='molecular'){
+      const total = sub.atoms.length;
+      if(c.hlAtoms>=total || P.hl.front>=P.hl.maxDepth){
+        P.hlMsg.innerHTML = `Strong bonds reach <b>${total} atom${total>1?'s':''}</b> and then stop. That is one ${total===1?'atom':'molecule'}; the dashed lines to the neighbours are only weak forces.`;
+      } else P.hlMsg.innerHTML = `Following the strong bonds outwards…`;
+    } else {
+      const reached = P.hl.front >= c.maxDepthInView;
+      P.hlMsg.innerHTML = reached
+        ? `Strong bonds reach <b>${fmt(c.hlAtoms)} atoms</b>, right to the edge of the view, and would carry on if you zoomed out. There is no molecule to find.`
+        : `Following the strong bonds outwards: <b>${fmt(c.hlAtoms)} atoms</b> so far and still going…`;
+    }
+  }
+  function ratioText(sub){
+    if(sub.lattice==='silica') return ' (each O is shared between two Si)';
+    if(sub.lattice==='checker') return ' (counted in Na⁺Cl⁻ pairs)';
+    return '';
+  }
+
+  // ---------- animation loop ----------
+  function needsLoop(){
+    if(zoomAnim) return true;
+    for(const P of panels){
+      if(P.sub.electrons && P.size/(2*hw) >= 18) return true;
+      if(P.hl && P.hl.front < P.hl.maxDepth + 1) return true;
+    }
+    return false;
+  }
+  function ensureLoop(){ if(!rafId && needsLoop()){ lastTs=null; rafId=requestAnimationFrame(loop); } }
+  function loop(ts){
+    if(lastTs===null) lastTs=ts;
+    const dt = Math.min((ts-lastTs)/1000, 1/20); lastTs=ts;
+
+    if(zoomAnim){
+      const u = Math.min(1, (ts-zoomAnim.t0)/ZOOM_ANIM_MS);
+      const e = u<0.5 ? 2*u*u : 1-Math.pow(-2*u+2,2)/2;
+      const v = Math.exp(zoomAnim.from + (zoomAnim.to-zoomAnim.from)*e);
+      if(u>=1) zoomAnim=null;
+      setHw(v);
+    }
+    for(const P of panels){
+      if(P.hl && P.hl.front < P.hl.maxDepth + 1){
+        // Spread fast enough to cross the current view in a few seconds
+        // however far out we are zoomed, but never slower than one bond
+        // every eighth of a second, so a molecule fills in visibly.
+        const speed = Math.max(8, P.hl.maxDepth/2.5);
+        P.hl.front += speed*dt;
+      }
+    }
+    stepElectrons(dt);
+    if(!zoomAnim) render();
+    if(needsLoop()) rafId=requestAnimationFrame(loop); else rafId=null;
+  }
+
+  // ---------- controls ----------
+  const el = {
+    zoomSlider: document.getElementById('zoomSlider'), zoomVal: document.getElementById('zoomVal'),
+    weakToggle: document.getElementById('weakToggle'), labelToggle: document.getElementById('labelToggle'),
+    zoomInBtn: document.getElementById('zoomInBtn'), zoomOutBtn: document.getElementById('zoomOutBtn'),
+    clearBtn: document.getElementById('clearBtn'),
+  };
+  el.zoomSlider.addEventListener('input', ()=>{
+    zoomAnim = null;
+    const f = +el.zoomSlider.value/1000;
+    setHw(HW_MIN*Math.pow(HW_MAX/HW_MIN, f));
+    ensureLoop();
+  });
+  el.zoomInBtn.addEventListener('click', ()=> animateZoomTo(HW_MIN));
+  el.zoomOutBtn.addEventListener('click', ()=> animateZoomTo(HW_MAX));
+  el.clearBtn.addEventListener('click', ()=>{ for(const P of panels) P.hl=null; render(); });
+  el.weakToggle.addEventListener('click', ()=>{ showWeak=!showWeak; el.weakToggle.classList.toggle('active', showWeak); render(); });
+  el.labelToggle.addEventListener('click', ()=>{ showLabels=!showLabels; el.labelToggle.classList.toggle('active', showLabels); render(); });
+
+  window.addEventListener('keydown', e=>{
+    if(e.target && e.target.tagName==='SELECT') return;
+    if(e.key==='+' || e.key==='='){ zoomAnim=null; setHw(hw/1.25); ensureLoop(); }
+    else if(e.key==='-' || e.key==='_'){ zoomAnim=null; setHw(hw*1.25); ensureLoop(); }
+    else if(e.key==='c' || e.key==='C'){ for(const P of panels) P.hl=null; render(); }
+  });
+
+  let rt;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(rt);
+    rt=setTimeout(()=>{ sizePanels(); render(); reportHeight(); }, 120);
+  });
+  function reportHeight(){
+    const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    window.parent.postMessage({ type:'simHeight', height:h }, '*');
+  }
+
+  // ---------- boot ----------
+  sizePanels();
+  setHw(HW_MIN);
+  ensureLoop();
+  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>
