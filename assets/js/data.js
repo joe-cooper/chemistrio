@@ -91,6 +91,11 @@ const simulations = [
     { id:"mo-formation-heteronuclear-sim", title:"Molecular Orbital Formation - Heteronuclear Diatomic Molecules", seoTitle:"Molecular Orbitals: Heteronuclear", topic:"Quantum", level:"Pre-University",
     desc:"Molecular orbital diagrams for Period 2 heteronuclear diatomic molecules.",  file:"/simulations/mo-formation-heteronuclear-sim.html",
     notes:"/simulations/notes/mo-formation-heteronuclear-sim.md", added:"2026-07-24" },
+  { id:"electron-config-sim", title:"Electron Configuration", topic:"Atomic Structure", level:"A-level",
+    desc:"Orbital energy-level diagram for every element up to krypton. Step from one element to the next to watch electrons fill shells, sub-shells and orbitals by the Aufbau principle and Hund's rule, and add or remove electrons to form ions.", featured:true, file:"/simulations/electron-config-sim.html", notes:"", added:"2026-09-16" },
+    { id:"ms-deflection-sim", title:"Mass Spectrometry - Deflection", seoTitle:"Mass Spectrometry - Deflection", topic:"Atomic Structure", level:"A-Level",
+    desc:"Simulation of deflection-based mass spectrometry.",  file:"/simulations/ms-deflection-sim.html",
+    notes:"/simulations/notes/ms-deflection-sim.md", added:"2026-09-16" },
 ];
 
 const resources = [

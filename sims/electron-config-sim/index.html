@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>chemistr.io | Chemistry Simulations and Resources</title>
-<meta name="description" content="Free interactive chemistry simulations and teaching notes for GCSE, A-level and Pre-University Chemistry: kinetics, equilibrium, acids and bases, quantum and organic mechanisms.">
-<link rel="canonical" href="https://chemistr.io/">
+<title>Electron Configuration Simulation | A-level Chemistry</title>
+<meta name="description" content="Orbital energy-level diagram for every element up to krypton. Step from one element to the next to watch electrons fill shells, sub-shells and orbitals by the…">
+<link rel="canonical" href="https://chemistr.io/sims/electron-config-sim/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="chemistr.io">
-<meta property="og:title" content="chemistr.io | Chemistry Simulations and Resources">
-<meta property="og:description" content="Free interactive chemistry simulations and teaching notes for GCSE, A-level and Pre-University Chemistry: kinetics, equilibrium, acids and bases, quantum and organic mechanisms.">
-<meta property="og:url" content="https://chemistr.io/">
+<meta property="og:title" content="Electron Configuration Simulation | A-level Chemistry">
+<meta property="og:description" content="Orbital energy-level diagram for every element up to krypton. Step from one element to the next to watch electrons fill shells, sub-shells and orbitals by the…">
+<meta property="og:url" content="https://chemistr.io/sims/electron-config-sim/">
 <meta name="twitter:card" content="summary_large_image">
 <!--prerender:head:start-->
 <meta property="og:image" content="https://chemistr.io/assets/img/og/default.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="chemistr.io — free interactive chemistry simulations">
+<meta property="og:image:alt" content="Screenshot of the Electron Configuration chemistry simulation">
 <meta name="twitter:image" content="https://chemistr.io/assets/img/og/default.png">
 <script type="application/ld+json">
 {
@@ -41,15 +41,78 @@
     },
     {
       "@type": "WebPage",
-      "@id": "https://chemistr.io/#webpage",
-      "url": "https://chemistr.io/",
-      "name": "chemistr.io | Chemistry Simulations and Resources",
-      "description": "Free interactive chemistry simulations and teaching notes for GCSE, A-level and Pre-University Chemistry: kinetics, equilibrium, acids and bases, quantum and organic mechanisms.",
+      "@id": "https://chemistr.io/sims/electron-config-sim/#webpage",
+      "url": "https://chemistr.io/sims/electron-config-sim/",
+      "name": "Electron Configuration Simulation | A-level Chemistry",
+      "description": "Orbital energy-level diagram for every element up to krypton. Step from one element to the next to watch electrons fill shells, sub-shells and orbitals by the…",
       "isPartOf": {
         "@id": "https://chemistr.io/#website"
       },
       "inLanguage": "en-GB",
-      "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/"
+      "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "breadcrumb": {
+        "@id": "https://chemistr.io/sims/electron-config-sim/#breadcrumb"
+      },
+      "mainEntity": {
+        "@id": "https://chemistr.io/sims/electron-config-sim/#resource"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://chemistr.io/sims/electron-config-sim/#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://chemistr.io/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Simulations",
+          "item": "https://chemistr.io/sims/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Electron Configuration",
+          "item": "https://chemistr.io/sims/electron-config-sim/"
+        }
+      ]
+    },
+    {
+      "@type": "LearningResource",
+      "@id": "https://chemistr.io/sims/electron-config-sim/#resource",
+      "name": "Electron Configuration",
+      "url": "https://chemistr.io/sims/electron-config-sim/",
+      "description": "Orbital energy-level diagram for every element up to krypton. Step from one element to the next to watch electrons fill shells, sub-shells and orbitals by the Aufbau principle and Hund's rule, and add or remove electrons to form ions.",
+      "learningResourceType": "Interactive simulation",
+      "educationalLevel": "A-level",
+      "about": {
+        "@type": "Thing",
+        "name": "Chemistry"
+      },
+      "teaches": "Atomic Structure",
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "student"
+      },
+      "inLanguage": "en-GB",
+      "isAccessibleForFree": true,
+      "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "author": {
+        "@id": "https://chemistr.io/#organization"
+      },
+      "publisher": {
+        "@id": "https://chemistr.io/#organization"
+      },
+      "isPartOf": {
+        "@id": "https://chemistr.io/#website"
+      },
+      "image": "https://chemistr.io/assets/img/og/default.png",
+      "datePublished": "2026-09-16",
+      "dateModified": "2026-09-16"
     }
   ]
 }
@@ -95,86 +158,13 @@
        current route's copy between the markers below so it's in the HTML
        a crawler receives; app.js fetches and mounts it for every later
        in-page navigation. See PAGES in assets/js/app.js. -->
-  <div class="page active" id="pageMount" data-prerendered-for="home"><!--prerender:page:start-->
-<h1>Resources for GCSE, A-Level and Pre-University Chemistry</h1>
-<p class="lead">A collection of interactive simulations and teaching resources for teachers and students.</p>
-<div class="actions">
-  <a class="btn" href="/sims">Browse simulations</a>
-  <!-- <button class="btn secondary" onclick="go('resources')">Teaching resources</button> -->
-   <!-- <button class="btn secondary" onclick="go('quizzes')">Quizzes</button> -->
-</div>
-
-<div class="home-section">
-  <h2>Popular simulations</h2>
-  <ul class="plain-list" id="featuredList">
-    <li>
-      <a class="linkish" href="/sims/phase-transitions-sim">
-        <span>State Changes</span>
-        <span class="meta">Kinetic Theory of Matter &middot; GCSE</span>
-      </a>
-    </li>
-    <li>
-      <a class="linkish" href="/sims/maxwell-boltzmann">
-        <span>Maxwell–Boltzmann Distribution</span>
-        <span class="meta">Rates/Kinetics &middot; A-level</span>
-      </a>
-    </li>
-    <li>
-      <a class="linkish" href="/sims/eqm-sim">
-        <span>Chemical Equilibrium</span>
-        <span class="meta">Equilibrium &middot; A-level</span>
-      </a>
-    </li>
-    <li>
-      <a class="linkish" href="/sims/molecule-shapes-sim">
-        <span>Shapes of Molecules (VSEPR)</span>
-        <span class="meta">Bonding &amp; Structure &middot; A-level</span>
-      </a>
-    </li>
-    <li>
-      <a class="linkish" href="/sims/ph-curve-sim">
-        <span>Acid–Base Titration</span>
-        <span class="meta">Acids &amp; Bases &middot; A-level</span>
-      </a>
-    </li>
-    <li>
-      <a class="linkish" href="/sims/buffer-sim">
-        <span>Buffer Solutions</span>
-        <span class="meta">Acids &amp; Bases &middot; A-level</span>
-      </a>
-    </li>
-    <li>
-      <a class="linkish" href="/sims/weak-acid-sim">
-        <span>Weak Acid pH — Approximation vs Exact</span>
-        <span class="meta">Acids &amp; Bases &middot; A-level</span>
-      </a>
-    </li>
-    <li>
-      <a class="linkish" href="/sims/curly-arrows-sim">
-        <span>Organic Mechanisms</span>
-        <span class="meta">Organic &middot; A-Level</span>
-      </a>
-    </li>
-    <li>
-      <a class="linkish" href="/sims/mo-formation-homonuclear-sim">
-        <span>Molecular Orbital Formation - Homonuclear Diatomic Molecules</span>
-        <span class="meta">Quantum &middot; Pre-University</span>
-      </a>
-    </li>
-    <li>
-      <a class="linkish" href="/sims/electron-config-sim">
-        <span>Electron Configuration</span><span class="new-badge">New</span>
-        <span class="meta">Atomic Structure &middot; A-level</span>
-      </a>
-    </li></ul>
-</div>
-<!--prerender:page:end--></div>
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
 
   <!-- SIMULATION VIEWER -->
-  <section class="viewer" id="page-viewer">
+  <section class="viewer active" id="page-viewer">
     <div class="viewer-bar">
       <a class="back-link" href="/sims">&larr; Back to simulations</a>
-      <h1 class="vtitle" id="viewerTitle"></h1>
+      <h1 class="vtitle" id="viewerTitle">Electron Configuration</h1>
       <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
       <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
         <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
@@ -183,14 +173,16 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc"></p>
+    <p class="vdesc" id="viewerDesc">Orbital energy-level diagram for every element up to krypton. Step from one element to the next to watch electrons fill shells, sub-shells and orbitals by the Aufbau principle and Hund's rule, and add or remove electrons to form ions.</p>
     <div class="viewer-layout">
       <!-- app.js clears this and drops the simulation's iframe in. Until
            then it holds a plain link to the simulation's own page, which
            gives crawlers something to follow and anyone without JS a way
            through to the simulation itself. -->
-      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start--><!--prerender:frame:end--></div>
-      <aside class="notes-sidebar" id="notesSidebar">
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/electron-config-sim.html">Open the Electron Configuration simulation</a></p>
+      <!--prerender:frame:end--></div>
+      <aside class="notes-sidebar" id="notesSidebar" style="display:none;">
         <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
           <span class="notes-toggle-arrow">&#9664;</span>
           <span class="notes-toggle-label">Teaching notes</span>

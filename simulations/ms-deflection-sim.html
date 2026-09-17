@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mass Spectrometry — Deflection Instrument</title>
+<link rel="canonical" href="https://chemistr.io/sims/ms-deflection-sim/">
+<link rel="icon" href="https://chemistr.io/favicon.ico" sizes="32x32">
+<link rel="icon" href="https://chemistr.io/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="https://chemistr.io/assets/img/apple-touch-icon.png">
+<!-- NOTE (Joe): path assumed by convention from theme.js's own reference to
+     "assets/js/theme.js" in mb-sim.html — adjust if your actual site path differs. -->
+<link rel="stylesheet" href="/assets/css/theme.css">
+<script src="/assets/js/theme.js" defer></script>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font);
+    -webkit-font-smoothing:antialiased;
+    padding:16px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* ---------- main layout ---------- */
+  .stage{
+    display:grid;
+    grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);
+    gap:14px;
+    margin-bottom:14px;
+  }
+  @media(max-width:860px){.stage{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:12px;
+    position:relative;
+  }
+  .card-label{
+    font-size:13px;font-weight:600;
+    color:var(--muted);
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:10px;
+  }
+  .card-label .right{color:var(--muted-dim);font-weight:400;font-size:12px;}
+  .toggles{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .curve-toggle{
+    font-family:var(--font);font-size:12px;
+    background:transparent;border:0;cursor:pointer;padding:2px 0;
+    color:var(--gold-dim);display:inline-flex;align-items:center;gap:7px;
+    transition:color .15s;
+  }
+  .curve-toggle .swatch{
+    width:16px;height:2px;border-radius:1px;background:var(--gold);
+    transition:opacity .15s,background .15s;
+  }
+  .curve-toggle:hover{color:var(--gold);}
+  .curve-toggle[aria-pressed="false"]{color:var(--muted-dim);}
+  .curve-toggle[aria-pressed="false"] .swatch{background:var(--muted-dim);box-shadow:none;opacity:.5;}
+  .curve-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px;}
+  .curve-toggle .swatch.diamond{
+    width:8px;height:8px;border-radius:1px;background:transparent;
+    border:2px solid var(--gold);transform:rotate(45deg);
+  }
+  .curve-toggle[aria-pressed="false"] .swatch.diamond{border-color:var(--muted-dim);opacity:.5;}
+
+  canvas{display:block;width:100%;height:auto;border-radius:3px;}
+  #app{background:#05070c;}
+  #spec{height:100%;}
+
+  /* ---------- readout column ---------- */
+  .readout{display:flex;flex-direction:column;}
+  .spec-wrap{flex:1;min-height:0;}
+
+  .stats{
+    display:grid;grid-template-columns:repeat(5,1fr);
+    gap:1px;background:var(--border-soft);
+    border:1px solid var(--border-soft);border-radius:4px;overflow:hidden;
+    margin-top:10px;
+  }
+  .stat{background:var(--raised);padding:8px 10px;}
+  .stat .k{
+    font-size:11.5px;color:var(--muted-dim);
+    display:block;margin-bottom:4px;
+  }
+  .stat .v{
+    font-variant-numeric:tabular-nums;
+    font-size:16px;font-weight:600;
+    color:var(--text);line-height:1;
+  }
+  .stat .v small{font-size:10px;color:var(--muted);font-weight:400;margin-left:2px;}
+  .stat.accent .v{color:var(--accent);}
+  @media(max-width:520px){.stats{grid-template-columns:repeat(2,1fr);}}
+
+  /* ---------- controls ---------- */
+  .controls{
+    background:var(--surface);border:1px solid var(--border);border-radius:6px;
+    padding:14px 16px;
+    display:grid;
+    grid-template-columns:auto auto 1fr 1fr auto;
+    gap:18px 22px;align-items:center;
+  }
+  @media(max-width:860px){
+    .controls{grid-template-columns:1fr 1fr;gap:14px;}
+    .ctl-run{grid-column:1 / -1;}
+  }
+  @media(max-width:460px){.controls{grid-template-columns:1fr;}}
+
+  .ctl-label{
+    font-size:12px;font-weight:600;color:var(--muted-dim);
+    margin-bottom:8px;display:block;
+  }
+
+  .mode-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  .mode-btns button{
+    font-family:var(--font);font-size:13px;font-weight:500;
+    background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:4px;
+    padding:7px 13px;cursor:pointer;
+    transition:background .15s,border-color .15s,color .15s;white-space:nowrap;
+  }
+  .mode-btns button[aria-pressed="true"]{background:var(--accent);color:#0d1117;border-color:var(--accent);font-weight:500;}
+  .mode-btns button:hover:not([aria-pressed="true"]){color:var(--text);border-color:var(--muted-dim);}
+
+  .slider-row{display:flex;flex-direction:column;}
+  .slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+  .slider-head .ctl-label{margin:0;}
+  .slider-head .val{font-variant-numeric:tabular-nums;font-size:13px;font-weight:500;color:var(--text);}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:3px;
+    background:var(--border);border-radius:2px;outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--text);border:2px solid var(--surface);
+    box-shadow:0 0 0 1px var(--border);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:var(--text);
+    border:2px solid var(--surface);box-shadow:0 0 0 1px var(--border);cursor:pointer;
+  }
+  input[type=range]:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 2px var(--accent);}
+  input[type=range]:disabled{opacity:.4;cursor:not-allowed;}
+
+  .ctl-run{display:flex;gap:10px;align-items:flex-end;height:100%;}
+  .btn{
+    font-family:var(--font);font-size:13.5px;font-weight:600;
+    cursor:pointer;border-radius:4px;
+    padding:9px 16px;transition:background .15s,border-color .15s,color .15s;
+  }
+  .btn-run{background:var(--accent);color:#0d1117;border:1px solid var(--accent);min-width:100px;}
+  .btn-run:hover{background:var(--gold);}
+  .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:var(--muted-dim);}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  /* ---------- model notes ---------- */
+  .notes{
+    margin-top:14px;font-size:12px;line-height:1.6;color:var(--muted-dim);
+    border-top:1px solid var(--border-soft);padding-top:12px;
+  }
+  .notes strong{color:var(--muted);font-weight:600;}
+  .notes ul{margin:6px 0 0;padding-left:18px;}
+  .notes li{margin-bottom:3px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="stage">
+    <!-- apparatus -->
+    <div class="card">
+      <div class="card-label">
+        <span>Ion path — mass-to-charge → colour</span>
+        <span class="right" id="phaseLabel">paused</span>
+      </div>
+      <canvas id="app" width="1240" height="920" aria-label="Deflection mass spectrometer apparatus" style="aspect-ratio: 620 / 460;"></canvas>
+    </div>
+
+    <!-- spectrum + stats -->
+    <div class="card readout">
+      <div class="card-label">
+        <span>Mass spectrum</span>
+        <div class="toggles">
+          <button class="curve-toggle" id="litToggle" aria-pressed="false">
+            <span class="swatch diamond"></span>literature abundance
+          </button>
+        </div>
+      </div>
+      <div class="spec-wrap">
+        <canvas id="spec" width="1100" height="820" aria-label="Live-built mass spectrum bar chart"></canvas>
+      </div>
+      <div class="stats">
+        <div class="stat"><span class="k">Accel. voltage</span><span class="v" id="sV">2.0<small>kV</small></span></div>
+        <div class="stat"><span class="k">Magnetic field</span><span class="v" id="sB">0.250<small>T</small></span></div>
+        <div class="stat"><span class="k">Radius (this ion)</span><span class="v" id="sR">—<small>m</small></span></div>
+        <div class="stat accent"><span class="k">Focused species</span><span class="v" id="sFocus">—</span></div>
+        <div class="stat accent"><span class="k">Ions detected</span><span class="v" id="sDet">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- controls -->
+  <div class="controls">
+    <div>
+      <span class="ctl-label">Sample</span>
+      <div class="mode-btns" role="group" aria-label="Sample">
+        <button id="sampleNe" aria-pressed="false">Neon</button>
+        <button id="sampleCl" aria-pressed="true">Chlorine</button>
+        <button id="sampleBr" aria-pressed="false">Bromine</button>
+      </div>
+    </div>
+
+    <div>
+      <span class="ctl-label">Scan mode</span>
+      <div class="mode-btns" role="group" aria-label="Scan mode">
+        <button id="modeManual" aria-pressed="true">Manual</button>
+        <button id="modeScan" aria-pressed="false">Auto-scan</button>
+      </div>
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-head"><span class="ctl-label">Accelerating voltage</span><span class="val" id="vVal">2.0 kV</span></div>
+      <input type="range" id="vSlider" min="500" max="5000" step="50" value="2000">
+    </div>
+
+    <div class="slider-row">
+      <div class="slider-head"><span class="ctl-label">Magnetic flux density</span><span class="val" id="bVal">0.250 T</span></div>
+      <input type="range" id="bSlider" min="0.05" max="0.65" step="0.001" value="0.25">
+    </div>
+
+    <div class="ctl-run">
+      <button class="btn btn-run" id="runBtn">Run</button>
+      <button class="btn btn-ghost" id="resetBtn">Reset</button>
+    </div>
+  </div>
+
+  <div class="notes">
+    <strong>Model notes.</strong> Real physics drives every reading: ions are singly charged (z&nbsp;=&nbsp;+1),
+    accelerate through p.d. <em>V</em> to speed v&nbsp;=&nbsp;√(2eV/m), then follow a semicircular path of radius
+    r&nbsp;=&nbsp;mv/(eB) through the magnetic sector — only ions whose radius matches the fixed detector radius
+    (15&nbsp;cm) reach the slit; everything else strikes the flight-tube wall. Isotopic abundances are literature
+    (IUPAC) values.
+    <ul>
+      <li>Acceleration is treated as instantaneous (the field region's extent and transit time are ignored).</li>
+      <li>Animation speed is slowed by a large constant factor for visibility — real transit times are microseconds — but relative speeds between ions are physically accurate, so heavier ions do visibly cross the plates more slowly.</li>
+      <li>The detector accepts a narrow window around the exact resonant radius (equivalent to resolving isotopes differing by &lt;1 u); the drawn slit gap and the flight tube's width are widened purely for visibility and aren't what decides a hit.</li>
+      <li>Because the animation is slowed so much, an ion's path is fixed by the field at the moment it enters the tube, and the detector count is delayed by the same transit time, so the count rises as ions on screen reach the slit rather than the instant the field is set.</li>
+      <li>The ions drawn on the canvas are a sparse sample of the beam, slowed for visibility; the detector counts the whole beam, so the ion count climbs far faster than the drawn ions land. Peak heights are the running fraction of detected ions per isotope, so early in a run (or after a single sweep) small-sample noise is expected — this mirrors why real spectrometers average many scans.</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- spectral colour ramp (light -> heavy), same stops as the
+  // Maxwell-Boltzmann sim's speed ramp, reused here for mass-to-charge ----------
+  const STOPS = [
+    [0.00, [43, 58,143]],
+    [0.20, [47,111,208]],
+    [0.40, [40,182,200]],
+    [0.55, [63,191,111]],
+    [0.70, [216,196, 58]],
+    [0.85, [232,137, 58]],
+    [1.00, [224, 69, 47]],
+  ];
+  function ramp(t){
+    t = t<0?0:t>1?1:t;
+    for(let i=1;i<STOPS.length;i++){
+      if(t<=STOPS[i][0]){
+        const [a,ca]=STOPS[i-1], [b,cb]=STOPS[i];
+        const f=(t-a)/(b-a);
+        return [
+          Math.round(ca[0]+(cb[0]-ca[0])*f),
+          Math.round(ca[1]+(cb[1]-ca[1])*f),
+          Math.round(ca[2]+(cb[2]-ca[2])*f),
+        ];
+      }
+    }
+    return STOPS[STOPS.length-1][1];
+  }
+  const rgb = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+  const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  // ---------- physics constants ----------
+  const AMU = 1.66053906660e-27;   // kg
+  const QE  = 1.602176634e-19;     // C — all ions z=+1
+  const R_DET = 0.15;              // m — fixed detector (flight-tube) radius
+  const TOL   = 0.006;             // fractional radius tolerance for detection (~0.6%)
+
+  function speedMps(massU, V){ return Math.sqrt(2*QE*V/(massU*AMU)); }
+  function radiusM(massU, V, B){ return Math.sqrt(2*massU*AMU*V/QE) / B; }
+  function resonantB(massU, V){ return Math.sqrt(2*massU*AMU*V/QE) / R_DET; }
+  function isDetected(massU, V, B){
+    const r = radiusM(massU, V, B);
+    return Math.abs(r - R_DET) / R_DET <= TOL;
+  }
+
+  // ---------- sample presets (literature isotopic abundances) ----------
+  const SAMPLES = {
+    Ne: { name:'Neon', isotopes:[
+      {mass:19.9924, label:'Ne-20', abundance:0.9048},
+      {mass:20.9938, label:'Ne-21', abundance:0.0027},
+      {mass:21.9914, label:'Ne-22', abundance:0.0925},
+    ]},
+    Cl: { name:'Chlorine', isotopes:[
+      {mass:34.9689, label:'Cl-35', abundance:0.7576},
+      {mass:36.9659, label:'Cl-37', abundance:0.2424},
+    ]},
+    Br: { name:'Bromine', isotopes:[
+      {mass:78.9183, label:'Br-79', abundance:0.5069},
+      {mass:80.9163, label:'Br-81', abundance:0.4931},
+    ]},
+  };
+
+  // ---------- DOM ----------
+  const appCanvas  = document.getElementById('app');
+  const specCanvas = document.getElementById('spec');
+  const actx = appCanvas.getContext('2d');
+  const sctx = specCanvas.getContext('2d');
+
+  const el = {
+    run: document.getElementById('runBtn'),
+    reset: document.getElementById('resetBtn'),
+    sampleNe: document.getElementById('sampleNe'),
+    sampleCl: document.getElementById('sampleCl'),
+    sampleBr: document.getElementById('sampleBr'),
+    modeManual: document.getElementById('modeManual'),
+    modeScan: document.getElementById('modeScan'),
+    vSlider: document.getElementById('vSlider'),
+    vVal: document.getElementById('vVal'),
+    bSlider: document.getElementById('bSlider'),
+    bVal: document.getElementById('bVal'),
+    phase: document.getElementById('phaseLabel'),
+    litToggle: document.getElementById('litToggle'),
+    sV: document.getElementById('sV'),
+    sB: document.getElementById('sB'),
+    sR: document.getElementById('sR'),
+    sFocus: document.getElementById('sFocus'),
+    sDet: document.getElementById('sDet'),
+  };
+
+  // ---------- state ----------
+  let sampleKey = 'Cl';
+  let scanMode = 'manual';       // 'manual' | 'scan'
+  let running = false;
+  let showLit = false;
+  let particles = [];
+  let counts = [];               // detected counts per isotope index, current sample
+  let totalDetected = 0;
+  let lastFocusLabel = '—';
+  let lastRadiusM = null;
+  let scanJustCompleted = false;
+  let scanDraining = false;      // sweep has reached B_MAX; letting drawn ions land before stopping
+  let scanB = 0;                 // sweep position, kept at full precision: the slider's own value is
+                                 // rounded to 3 dp, and at high frame rates a single frame's step is
+                                 // below that, so reading B back off the slider would stall the sweep
+
+  const B_MIN = +el.bSlider.min, B_MAX = +el.bSlider.max;
+  const SCAN_DURATION_S = 20;    // seconds for a full B_MIN -> B_MAX sweep
+
+  function currentSample(){ return SAMPLES[sampleKey]; }
+  function resetCounts(){
+    counts = currentSample().isotopes.map(()=>0);
+    totalDetected = 0;
+    lastFocusLabel = '—';
+    lastRadiusM = null;
+  }
+
+  // ---------- canvas sizing (crisp) ----------
+  let dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  window.addEventListener('resize', () => {
+    dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  });
+  const APP_W = 620, APP_H = 460;
+  function sizeCanvas(canvas, ctx, cssW, cssH){
+    canvas.style.aspectRatio = (cssW/cssH).toString();
+    const w = canvas.clientWidth || cssW;
+    const h = w * cssH/cssW;
+    canvas.width  = Math.round(w*dpr);
+    canvas.height = Math.round(h*dpr);
+    ctx.setTransform(dpr*w/cssW,0,0,dpr*h/cssH,0,0);
+  }
+  let specW = 520, specH = 320;
+  function sizeSpecCanvas(canvas, ctx){
+    const wrap = canvas.parentElement;
+    specW = Math.max(200, wrap.clientWidth || 520);
+    specH = Math.max(120, wrap.clientHeight || 320);
+    canvas.width  = Math.round(specW*dpr);
+    canvas.height = Math.round(specH*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function resizeAll(){
+    sizeCanvas(appCanvas, actx, APP_W, APP_H);
+    sizeSpecCanvas(specCanvas, sctx);
+  }
+
+  // ---------- apparatus geometry (logical px, matches APP_W/APP_H) ----------
+  const SCALE = 850;            // px per metre
+  const ENTRY_X = 150, ENTRY_Y = 90;
+  const STRAIGHT_PX = 90;       // length of the acceleration section drawn
+  const ION_X = ENTRY_X - STRAIGHT_PX;
+  const VISUAL_SPEED_FACTOR = 3.8e-6;  // artistic slow-down; see model notes
+  const SLIT_HALF_PX = 9;       // drawn slit half-width (cosmetic only)
+  const R_DET_PX = R_DET*SCALE; // detector radius, i.e. the flight tube's centreline
+  const TUBE_HALF_PX = 22;      // half-width of the semicircular flight tube
+
+  // Arc length (px) an ion of path radius rPx travels from the tube mouth before
+  // it meets the tube wall, or null if it reaches the end plate. The path is a
+  // circle of radius rPx centred at (ENTRY_X, ENTRY_Y+rPx); the tube is the
+  // annulus R_DET_PX +/- TUBE_HALF_PX centred at (ENTRY_X, ENTRY_Y+R_DET_PX).
+  // Both start together at the mouth, and the ion's distance from the tube
+  // centre then grows (rPx > R) or shrinks (rPx < R) monotonically with angle.
+  function tubeWallArc(rPx){
+    const R = R_DET_PX, h = TUBE_HALF_PX, d = rPx - R;
+    if(Math.abs(d) <= h/2) return null;          // still inside the tube at the end plate
+    const wallR = d > 0 ? R + h : R - h;
+    const sinT = (wallR*wallR - rPx*rPx - d*d) / (2*rPx*d);
+    const theta = Math.asin(Math.max(-1, Math.min(1, sinT)));
+    return rPx*(theta + Math.PI/2);
+  }
+
+  // ---------- detector counting ----------
+  // The counts behind the spectrum come from the whole ion beam, not from the
+  // handful of ions drawn on the canvas: the drawn ions are a sparse visual
+  // sample, far too few to register anything during a sweep (the field sits in
+  // an isotope's detection window for only ~0.1 s). Each frame, every isotope
+  // in focus at the current V and B emits a Poisson-distributed packet of ions
+  // at its share of the beam, so peak heights still carry genuine small-sample
+  // noise early in a run. A packet is counted only when it would reach the
+  // detector: it is delayed by the same (slowed-down) transit time as the
+  // drawn ions, so the count rises as the ions on screen hit the slit, not
+  // the moment the field is set.
+  const SOURCE_RATE = 3000; // ions/sec in the beam, all isotopes together
+  let packets = [];         // {idx, n, arriveAt} beam packets in flight that will be detected
+  let simT = 0;             // animation clock (s); only advances while running
+
+  function transitS(massU, V, rPx){
+    return (STRAIGHT_PX + Math.PI*rPx) / (speedMps(massU, V)*SCALE*VISUAL_SPEED_FACTOR);
+  }
+
+  function poisson(lambda){
+    if(lambda<=0) return 0;
+    const L = Math.exp(-lambda);
+    let k = 0, p = 1;
+    do { k++; p *= Math.random(); } while(p > L);
+    return k-1;
+  }
+
+  function emitBeam(dt){
+    const V = +el.vSlider.value, B = +el.bSlider.value;
+    currentSample().isotopes.forEach((iso,i)=>{
+      if(!isDetected(iso.mass, V, B)) return;   // anything else ends on the tube wall
+      const n = poisson(iso.abundance*SOURCE_RATE*dt);
+      if(n>0) packets.push({ idx:i, n, arriveAt: simT + transitS(iso.mass, V, radiusM(iso.mass, V, B)*SCALE) });
+    });
+  }
+  function stepDetector(){
+    const still = [];
+    for(const pk of packets){
+      if(pk.arriveAt <= simT){ counts[pk.idx] += pk.n; totalDetected += pk.n; }
+      else still.push(pk);
+    }
+    packets = still;
+  }
+
+  // ---------- particle spawning ----------
+  let spawnAcc = 0;
+  const SPAWN_RATE = 7; // drawn ions/sec (a visual sample of the beam; see stepDetector)
+
+  function weightedPick(isotopes){
+    const r = Math.random();
+    let acc = 0;
+    for(let i=0;i<isotopes.length;i++){
+      acc += isotopes[i].abundance;
+      if(r<=acc) return i;
+    }
+    return isotopes.length-1;
+  }
+
+  function spawnParticle(){
+    const sample = currentSample();
+    const idx = weightedPick(sample.isotopes);
+    const iso = sample.isotopes[idx];
+    const V = +el.vSlider.value;
+    const B = +el.bSlider.value;
+    const r = radiusM(iso.mass, V, B);
+    const rPx = r*SCALE;
+    const v = speedMps(iso.mass, V);
+    const detected = isDetected(iso.mass, V, B);
+
+    // colour by mass across the sample's own isotope range (with a little
+    // padding so a two-isotope sample like Cl doesn't map to pure endpoints)
+    const masses = sample.isotopes.map(x=>x.mass);
+    const lo = Math.min(...masses)-0.6, hi = Math.max(...masses)+0.6;
+    const t = (iso.mass-lo)/(hi-lo);
+    const color = rgb(ramp(t));
+
+    const wallArc = tubeWallArc(rPx);
+    particles.push({
+      idx, label:iso.label, mass:iso.mass, color, detected,
+      rPx, speedMps:v,
+      sPx: 0,
+      hitsWall: wallArc!=null,
+      arcLenPx: wallArc!=null ? wallArc : Math.PI*rPx,
+    });
+  }
+
+  // ---------- physics/animation step ----------
+  function stepParticles(dt){
+    const next = [];
+    for(const p of particles){
+      const dPx = p.speedMps*SCALE*VISUAL_SPEED_FACTOR*dt;
+      p.sPx += dPx;
+
+      let x, y, alive = true;
+      if(p.sPx < STRAIGHT_PX){
+        // acceleration section: straight line toward ENTRY
+        x = ION_X + p.sPx;
+        y = ENTRY_Y;
+      } else {
+        const sArc = p.sPx - STRAIGHT_PX;
+        if(sArc >= p.arcLenPx){
+          if(p.hitsWall){
+            // struck the flight-tube wall part-way round
+            const theta = -Math.PI/2 + p.arcLenPx/p.rPx;
+            x = ENTRY_X + p.rPx*Math.cos(theta);
+            y = ENTRY_Y + p.rPx + p.rPx*Math.sin(theta);
+            spawnFlash(x, y, true);
+          } else {
+            // reached the end plate at (ENTRY_X, ENTRY_Y + 2*rPx)
+            x = ENTRY_X;
+            y = ENTRY_Y + 2*p.rPx;
+            if(p.detected){
+              lastFocusLabel = p.label;
+              lastRadiusM = p.mass ? (p.rPx/SCALE) : null;
+              spawnFlash(x, y);
+            } else {
+              spawnFlash(x, y, true);
+            }
+          }
+          alive = false;
+        } else {
+          const theta = -Math.PI/2 + sArc/p.rPx;
+          const cx = ENTRY_X, cy = ENTRY_Y + p.rPx;
+          x = cx + p.rPx*Math.cos(theta);
+          y = cy + p.rPx*Math.sin(theta);
+        }
+      }
+      // cull anything that has wandered off the visible apparatus
+      if(x < -30 || x > APP_W+30 || y < -30 || y > APP_H+30) alive = false;
+
+      if(alive){ p.x=x; p.y=y; next.push(p); }
+    }
+    particles = next;
+  }
+
+  // brief wall/slit flash markers, drawn for a few frames then removed
+  let flashes = [];
+  function spawnFlash(x,y,miss){ flashes.push({x,y,miss:!!miss,life:1}); }
+  function stepFlashes(dt){
+    flashes = flashes.filter(f => (f.life -= dt*2.2) > 0);
+  }
+
+  // ---------- apparatus drawing ----------
+  function drawApparatus(){
+    const w=APP_W, h=APP_H;
+    actx.clearRect(0,0,w,h);
+    actx.fillStyle = '#05070c';
+    actx.fillRect(0,0,w,h);
+
+    const accent = cssVar('--accent');
+    const muted = cssVar('--muted');
+    const mutedDim = cssVar('--muted-dim');
+    const border = cssVar('--border');
+
+    // ionisation chamber
+    actx.strokeStyle = border; actx.lineWidth = 1.2;
+    actx.strokeRect(ION_X-46, ENTRY_Y-22, 40, 44);
+    actx.fillStyle = mutedDim; actx.font='10px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    actx.textAlign='center';
+    actx.fillText('sample', ION_X-26, ENTRY_Y-28);
+    actx.fillText('ionised', ION_X-26, ENTRY_Y+38);
+
+    // acceleration plates
+    actx.strokeStyle = muted; actx.lineWidth = 2;
+    actx.beginPath(); actx.moveTo(ION_X-4, ENTRY_Y-26); actx.lineTo(ION_X-4, ENTRY_Y+26); actx.stroke();
+    actx.beginPath(); actx.moveTo(ION_X+22, ENTRY_Y-26); actx.lineTo(ION_X+22, ENTRY_Y+26); actx.stroke();
+    actx.fillStyle = mutedDim; actx.font='11px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    actx.fillText('+', ION_X-4, ENTRY_Y-32);
+    actx.fillText('−', ION_X+22, ENTRY_Y-32);
+    // field arrow
+    actx.strokeStyle = mutedDim; actx.lineWidth = 1;
+    actx.beginPath(); actx.moveTo(ION_X+2, ENTRY_Y+38); actx.lineTo(ION_X+16, ENTRY_Y+38); actx.stroke();
+    actx.beginPath(); actx.moveTo(ION_X+12,ENTRY_Y+34); actx.lineTo(ION_X+16,ENTRY_Y+38); actx.lineTo(ION_X+12,ENTRY_Y+42); actx.stroke();
+
+    // semicircular flight tube: an annulus about the detector radius, open at
+    // the top (where the accelerated beam enters) and closed at the bottom by
+    // the end plate carrying the detector slit. The magnet sits across the
+    // tube, so the into-the-page field marks are drawn only inside it.
+    const tubeCx = ENTRY_X, tubeCy = ENTRY_Y + R_DET_PX;
+    const rIn = R_DET_PX - TUBE_HALF_PX, rOut = R_DET_PX + TUBE_HALF_PX;
+    const tubePath = () => {
+      actx.beginPath();
+      actx.arc(tubeCx, tubeCy, rOut, -Math.PI/2, Math.PI/2);
+      actx.arc(tubeCx, tubeCy, rIn, Math.PI/2, -Math.PI/2, true);
+      actx.closePath();
+    };
+    tubePath();
+    actx.fillStyle = accent; actx.globalAlpha = 0.06; actx.fill();
+    actx.globalAlpha = 1;
+
+    actx.save();
+    tubePath(); actx.clip();
+    actx.strokeStyle = mutedDim; actx.lineWidth = 1;
+    for(let gx=tubeCx+8; gx<tubeCx+rOut; gx+=26){
+      for(let gy=tubeCy-rOut+8; gy<tubeCy+rOut; gy+=26){
+        const rr=2.6;
+        actx.beginPath();
+        actx.moveTo(gx-rr,gy-rr); actx.lineTo(gx+rr,gy+rr);
+        actx.moveTo(gx-rr,gy+rr); actx.lineTo(gx+rr,gy-rr);
+        actx.stroke();
+      }
+    }
+    actx.restore();
+
+    // tube walls (the two mouths are left open)
+    actx.strokeStyle = muted; actx.lineWidth = 2;
+    actx.beginPath(); actx.arc(tubeCx, tubeCy, rOut, -Math.PI/2, Math.PI/2); actx.stroke();
+    actx.beginPath(); actx.arc(tubeCx, tubeCy, rIn, -Math.PI/2, Math.PI/2); actx.stroke();
+
+    actx.fillStyle = mutedDim; actx.font='10px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    actx.textAlign='left';
+    actx.fillText('magnetic field (into page)', tubeCx+rOut+10, tubeCy-rOut+28);
+    actx.fillText('flight tube', tubeCx+rOut+10, tubeCy-rOut+42);
+
+    // centreline: the path an ion must follow to reach the slit
+    actx.strokeStyle = mutedDim; actx.globalAlpha=0.5; actx.setLineDash([3,3]); actx.lineWidth=1;
+    actx.beginPath();
+    actx.arc(tubeCx, tubeCy, R_DET_PX, -Math.PI/2, Math.PI/2);
+    actx.stroke();
+    actx.setLineDash([]); actx.globalAlpha=1;
+
+    // end plate closing the bottom mouth, with the detector slit in it
+    const slitY = ENTRY_Y + 2*R_DET_PX;
+    actx.strokeStyle = muted; actx.lineWidth = 3;
+    actx.beginPath(); actx.moveTo(ENTRY_X, tubeCy+rIn); actx.lineTo(ENTRY_X, slitY-SLIT_HALF_PX); actx.stroke();
+    actx.beginPath(); actx.moveTo(ENTRY_X, slitY+SLIT_HALF_PX); actx.lineTo(ENTRY_X, tubeCy+rOut); actx.stroke();
+    actx.strokeStyle = accent; actx.lineWidth = 2;
+    actx.beginPath(); actx.moveTo(ENTRY_X-10, slitY); actx.lineTo(ENTRY_X+10, slitY); actx.stroke();
+    actx.fillStyle = mutedDim; actx.font='10px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    actx.textAlign='right';
+    actx.fillText('detector', ENTRY_X-16, slitY+3);
+
+    // entry-line dot
+    actx.fillStyle = muted;
+    actx.beginPath(); actx.arc(ENTRY_X, ENTRY_Y, 2.4, 0, Math.PI*2); actx.fill();
+
+    // particles
+    for(const p of particles){
+      actx.fillStyle = p.color;
+      actx.beginPath(); actx.arc(p.x, p.y, 4, 0, Math.PI*2); actx.fill();
+      actx.strokeStyle = 'rgba(0,0,0,0.4)'; actx.lineWidth = 0.8; actx.stroke();
+    }
+    // flashes
+    for(const f of flashes){
+      actx.globalAlpha = Math.max(0, f.life);
+      actx.strokeStyle = f.miss ? mutedDim : accent;
+      actx.lineWidth = 2;
+      actx.beginPath(); actx.arc(f.x, f.y, 9*(1.6-f.life), 0, Math.PI*2); actx.stroke();
+      actx.globalAlpha = 1;
+    }
+  }
+
+  // ---------- spectrum drawing ----------
+  function drawSpectrum(){
+    const w=specW, h=specH;
+    sctx.clearRect(0,0,w,h);
+    const padL=42, padR=14, padT=14, padB=30;
+    const plotW=w-padL-padR, plotH=h-padT-padB;
+
+    const sample = currentSample();
+    const masses = sample.isotopes.map(x=>x.mass);
+    const xMin = Math.floor(Math.min(...masses))-1;
+    const xMax = Math.ceil(Math.max(...masses))+1;
+    const X = m => padL + (m-xMin)/(xMax-xMin) * plotW;
+    const Y = pct => padT + plotH - (pct/100)*plotH;
+
+    const border = cssVar('--border-soft');
+    const muted = cssVar('--muted');
+    const mutedDim = cssVar('--muted-dim');
+    const accent = cssVar('--accent');
+    const gold = cssVar('--gold');
+
+    // axes
+    sctx.strokeStyle = border; sctx.lineWidth = 1;
+    sctx.beginPath(); sctx.moveTo(padL,padT); sctx.lineTo(padL,padT+plotH); sctx.lineTo(padL+plotW,padT+plotH); sctx.stroke();
+    // y gridlines at 25/50/75/100%
+    sctx.fillStyle = mutedDim; sctx.font='10px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    sctx.textAlign='right';
+    [0,25,50,75,100].forEach(p=>{
+      const y=Y(p);
+      sctx.strokeStyle='rgba(139,150,165,0.12)'; sctx.beginPath(); sctx.moveTo(padL,y); sctx.lineTo(padL+plotW,y); sctx.stroke();
+      sctx.fillText(p+'%', padL-6, y+3);
+    });
+
+    const barW = Math.min(34, plotW/(sample.isotopes.length*2.5));
+
+    sample.isotopes.forEach((iso,i)=>{
+      const x = X(iso.mass);
+      const pct = totalDetected>0 ? (counts[i]/totalDetected)*100 : 0;
+
+      // live bar
+      const yTop = Y(pct);
+      const color = ramp((iso.mass - (Math.min(...masses)-0.6)) / ((Math.max(...masses)+0.6)-(Math.min(...masses)-0.6)));
+      sctx.fillStyle = rgb(color);
+      sctx.fillRect(x-barW/2, yTop, barW, (padT+plotH)-yTop);
+
+      // literature reference marker
+      if(showLit){
+        const yLit = Y(iso.abundance*100);
+        sctx.strokeStyle = gold; sctx.lineWidth = 2;
+        sctx.beginPath(); sctx.moveTo(x-barW/2-4, yLit); sctx.lineTo(x+barW/2+4, yLit); sctx.stroke();
+      }
+
+      // x label
+      sctx.fillStyle = muted; sctx.font='11px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+      sctx.textAlign='center';
+      sctx.fillText(iso.mass.toFixed(0), x, padT+plotH+16);
+    });
+
+    sctx.fillStyle = mutedDim; sctx.font='600 12px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+    sctx.textAlign='center';
+    sctx.fillText('mass-to-charge (m/z)', padL+plotW/2, h-6);
+    sctx.save();
+    sctx.translate(12, padT+plotH/2);
+    sctx.rotate(-Math.PI/2);
+    sctx.textAlign='center';
+    sctx.fillText('relative abundance', 0, 0);
+    sctx.restore();
+  }
+
+  // ---------- readouts ----------
+  function updateReadouts(){
+    const V = +el.vSlider.value, B = +el.bSlider.value;
+    el.sV.innerHTML = (V/1000).toFixed(2)+'<small>kV</small>';
+    el.sB.innerHTML = B.toFixed(3)+'<small>T</small>';
+    el.sR.innerHTML = lastRadiusM!=null ? lastRadiusM.toFixed(3)+'<small>m</small>' : '—';
+    el.sFocus.textContent = lastFocusLabel;
+    el.sDet.textContent = totalDetected.toLocaleString();
+
+    // which (if any) sample species currently resonates at this B,V
+    const sample = currentSample();
+    const inFocus = sample.isotopes.filter(iso => isDetected(iso.mass, V, B)).map(iso=>iso.label);
+    el.phase.textContent = running
+      ? (scanMode==='scan' ? 'scanning' : (inFocus.length ? `${inFocus.join(', ')} in focus` : 'running'))
+      : (scanJustCompleted ? 'scan complete' : 'paused');
+  }
+
+  // ---------- main loop ----------
+  let lastT = null;
+  function loop(ts){
+    if(!running) return;
+    if(lastT==null) lastT = ts;
+    const dt = Math.min(0.05, (ts-lastT)/1000);
+    lastT = ts;
+    simT += dt;
+
+    if(scanMode==='scan' && !scanDraining){
+      scanB += dt*(B_MAX-B_MIN)/SCAN_DURATION_S;
+      if(scanB >= B_MAX){ scanB = B_MAX; scanDraining = true; }
+      el.bSlider.value = scanB.toFixed(3);
+      el.bVal.textContent = scanB.toFixed(3)+' T';
+    }
+
+    if(scanDraining){
+      // sweep finished: stop the source and let the ions already in flight land
+      if(particles.length===0 && flashes.length===0 && packets.length===0){
+        scanDraining = false;
+        scanJustCompleted = true;
+        setRunning(false);
+        return;
+      }
+    } else {
+      spawnAcc += dt*SPAWN_RATE;
+      while(spawnAcc>=1 && particles.length<50){ spawnParticle(); spawnAcc-=1; }
+      emitBeam(dt);
+    }
+
+    stepDetector();
+    stepParticles(dt);
+    stepFlashes(dt);
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  function draw(){
+    drawApparatus();
+    drawSpectrum();
+    updateReadouts();
+  }
+
+  // ---------- controls ----------
+  function setRunning(on){
+    running = on;
+    lastT = null;
+    if(on) scanJustCompleted = false;
+    if(!on) scanDraining = false;
+    el.run.textContent = on ? 'Pause' : 'Run';
+    el.bSlider.disabled = on && scanMode==='scan';
+    if(on) requestAnimationFrame(loop);
+    else draw();
+  }
+  function setSample(key){
+    sampleKey = key;
+    el.sampleNe.setAttribute('aria-pressed', key==='Ne');
+    el.sampleCl.setAttribute('aria-pressed', key==='Cl');
+    el.sampleBr.setAttribute('aria-pressed', key==='Br');
+    particles = []; flashes = []; packets = [];
+    resetCounts();
+    scanJustCompleted = false;
+    draw();
+  }
+  function setScanMode(m){
+    scanMode = m;
+    el.modeManual.setAttribute('aria-pressed', m==='manual');
+    el.modeScan.setAttribute('aria-pressed', m==='scan');
+    el.bSlider.disabled = running && m==='scan';
+    scanJustCompleted = false;
+    scanDraining = false;
+    if(m==='scan') startScanFrom(B_MIN);
+    draw();
+  }
+  function startScanFrom(B){
+    scanB = B;
+    el.bSlider.value = B.toFixed(3);
+    el.bVal.textContent = B.toFixed(3)+' T';
+  }
+
+  el.run.addEventListener('click', ()=>{
+    if(!running && scanMode==='scan'){
+      // resume from wherever the sweep was paused; restart a finished scan from the bottom
+      startScanFrom(scanB >= B_MAX-0.0005 ? B_MIN : scanB);
+    }
+    setRunning(!running);
+  });
+  el.reset.addEventListener('click', ()=>{
+    running = false;
+    scanJustCompleted = false;
+    scanDraining = false;
+    el.run.textContent = 'Run';
+    el.bSlider.disabled = false;
+    particles = []; flashes = []; packets = [];
+    resetCounts();
+    if(scanMode==='scan') startScanFrom(B_MIN);
+    draw();
+  });
+  el.sampleNe.addEventListener('click', ()=>setSample('Ne'));
+  el.sampleCl.addEventListener('click', ()=>setSample('Cl'));
+  el.sampleBr.addEventListener('click', ()=>setSample('Br'));
+  el.modeManual.addEventListener('click', ()=>setScanMode('manual'));
+  el.modeScan.addEventListener('click', ()=>setScanMode('scan'));
+  el.litToggle.addEventListener('click', ()=>{
+    showLit = !showLit;
+    el.litToggle.setAttribute('aria-pressed', showLit);
+    draw();
+  });
+  el.vSlider.addEventListener('input', ()=>{
+    el.vVal.textContent = (+el.vSlider.value/1000).toFixed(2)+' kV';
+    draw();
+  });
+  el.bSlider.addEventListener('input', ()=>{
+    el.bVal.textContent = (+el.bSlider.value).toFixed(3)+' T';
+    draw();
+  });
+
+  window.addEventListener('keydown', e=>{
+    if(e.code==='Space'){ e.preventDefault(); el.run.click(); }
+    else if(e.key==='r'||e.key==='R'){ el.reset.click(); }
+    else if(e.key==='l'||e.key==='L'){ el.litToggle.click(); }
+  });
+
+  let rt;
+  window.addEventListener('resize', ()=>{ clearTimeout(rt); rt=setTimeout(()=>{ resizeAll(); draw(); reportHeight(); },120); });
+
+  function reportHeight() {
+    const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    window.parent.postMessage({ type: 'simHeight', height: h }, '*');
+  }
+
+  // ---------- boot ----------
+  resetCounts();
+  resizeAll();
+  draw();
+  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+})();
+</script>
+
+</body>
+</html>
