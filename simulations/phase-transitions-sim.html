@@ -632,7 +632,12 @@
   // ---------- Rendering ----------
   const canvas = document.getElementById("simCanvas");
   const ctx = canvas.getContext("2d");
-  const PARTICLE_RADIUS_PX = 5;
+  // Drawn radius is half the equilibrium separation, so neighbours in the solid sit
+  // touching (as LJ discs at the potential minimum should) rather than floating apart.
+  const PARTICLE_RADIUS_PX = LATTICE_SPACING * PXP / 2;
+  // A hairline seam in the background colour keeps overlapping discs readable as
+  // separate particles when thermal vibration pushes neighbours slightly into each other.
+  const PARTICLE_SEAM_PX = 0.75;
 
   // ---------- Responsive canvas sizing ----------
   // All drawing below (render(), the box border, particle positions) is expressed in a
@@ -699,12 +704,15 @@
     ctx.lineWidth = 1;
     ctx.strokeRect(0.5, 0.5, BOX_W * PXP, BOX_H * PXP);
 
+    ctx.strokeStyle = THEME.surface;
+    ctx.lineWidth = PARTICLE_SEAM_PX;
     for (let i = 0; i < N; i++) {
       const speed = Math.sqrt(vx[i] * vx[i] + vy[i] * vy[i]);
       ctx.fillStyle = speedColor(speed);
       ctx.beginPath();
       ctx.arc(px[i] * PXP, py[i] * PXP, PARTICLE_RADIUS_PX, 0, Math.PI * 2);
       ctx.fill();
+      ctx.stroke();
     }
   }
 
