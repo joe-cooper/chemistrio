@@ -1,7 +1,10 @@
 /* =========================================================
    CONTENT DATA
    Add a simulation: add an object to `simulations`.
-     - topic groups it into a collapsible category
+     - topic groups it into a collapsible category. The categories
+       appear on the sims page in the order given by `topicOrder`
+       below; any topic missing from that list is appended after the
+       listed ones, in the order it first appears in `simulations`.
      - file: path to your simulation's HTML (leave "" for a placeholder)
      - added: "YYYY-MM-DD" the sim was published (optional). Shows a
        "New" badge next to it on the sims list and home page for
@@ -40,6 +43,24 @@
               url:"https://www.rsc.org/periodic-table" }
    ========================================================= */
 
+// Order of the collapsible topic categories on the sims page. The
+// first one is opened by default. A topic not listed here still shows
+// up, after these, so a typo can't hide a simulation.
+const topicOrder = [
+  "Kinetic Theory of Matter",
+    "Atomic Structure",
+      "Bonding & Structure",
+        "Organic",
+        "Acids & Bases",
+  "Rates/Kinetics",
+  "Equilibrium",
+
+
+
+  "Quantum",
+
+];
+
 const simulations = [
   { id:"phase-transitions-sim", title:"State Changes", topic:"Kinetic Theory of Matter", level:"GCSE",
     desc:"Simulations of particles and their state changes.", featured:true, file:"/simulations/phase-transitions-sim.html", notes:"/simulations/notes/phase-transitions-sim.md", tour:true },
@@ -60,6 +81,8 @@ const simulations = [
     desc:"Animated diffusion tube for the reaction between hydrogen chloride and ammonia. Temperature, air particles and reactant particles can be adjusted.", file:"/simulations/diffusion-tube-sim.html", notes:"/simulations/notes/diffusion-tube-sim.md" },
   { id:"brownian-motion-sim", title:"Brownian Motion", topic:"Kinetic Theory of Matter", level:"GCSE",
     desc:"Brown's 1827 experiment of a pollen grain moving on the surface of water.", file:"/simulations/brownian-motion-sim.html", notes:"/simulations/notes/brownian-motion-sim.md", added:"2026-08-04" },
+  { id:"covalent-bonding-sim", title:"Covalent Bonding", topic:"Bonding & Structure", level:"GCSE",
+    desc:"Drag atoms together to share electrons and build simple molecules. Dot-and-cross diagrams form as the outer shells overlap, and each atom stops bonding once its outer shell is full.", file:"/simulations/covalent-bonding-sim.html", notes:"", added:"2026-09-19" },
   { id:"giant-structures-sim", title:"Simple Molecules and Giant Structures", seoTitle:"Molecules vs Giant Structures", topic:"Bonding & Structure", level:"GCSE",
     desc:"A simple, 2D illustration of the different between simple and giant structures.Zoom out from a single particle to a whole crystal, side by side, and trace the connections between particles through the lattice.", file:"/simulations/giant-structures-sim.html", notes:"", added:"2026-09-13" },
   { id:"molecule-shapes-sim", title:"Shapes of Molecules (VSEPR)", topic:"Bonding & Structure", level:"A-level",
@@ -91,11 +114,13 @@ const simulations = [
     { id:"mo-formation-heteronuclear-sim", title:"Molecular Orbital Formation - Heteronuclear Diatomic Molecules", seoTitle:"Molecular Orbitals: Heteronuclear", topic:"Quantum", level:"Pre-University",
     desc:"Molecular orbital diagrams for Period 2 heteronuclear diatomic molecules.",  file:"/simulations/mo-formation-heteronuclear-sim.html",
     notes:"/simulations/notes/mo-formation-heteronuclear-sim.md", added:"2026-07-24" },
+  { id:"electronic-structure-sim", title:"Electronic Structure", topic:"Atomic Structure", level:"GCSE",
+    desc:"Electron shell diagram for every element up to calcium. Step from one element to the next to watch the shells fill by the 2,8,8 rule, see how the outer shell fixes the group, and add or remove electrons to form ions.", file:"/simulations/electronic-structure-sim.html", notes:"", added:"2026-09-20" },
   { id:"electron-config-sim", title:"Electron Configuration", topic:"Atomic Structure", level:"A-level",
     desc:"Orbital energy-level diagram for every element up to krypton. Step from one element to the next to watch electrons fill shells, sub-shells and orbitals by the Aufbau principle and Hund's rule, and add or remove electrons to form ions.", featured:true, file:"/simulations/electron-config-sim.html", notes:"", added:"2026-09-16" },
     { id:"ms-deflection-sim", title:"Mass Spectrometry - Deflection", seoTitle:"Mass Spectrometry - Deflection", topic:"Atomic Structure", level:"A-Level",
     desc:"Simulation of deflection-based mass spectrometry.",  file:"/simulations/ms-deflection-sim.html",
-    notes:"/simulations/notes/ms-deflection-sim.md", added:"2026-09-16" },
+    notes:"", added:"2026-09-16" },
 ];
 
 const resources = [
@@ -125,4 +150,4 @@ const resources = [
 
 // Lets scripts/build-seo-pages.js read this data with plain `require()`
 // without loading it as a browser script (where `module` is undefined).
-if (typeof module !== "undefined") module.exports = { simulations, resources };
+if (typeof module !== "undefined") module.exports = { simulations, resources, topicOrder };

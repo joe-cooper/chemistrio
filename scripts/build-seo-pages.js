@@ -41,7 +41,7 @@ const { execFileSync } = require("child_process");
 
 const ROOT = path.join(__dirname, "..");
 
-const { simulations, resources } = require(path.join(ROOT, "assets/js/data.js"));
+const { simulations, resources, topicOrder } = require(path.join(ROOT, "assets/js/data.js"));
 const R = require(path.join(ROOT, "assets/js/render.js"));
 const { marked } = require(path.join(ROOT, "assets/vendor/marked.min.js"));
 
@@ -345,7 +345,7 @@ function pageFragment(id) {
   if (!meta) throw new Error(`no PAGE_META entry for "${id}"`);
   let html = fs.readFileSync(path.join(ROOT, meta.fragment.replace(/^\//, "")), "utf8").trim();
   if (id === "home") html = fillEmptyById(html, "featuredList", R.featuredHtml(simulations, NOW));
-  if (id === "sims") html = fillEmptyById(html, "simCategories", R.simCategoriesHtml(simulations, NOW));
+  if (id === "sims") html = fillEmptyById(html, "simCategories", R.simCategoriesHtml(simulations, NOW, topicOrder));
   if (id === "resources") html = fillEmptyById(html, "resourceCategories", R.resourceCategoriesHtml(resources));
   return html;
 }

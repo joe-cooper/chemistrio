@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Electronic Structure</title>
+<link rel="canonical" href="https://chemistr.io/sims/electronic-structure-sim/">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<link rel="stylesheet" href="../assets/css/sim.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  .stage{display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,560px);gap:14px;margin-bottom:14px;}
+  .recipe-card .row{font-size:13.5px;padding:7px 0;}
+  .recipe-card .card-label{font-size:11px;}
+  .headline{font-size:13.5px;line-height:1.6;padding:11px 13px;}
+
+  /* species panel */
+  .species{display:flex;align-items:baseline;gap:14px;padding:6px 0 12px;border-bottom:1px solid var(--border-soft);margin-bottom:6px;}
+  .species .sym{font-family:var(--mono);font-size:42px;font-weight:500;line-height:1;color:var(--text);}
+  .species .sym sup{font-size:18px;color:var(--gold);margin-left:1px;}
+  .species .name{font-size:18px;color:var(--text);}
+  .species .z{font-family:var(--mono);font-size:13px;color:var(--muted);display:block;margin-top:3px;}
+  .recipe-card .row .v.cfg{font-size:15px;letter-spacing:.04em;}
+  .headline sup{font-size:.8em;font-weight:600;line-height:0;position:relative;top:-.45em;vertical-align:baseline;}
+  .ion-badge{
+    display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+    padding:3px 8px;border-radius:99px;
+  }
+  .ion-badge.neutral{background:rgba(139,150,165,.15);color:var(--muted);}
+  .ion-badge.cation{background:rgba(224,98,90,.15);color:#e0625a;}
+  .ion-badge.anion{background:rgba(90,160,220,.15);color:#5aa0dc;}
+
+  /* shell diagram */
+  .diagram-card{display:flex;flex-direction:column;min-height:0;}
+  .diagram-wrap{flex:1;display:flex;justify-content:center;align-items:center;}
+  svg.diagram{width:100%;max-width:440px;height:auto;display:block;font-family:var(--mono);user-select:none;}
+  .shell{fill:none;stroke:var(--muted-dim);stroke-width:1.4;opacity:0;transition:opacity .35s;}
+  .shell.on{opacity:1;}
+  .shell-label{fill:var(--muted-dim);font-size:9.5px;letter-spacing:.06em;font-family:var(--font);font-weight:600;opacity:0;transition:opacity .35s;}
+  .shell-label.on{opacity:1;}
+  .nucleus{fill:var(--raised);stroke:var(--border);stroke-width:1.4;}
+  .nucleus.empty{stroke-dasharray:4 4;}
+  .nuc-sym{fill:var(--text);font-size:20px;font-weight:500;text-anchor:middle;}
+  .nuc-p{fill:var(--muted);font-size:9.5px;text-anchor:middle;letter-spacing:.04em;}
+  .e{opacity:0;transition:opacity .22s,transform .4s cubic-bezier(.4,0,.2,1),fill .35s,stroke .35s;}
+  .e.on{opacity:1;}
+  .e .dot{fill:var(--text);}
+  .e .x{stroke:var(--text);stroke-width:2;stroke-linecap:round;fill:none;}
+  .e.new .dot{fill:var(--accent);}
+  .e.new .x{stroke:var(--accent);}
+  svg.crosses .dot{display:none;}
+  svg:not(.crosses) .x{display:none;}
+
+  .legend{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--muted);flex-wrap:wrap;align-items:center;}
+  .legend svg{width:16px;height:16px;vertical-align:middle;margin-right:4px;}
+  .legend .lring{display:inline-block;width:14px;height:14px;border:1.5px solid var(--muted-dim);border-radius:50%;vertical-align:middle;margin-right:5px;}
+
+  .ctl-group{display:flex;flex-direction:column;gap:7px;}
+  .btn-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .btn-step{min-width:0;}
+  .btn:disabled{opacity:.4;cursor:default;}
+  .btn-ghost:disabled:hover{color:var(--muted);border-color:var(--border);}
+  .select-block{min-width:230px;}
+  .charge-pill{font-family:var(--mono);font-size:13px;color:var(--text);padding:0 4px;min-width:34px;text-align:center;}
+  .toggle-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+  @media(max-width:860px){.stage{grid-template-columns:1fr;}.diagram-card{order:-1;}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header></header>
+
+  <div class="stage">
+    <div class="left-col">
+      <div class="card recipe-card">
+        <div class="card-label"><span>Current species</span><span class="ion-badge neutral" id="ionBadge">no nucleus</span></div>
+        <div class="species">
+          <span class="sym" id="spSym">&ndash;</span>
+          <span><span class="name" id="spName">Empty</span><span class="z" id="spZ">no electrons</span></span>
+        </div>
+        <div class="row"><span class="k">Protons</span><span class="v" id="rP">0</span></div>
+        <div class="row"><span class="k">Electrons</span><span class="v" id="rN">0</span></div>
+        <div class="row"><span class="k">Charge</span><span class="v" id="rCharge">0</span></div>
+        <div class="row"><span class="k">Electronic structure</span><span class="v cfg accent" id="rCfg">—</span></div>
+        <div class="row"><span class="k">Outer-shell electrons</span><span class="v" id="rOuter">—</span></div>
+        <div class="row"><span class="k">Group (element)</span><span class="v" id="rGroup">—</span></div>
+        <div class="row"><span class="k">Period (element)</span><span class="v" id="rPeriod">—</span></div>
+      </div>
+      <div class="headline" id="headline"></div>
+    </div>
+
+    <div class="card diagram-card">
+      <div class="card-label"><span>Electron shell diagram</span><span class="right" id="diagramTag"></span></div>
+      <div class="diagram-wrap">
+        <svg class="diagram" id="diagram" viewBox="0 0 420 420" role="img" aria-label="Electron shell diagram: a nucleus in the centre with electrons drawn on concentric rings, one ring per shell"></svg>
+      </div>
+      <div class="legend">
+        <span><span class="lring"></span>one shell (energy level)</span>
+        <span><svg viewBox="0 0 16 16"><circle class="dot" cx="8" cy="8" r="4" fill="currentColor"/><path class="x" d="M4.5 4.5L11.5 11.5M4.5 11.5L11.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>electron</span>
+        <span><svg viewBox="0 0 16 16" style="color:var(--accent)"><circle class="dot" cx="8" cy="8" r="4" fill="currentColor"/><path class="x" d="M4.5 4.5L11.5 11.5M4.5 11.5L11.5 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>most recently added</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="ctl-row">
+      <div class="select-block">
+        <span class="ctl-label">Element</span>
+        <select id="elementSelect" aria-label="Choose an element"></select>
+      </div>
+      <div class="ctl-group">
+        <span class="ctl-label">Step through the elements</span>
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-step" id="prevBtn" type="button" title="Previous element (left arrow key)">&lsaquo; Previous</button>
+          <button class="btn btn-ghost btn-step" id="nextBtn" type="button" title="Next element (right arrow key)">Next &rsaquo;</button>
+        </div>
+      </div>
+      <div class="ctl-group">
+        <span class="ctl-label">Form an ion</span>
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-step" id="removeBtn" type="button" title="Remove one electron (minus key)">&minus; e&#8315;</button>
+          <span class="charge-pill" id="chargePill">0</span>
+          <button class="btn btn-ghost btn-step" id="addBtn" type="button" title="Add one electron (plus key)">+ e&#8315;</button>
+          <button class="btn btn-ghost btn-step" id="neutralBtn" type="button" title="Back to the neutral atom">Neutral</button>
+        </div>
+      </div>
+      <div class="ctl-group">
+        <span class="ctl-label">Draw electrons as</span>
+        <div class="toggle-row">
+          <button type="button" class="chip-toggle active" id="dotsBtn">Dots</button>
+          <button type="button" class="chip-toggle" id="crossesBtn">Crosses</button>
+        </div>
+      </div>
+      <div class="ctl-run">
+        <button class="btn btn-run" id="fillBtn" type="button" title="Watch the electrons go in one at a time">Fill from empty</button>
+      </div>
+    </div>
+  </div>
+
+  <details class="note">
+    <summary>Model notes &amp; assumptions</summary>
+    <p><b>What the diagram shows.</b> The nucleus sits in the centre, and each ring is one shell (also called an energy level). The shells are drawn as circles at fixed distances, but this is only a way of keeping count: the electrons are not really circling the nucleus on tracks, and the rings say nothing about where an electron actually is. What the diagram does record correctly is how many electrons there are in each shell, and that the shells further from the nucleus are higher in energy.</p>
+    <p><b>How the shells fill.</b> Electrons go into the lowest-energy shell that has room. The first shell holds up to 2 electrons and the second up to 8. The third shell takes 8 electrons before the fourth shell starts, so potassium is 2,8,8,1 and calcium is 2,8,8,2. The electronic structure is written as the number of electrons in each shell, innermost first, separated by commas.</p>
+    <p><b>Why it stops at calcium.</b> From scandium (element 21) onwards the "8 then start the next shell" rule breaks down: the third shell can actually hold 18 electrons, and after calcium the extra electrons go back into it while the fourth shell already has 2. Explaining why needs the idea that each shell is split into sub-shells of different energy, which is A-level work. Every element up to calcium follows the simple rule exactly, so this is the natural place to stop. The A-level <a href="/sims/electron-config-sim">Electron Configuration</a> simulation carries on to krypton.</p>
+    <p><b>Ions.</b> Removing electrons takes them from the outer shell first, since those are the least strongly held; adding electrons puts them into the lowest shell with space. The simulation lets you remove or add as many as you like so that you can see what does and does not happen in practice: sodium loses one electron to reach a full outer shell and stops there, because taking a second electron out of a full shell is far harder.</p>
+    <p><b>Drawing convention.</b> Electrons are placed singly at the top, bottom, left and right of a shell and then pair up, which is how most GCSE textbooks and mark schemes draw them. Exam boards accept dots or crosses; the toggle switches between the two. Both are the same electron, drawn differently.</p>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- data ----------
+  // [symbol, name, group] — group 0 is the noble gases, as on GCSE
+  // periodic tables. Hydrogen is left out of any group.
+  const ELEMENTS = [
+    ['H','Hydrogen',null],['He','Helium',0],['Li','Lithium',1],['Be','Beryllium',2],['B','Boron',3],
+    ['C','Carbon',4],['N','Nitrogen',5],['O','Oxygen',6],['F','Fluorine',7],['Ne','Neon',0],
+    ['Na','Sodium',1],['Mg','Magnesium',2],['Al','Aluminium',3],['Si','Silicon',4],['P','Phosphorus',5],
+    ['S','Sulfur',6],['Cl','Chlorine',7],['Ar','Argon',0],['K','Potassium',1],['Ca','Calcium',2]
+  ];
+  const ZMAX = ELEMENTS.length;
+  const EMPTY = ['–', 'Empty', null];
+  const elem = z => z > 0 ? ELEMENTS[z-1] : EMPTY;
+
+  // How many electrons each shell takes before the next one starts.
+  // The fourth shell is capped at 2 only because the simulation ends
+  // at calcium; see the model notes.
+  const CAP = [2, 8, 8, 2];
+  // Capacity quoted to the user: the fourth shell is "up to 8" like the
+  // second and third, even though only two of its places are ever used here.
+  const CAP_SAID = [2, 8, 8, 8];
+  const NOBLE = [[18,'Ar','argon'],[10,'Ne','neon'],[2,'He','helium']];
+
+  function fill(N){
+    const c = [0,0,0,0]; let left = N;
+    for (let i = 0; i < CAP.length; i++){ const take = Math.min(left, CAP[i]); c[i] = take; left -= take; }
+    return c;
+  }
+  // Configuration of the species with Z protons and N electrons. For
+  // these elements the ion's structure is the same as filling from
+  // empty, but the wording in the headline is about what was lost or
+  // gained relative to the neutral atom, so keep both.
+  function speciesConfig(Z, N){ return fill(N); }
+  const total = c => c.reduce((a,b) => a + b, 0);
+  const shellsUsed = c => { let k = c.length; while (k > 0 && c[k-1] === 0) k--; return k; };
+  const outerCount = c => { const k = shellsUsed(c); return k ? c[k-1] : 0; };
+  const cfgText = c => { const k = shellsUsed(c); return k ? c.slice(0,k).join(',') : '—'; };
+
+  // Every electron as a slot {shell, idx} in the order they go in.
+  function slotsOf(c){
+    const out = [];
+    c.forEach((n, sh) => { for (let i = 0; i < n; i++) out.push({ shell:sh, idx:i }); });
+    return out;
+  }
+  const slotKey = s => s.shell + ':' + s.idx;
+  function configFromSlots(slots){
+    const c = [0,0,0,0];
+    slots.forEach(s => c[s.shell]++);
+    return c;
+  }
+  function plural(n, word){ return n + ' ' + word + (n === 1 ? '' : 's'); }
+  function ordinal(n){
+    const r10 = n % 10, r100 = n % 100;
+    const suffix = (r100 >= 11 && r100 <= 13) ? 'th' : ({1:'st',2:'nd',3:'rd'}[r10] || 'th');
+    return n + suffix;
+  }
+  const shellName = k => ['first','second','third','fourth'][k];
+  function groupText(g){ return g === null ? '—' : (g === 0 ? '0' : String(g)); }
+
+  // ---------- diagram geometry (SVG user units) ----------
+  const CX = 210, CY = 210, NUC_R = 30;
+  const RADII = [64, 102, 140, 178];
+  // Electrons sit singly at the top, bottom, left and right of a ring,
+  // then pair up beside those, which is the usual textbook drawing.
+  const CARDINAL = [-90, 90, 180, 0];
+  const PAIR_SEP = 7;   // half the distance between a pair, in user units
+  function slotPos(shell, idx, count){
+    const r = RADII[shell];
+    const base = CARDINAL[idx % 4] * Math.PI / 180;
+    // A single electron sits exactly on the cardinal point; once its
+    // partner arrives the two straddle it.
+    const partner = idx < 4 ? idx + 4 : idx - 4;
+    const paired = partner < count;
+    let a = base;
+    if (paired) a += (idx < 4 ? -1 : 1) * PAIR_SEP / r;
+    return { x: CX + r * Math.cos(a), y: CY + r * Math.sin(a) };
+  }
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  function svgEl(tag, attrs){
+    const el = document.createElementNS(svgNS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  const diagram = document.getElementById('diagram');
+  const rings = [], ringLabels = [];
+  const electrons = {};   // slot key -> <g>
+  let nucCircle, nucSym, nucP;
+
+  function buildDiagram(){
+    RADII.forEach((r, i) => {
+      const ring = svgEl('circle', { class:'shell', cx:CX, cy:CY, r:r });
+      diagram.appendChild(ring);
+      rings.push(ring);
+      const a = -45 * Math.PI / 180;
+      const lab = svgEl('text', { class:'shell-label', 'text-anchor':'middle', x: CX + (r + 13) * Math.cos(a), y: CY + (r + 13) * Math.sin(a) + 3 });
+      lab.textContent = ['1st','2nd','3rd','4th'][i];
+      diagram.appendChild(lab);
+      ringLabels.push(lab);
+    });
+    nucCircle = svgEl('circle', { class:'nucleus', cx:CX, cy:CY, r:NUC_R });
+    diagram.appendChild(nucCircle);
+    nucSym = svgEl('text', { class:'nuc-sym', x:CX, y:CY + 4 });
+    diagram.appendChild(nucSym);
+    nucP = svgEl('text', { class:'nuc-p', x:CX, y:CY + 18 });
+    diagram.appendChild(nucP);
+    CAP.forEach((cap, sh) => {
+      for (let i = 0; i < cap; i++){
+        const g = svgEl('g', { class:'e' });
+        g.appendChild(svgEl('circle', { class:'dot', cx:0, cy:0, r:4.6 }));
+        g.appendChild(svgEl('path', { class:'x', d:'M-4 -4 L4 4 M-4 4 L4 -4' }));
+        const p = slotPos(sh, i, 0);
+        g.style.transform = 'translate(' + p.x + 'px,' + p.y + 'px)';
+        diagram.appendChild(g);
+        electrons[sh + ':' + i] = g;
+      }
+    });
+  }
+  buildDiagram();
+
+  function drawDiagram(c, newKeys){
+    const used = shellsUsed(c);
+    rings.forEach((ring, i) => ring.classList.toggle('on', i < used));
+    ringLabels.forEach((lab, i) => lab.classList.toggle('on', i < used));
+    const on = new Set(slotsOf(c).map(slotKey));
+    for (const k in electrons){
+      const [sh, i] = k.split(':').map(Number);
+      const p = slotPos(sh, i, c[sh]);
+      electrons[k].style.transform = 'translate(' + p.x + 'px,' + p.y + 'px)';
+      electrons[k].classList.toggle('on', on.has(k));
+      electrons[k].classList.toggle('new', on.has(k) && newKeys.has(k));
+    }
+  }
+
+  // ---------- DOM ----------
+  const el = {};
+  ['elementSelect','prevBtn','nextBtn','removeBtn','addBtn','neutralBtn','fillBtn','chargePill',
+   'ionBadge','spSym','spName','spZ','rP','rN','rCharge','rCfg','rOuter','rGroup','rPeriod',
+   'headline','diagramTag','dotsBtn','crossesBtn'].forEach(id => el[id] = document.getElementById(id));
+
+  const emptyOpt = document.createElement('option');
+  emptyOpt.value = 0;
+  emptyOpt.textContent = '0. Empty (no electrons)';
+  el.elementSelect.appendChild(emptyOpt);
+  ELEMENTS.forEach(([sym, name], i) => {
+    const opt = document.createElement('option');
+    opt.value = i + 1;
+    opt.textContent = (i+1) + '. ' + name + ' (' + sym + ')';
+    el.elementSelect.appendChild(opt);
+  });
+
+  // ---------- state ----------
+  // Start on sodium: 2,8,1 is the example most GCSE courses open with.
+  let Z = 11, N = 11;
+  let prevKeys = new Set();   // slots shown before the last change, for the "new" highlight
+  let anim = null;
+
+  function chargeHtml(q){
+    if (q === 0) return '';
+    return '<sup>' + (Math.abs(q) > 1 ? Math.abs(q) : '') + (q > 0 ? '+' : '−') + '</sup>';
+  }
+  function chargeText(q){
+    if (q === 0) return '0';
+    return (q > 0 ? '+' : '−') + Math.abs(q);
+  }
+  // Other elements with the same number of outer electrons, for the
+  // "same group" remark.
+  function groupMates(Z){
+    const g = elem(Z)[2];
+    if (g === null) return [];
+    return ELEMENTS.map((e, i) => [e, i+1]).filter(([e, z]) => e[2] === g && z !== Z).map(([e]) => e[1].toLowerCase());
+  }
+  function listWords(arr){
+    if (arr.length <= 1) return arr.join('');
+    return arr.slice(0, -1).join(', ') + ' and ' + arr[arr.length-1];
+  }
+
+  function headline(c){
+    const [sym, name, group] = elem(Z);
+    const lname = name.toLowerCase();
+    const q = Z - N;
+    if (Z === 0 && N === 0) return 'No electrons yet. Use <b>+ e⁻</b> to add them one at a time and watch which shell each one goes into, or step to hydrogen and work along the periodic table from there.';
+    if (N === 0) return name + ' stripped of every electron: a bare nucleus with a charge of ' + Z + '+.';
+    const noble = NOBLE.find(x => x[0] === N);
+    const isoNote = (noble && N !== Z) ? ' It now has the same electronic structure as ' + noble[2] + '.' : '';
+    const used = shellsUsed(c);
+    const sh = used - 1;
+    const n = c[sh];
+
+    if (q === 0 || Z === 0){
+      let msg = 'The ' + ordinal(N) + ' electron ';
+      if (n === 1){
+        if (sh === 0) msg += 'goes into the <b>first shell</b>, the one closest to the nucleus and lowest in energy.';
+        else msg += 'starts the <b>' + shellName(sh) + ' shell</b>: the ' + shellName(sh-1) + ' shell is full with ' + CAP[sh-1] + ', so the next electron has to go further out.';
+      } else if (n === CAP_SAID[sh]){
+        msg += 'fills the <b>' + shellName(sh) + ' shell</b>.';
+      } else if (n <= 4){
+        msg += 'goes into the <b>' + shellName(sh) + ' shell</b> too, which now holds ' + n + ' of ' + CAP_SAID[sh] + '.';
+      } else {
+        msg += 'pairs up with one already in the <b>' + shellName(sh) + ' shell</b>, which now holds ' + n + ' of ' + CAP_SAID[sh] + '.';
+      }
+      if (Z === 0) return msg + (noble ? ' Every shell is full: this is the ' + noble[2] + ' structure.' : '');
+      if (group === 0) return msg + ' Every shell is full, and a full outer shell is why ' + lname + ' is so unreactive: it has no need to gain, lose or share any electrons.';
+      if (Z === 1) return msg + ' Hydrogen has one electron in a shell that could hold two, so it is one short of the helium structure.';
+      const mates = groupMates(Z);
+      const outer = outerCount(c);
+      msg += ' ' + name + ' has <b>' + plural(outer, 'outer electron') + '</b>, so it is in group ' + group;
+      if (mates.length) msg += ', with ' + listWords(mates) + ', which ' + (mates.length === 1 ? 'has' : 'also have') + ' ' + outer + ' in the outer shell';
+      msg += '.';
+      if (used > 1 && n === 1 && sh > 0) msg += ' A new shell means a new period: ' + lname + ' starts period ' + used + '.';
+      return msg;
+    }
+
+    if (q > 0){
+      const neutral = fill(Z);
+      const nUsed = shellsUsed(neutral);
+      const outerN = neutral[nUsed-1];
+      const fromOuter = Math.min(q, outerN);
+      const deeper = q - fromOuter;
+      if (group === 0) return name + ' has lost ' + plural(q, 'electron') + ' from a full outer shell to make ' + sym + chargeHtml(q) + '. Taking an electron out of a full shell takes a great deal of energy, which is why the noble gases do not form ions.';
+      if (deeper > 0) return 'Having emptied its outer shell, ' + lname + ' is now losing electrons from a full shell to make ' + sym + chargeHtml(q) + '. That takes far more energy than the first ' + plural(outerN, 'electron') + ' did, because these electrons are closer to the nucleus and more strongly held, so ' + lname + ' does not form this ion in practice.';
+      let msg = name + ' has lost ' + (q === outerN ? (q === 1 ? 'its one outer electron' : (q === 2 ? 'both' : 'all ' + q) + ' of its outer electrons') : plural(q, 'outer electron')) + ', leaving ' + sym + chargeHtml(q) + '.';
+      if (q === outerN){
+        msg += ' What is left is a full outer shell.' + isoNote;
+        if (group <= 3) msg += ' This is the ion ' + lname + ' forms in its compounds.';
+        else if (group === 4) msg += ' Losing four electrons takes a great deal of energy, though, and in practice ' + lname + ' shares electrons instead.';
+        else msg += ' Losing ' + q + ' electrons takes far more energy than gaining ' + (8 - outerN) + ' would, so in practice ' + lname + ' forms a negative ion, not a positive one.';
+      } else if (group <= 3){
+        msg += ' Its outer shell is not yet empty, so it has not reached a full outer shell.';
+      } else if (group >= 5){
+        msg += ' ' + name + ' was only ' + plural(8 - outerN, 'electron') + ' short of a full outer shell, so gaining is the easier route: it forms negative ions, not positive ones.';
+      }
+      return msg;
+    }
+
+    const neutral = fill(Z);
+    const nUsed = shellsUsed(neutral);
+    const room = CAP_SAID[nUsed-1] - neutral[nUsed-1];
+    const g = -q;
+    if (g <= room && used === nUsed){
+      let msg = name + ' has gained ' + plural(g, 'electron') + ', giving ' + sym + chargeHtml(q) + '. Its outer shell now holds ' + n + ' of ' + CAP_SAID[sh] + '.';
+      if (n === CAP_SAID[sh]){
+        msg += ' That completes the outer shell.' + isoNote;
+        if (group !== null && group >= 5) msg += ' This is the ion ' + lname + ' forms in its compounds.';
+      }
+      return msg;
+    }
+    if (nUsed >= 4 || room === 0) return name + ' already had a full outer shell, so there is nothing to be gained by taking on more electrons: the extra ' + (g === 1 ? 'one has' : 'ones have') + ' to start a new shell further out, weakly held and far from the nucleus. This ion does not form.';
+    return 'The outer shell of ' + lname + ' was already full after gaining ' + room + ', so the extra ' + plural(g - room, 'electron') + ' had to start a new shell. Atoms only gain electrons up to a full outer shell, so this ion does not form.';
+  }
+
+  function updateReadout(c, animating){
+    const [sym, name, group] = elem(Z);
+    const q = Z - N;
+    const noNucleus = Z === 0;
+    el.spSym.innerHTML = noNucleus ? sym : sym + chargeHtml(q);
+    el.spName.textContent = name;
+    el.spZ.textContent = noNucleus ? 'no nucleus' : 'atomic number ' + Z;
+    el.rP.textContent = noNucleus ? '—' : Z;
+    el.rN.textContent = animating ? total(c) + ' of ' + N : N;
+    el.rCharge.textContent = noNucleus ? '—' : chargeText(q);
+    el.chargePill.textContent = noNucleus ? N + ' e⁻' : chargeText(q);
+    el.rCfg.textContent = cfgText(c);
+    el.rOuter.textContent = total(c) ? outerCount(c) : '—';
+    el.rGroup.textContent = noNucleus ? '—' : groupText(group);
+    el.rPeriod.textContent = noNucleus ? '—' : shellsUsed(fill(Z));
+    el.ionBadge.textContent = noNucleus ? 'no nucleus' : (q === 0 ? 'neutral atom' : (q > 0 ? 'positive ion' : 'negative ion'));
+    el.ionBadge.className = 'ion-badge ' + (q === 0 ? 'neutral' : (q > 0 ? 'cation' : 'anion'));
+    el.diagramTag.textContent = noNucleus ? total(c) + ' e⁻' : sym + (q === 0 ? '' : ' ' + chargeText(q)) + ' · ' + cfgText(c);
+    nucCircle.classList.toggle('empty', noNucleus);
+    nucSym.textContent = noNucleus ? '' : sym;
+    nucP.textContent = noNucleus ? '' : Z + ' p⁺';
+    nucSym.setAttribute('y', noNucleus ? CY + 4 : CY + 2);
+  }
+
+  function updateButtons(){
+    el.prevBtn.disabled = Z <= 0;
+    el.nextBtn.disabled = Z >= ZMAX;
+    el.removeBtn.disabled = N <= 0;
+    el.addBtn.disabled = N >= ZMAX;
+    el.neutralBtn.disabled = N === Z;
+    el.neutralBtn.textContent = Z === 0 ? 'Clear' : 'Neutral';
+    el.elementSelect.value = Z;
+  }
+
+  function render(){
+    stopAnim();
+    const c = speciesConfig(Z, N);
+    const keys = new Set(slotsOf(c).map(slotKey));
+    // Highlight the newcomer only when exactly one electron arrived;
+    // jumping several elements at once flags nothing.
+    let newKeys = new Set([...keys].filter(k => !prevKeys.has(k)));
+    if (newKeys.size > 1) newKeys = new Set();
+    prevKeys = keys;
+    drawDiagram(c, newKeys);
+    updateReadout(c, false);
+    el.headline.innerHTML = headline(c);
+    updateButtons();
+  }
+
+  // ---------- "fill from empty" animation ----------
+  function stopAnim(){ if (anim){ clearInterval(anim); anim = null; } }
+  function animateFill(){
+    stopAnim();
+    const c = speciesConfig(Z, N);
+    const slots = slotsOf(c);
+    if (!slots.length) return;
+    let k = 0;
+    const tick = () => {
+      k++;
+      const shown = slots.slice(0, k);
+      const pc = configFromSlots(shown);
+      const last = shown[shown.length-1];
+      drawDiagram(pc, new Set([slotKey(last)]));
+      updateReadout(pc, k < slots.length);
+      const n = pc[last.shell];
+      let how;
+      if (n === 1) how = 'starts the <b>' + shellName(last.shell) + ' shell</b>';
+      else if (n === CAP[last.shell] && last.shell < 3) how = 'fills the <b>' + shellName(last.shell) + ' shell</b>';
+      else how = 'goes into the <b>' + shellName(last.shell) + ' shell</b>, which still has room';
+      el.headline.innerHTML = 'Electron ' + k + ' of ' + slots.length + ' ' + how + '.';
+      if (k >= slots.length){
+        stopAnim();
+        prevKeys = new Set(slots.map(slotKey));
+        setTimeout(() => { if (!anim){ drawDiagram(c, new Set([slotKey(last)])); el.headline.innerHTML = headline(c); updateReadout(c, false); } }, 900);
+      }
+    };
+    drawDiagram(configFromSlots([]), new Set());
+    updateReadout(configFromSlots([]), true);
+    el.headline.innerHTML = 'Filling the shells from the inside out.';
+    anim = setInterval(tick, 300);
+  }
+
+  // ---------- controls ----------
+  function setElement(z){ Z = Math.max(0, Math.min(ZMAX, z)); N = Z; render(); }
+  el.elementSelect.addEventListener('change', () => setElement(+el.elementSelect.value));
+  el.prevBtn.addEventListener('click', () => setElement(Z - 1));
+  el.nextBtn.addEventListener('click', () => setElement(Z + 1));
+  el.removeBtn.addEventListener('click', () => { if (N > 0){ N--; render(); } });
+  el.addBtn.addEventListener('click', () => { if (N < ZMAX){ N++; render(); } });
+  el.neutralBtn.addEventListener('click', () => { N = Z; render(); });
+  el.fillBtn.addEventListener('click', animateFill);
+  function setStyle(crosses){
+    diagram.classList.toggle('crosses', crosses);
+    document.querySelectorAll('.legend svg').forEach(sv => sv.classList.toggle('crosses', crosses));
+    el.dotsBtn.classList.toggle('active', !crosses);
+    el.crossesBtn.classList.toggle('active', crosses);
+  }
+  el.dotsBtn.addEventListener('click', () => setStyle(false));
+  el.crossesBtn.addEventListener('click', () => setStyle(true));
+
+  document.addEventListener('keydown', e => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'select' || tag === 'input' || tag === 'textarea') return;
+    if (e.key === 'ArrowRight'){ setElement(Z + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft'){ setElement(Z - 1); e.preventDefault(); }
+    else if (e.key === '+' || e.key === '='){ if (N < ZMAX){ N++; render(); } }
+    else if (e.key === '-' || e.key === '_'){ if (N > 0){ N--; render(); } }
+  });
+
+  // ---------- height reporting to the site viewer ----------
+  function reportHeight(){
+    window.parent.postMessage({ type:'simHeight', height: document.body.scrollHeight }, '*');
+  }
+  let rt;
+  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(reportHeight, 120); });
+  new ResizeObserver(reportHeight).observe(document.body);
+  setInterval(reportHeight, 800);
+
+  // ---------- boot ----------
+  prevKeys = new Set(slotsOf(speciesConfig(Z, N)).map(slotKey));
+  render();
+  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>

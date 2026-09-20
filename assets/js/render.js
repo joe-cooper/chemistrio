@@ -151,8 +151,14 @@ function simDescription(sim) {
    anchor text, and the delegated click handler in app.js still turns
    it into a pushState navigation for visitors, so nothing about the
    in-page behaviour changes. */
-function simCategoriesHtml(simulations, now) {
-  const topics = uniq(simulations.map(s => s.topic));
+function orderTopics(simulations, topicOrder) {
+  const seen = uniq(simulations.map(s => s.topic));
+  const listed = (topicOrder || []).filter(t => seen.includes(t));
+  return listed.concat(seen.filter(t => !listed.includes(t)));
+}
+
+function simCategoriesHtml(simulations, now, topicOrder) {
+  const topics = orderTopics(simulations, topicOrder);
   return topics.map((topic, i) => {
     const items = simulations.filter(s => s.topic === topic);
     const rows = items.map(s => `
@@ -262,7 +268,7 @@ if (typeof module !== "undefined" && module.exports) {
     PAGE_META, NEW_BADGE_DAYS, DESCRIPTION_LIMIT, CANONICAL_ORIGIN, canonicalUrl,
     uniq, esc, pagePath, simPath, pageMeta, isNewSim, newBadge,
     normLevel, truncateText, simTitle, simDescription,
-    simCategoriesHtml, resourceCategoriesHtml, featuredHtml, navHtml,
+    orderTopics, simCategoriesHtml, resourceCategoriesHtml, featuredHtml, navHtml,
     MATH_SPAN_RE, protectMath, restoreMath, notesHtml
   };
 }

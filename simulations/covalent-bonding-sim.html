@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Covalent Bonding</title>
+<link rel="canonical" href="https://chemistr.io/sims/covalent-bonding-sim/">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<link rel="stylesheet" href="../assets/css/sim.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  /* Element colours. Light-mode overrides keep the pale hydrogen
+     legible against the lighter canvas background. */
+  :root{
+    --H:#e8ecf2; --C:#9aa7b8; --N:#7fa7ff; --O:#ff5d5d; --Cl:#5ed17a;
+    --full:#e0a68a; --edge:rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --H:#8d99a8; --C:#6b7887; --N:#3b6fd6; --O:#d64545; --Cl:#2e9e4f;
+    --full:#b97a55; --edge:rgba(0,0,0,.25);
+  }
+
+  .stage{margin-bottom:14px;}
+  .stage .card-label{margin-bottom:10px;}
+  .stage canvas{cursor:default;touch-action:none;user-select:none;-webkit-user-select:none;}
+  .legend{display:flex;gap:6px 16px;margin-top:10px;font-size:12px;color:var(--muted);flex-wrap:wrap;min-height:18px;}
+  .legend .mk{font-size:13px;margin-right:4px;vertical-align:-1px;}
+  .legend .ring{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:-1px;border:2px solid var(--full);box-sizing:border-box;}
+
+  .stats{grid-template-columns:repeat(3,1fr);}
+  .stat .v{font-size:15px;line-height:1.2;}
+  .headline{min-height:44px;}
+
+  .controls{display:flex;flex-wrap:wrap;gap:16px 26px;align-items:flex-end;}
+  .toggle-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+  .tray{display:flex;flex-direction:column;gap:7px;}
+  .tray .row{display:flex;gap:6px;flex-wrap:wrap;}
+  .tray .btn{padding:6px 11px;font-size:12.5px;min-width:0;}
+  .tray .btn i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:0;border:1px solid var(--edge);}
+  .ctl-run .btn{padding:9px 14px;}
+  .btn:disabled{opacity:.45;cursor:default;}
+  .kbd-hint{font-size:11.5px;color:var(--muted-dim);margin-top:8px;flex-basis:100%;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header></header>
+
+  <div class="card stage">
+    <div class="card-label"><span id="molName"></span><span class="right" id="molState"></span></div>
+    <canvas id="cv" aria-label="Atoms that can be dragged together to form covalent bonds"></canvas>
+    <div class="legend" id="legend"></div>
+    <div class="stats">
+      <div class="stat"><span class="k">Full outer shells</span><span class="v" id="fullCount">0 of 0</span></div>
+      <div class="stat"><span class="k">Shared pairs</span><span class="v" id="pairCount">0</span></div>
+      <div class="stat accent"><span class="k">Molecule</span><span class="v" id="formula">—</span></div>
+    </div>
+    <div class="headline" id="headline"></div>
+  </div>
+
+  <!-- controls -->
+  <div class="controls">
+    <div class="select-block">
+      <span class="ctl-label">Molecule</span>
+      <select id="tmpl" aria-label="Choose which atoms to start with"></select>
+    </div>
+
+    <div class="tray" id="tray" style="display:none">
+      <span class="ctl-label">Add an atom</span>
+      <div class="row" id="trayRow"></div>
+    </div>
+
+    <div class="toggle-row">
+      <button type="button" class="chip-toggle active" id="countToggle">Electron counts</button>
+      <button type="button" class="chip-toggle" id="innerToggle">Inner shells</button>
+    </div>
+
+    <div class="ctl-run">
+      <button class="btn btn-run" id="buildBtn">Build it for me</button>
+      <button class="btn btn-ghost" id="resetBtn">Reset</button>
+    </div>
+    <div class="kbd-hint">Drag an atom onto another until their outer shells overlap. Click a shared pair to unshare it, or pull the atoms apart sharply.</div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- data ----------
+  // R is the outer-shell radius on screen; core is the filled disc that
+  // stands in for the nucleus and any inner shells. `inner` lists the
+  // electrons in each inner shell, drawn only when the toggle is on.
+  const ELEMENTS = {
+    H:  { name:"hydrogen", valence:1, cap:2, R:34, core:15, inner:[] },
+    C:  { name:"carbon",   valence:4, cap:8, R:58, core:19, inner:[2] },
+    N:  { name:"nitrogen", valence:5, cap:8, R:58, core:19, inner:[2] },
+    O:  { name:"oxygen",   valence:6, cap:8, R:58, core:19, inner:[2] },
+    Cl: { name:"chlorine", valence:7, cap:8, R:64, core:21, inner:[2,8] },
+  };
+  const LENS = 28;       // width of the overlap between two bonded shells, px
+  const E_R = 4.4;       // electron dot radius
+  const PAIR_GAP = 5.4;  // half the distance between the two electrons of a pair
+  const STACK = 24;      // spacing between the shared pairs of a multiple bond
+  const K_BOND = 200;    // bond spring, px/s² per px of stretch
+  const SNAP = 8;        // gap between the shells at which a stretched bond breaks, px
+  const K_REP = 650;     // peak repulsion between unbonded atoms, px/s²
+  const DAMP = 13;       // velocity damping, 1/s
+
+  // Atom positions are fractions of the canvas. The first atom listed is
+  // the one the others are moved towards by "Build it for me", and
+  // `bonds` is the target structure in the order that button makes them.
+  const TEMPLATES = {
+    h2:  { name:"Hydrogen", formula:"H₂", group:"Elements",
+      atoms:[["H",.34,.5,"dot"],["H",.66,.5,"cross"]], bonds:[[0,1,1]],
+      done:"One shared pair, a single bond, gives each hydrogen atom the 2 electrons its shell can hold." },
+    cl2: { name:"Chlorine", formula:"Cl₂", group:"Elements",
+      atoms:[["Cl",.3,.5,"dot"],["Cl",.7,.5,"cross"]], bonds:[[0,1,1]],
+      done:"Each chlorine atom had 7 outer electrons and needed only one more, so one shared pair is enough for both. The other six electrons on each atom stay in pairs that aren't shared." },
+    o2:  { name:"Oxygen", formula:"O₂", group:"Elements",
+      atoms:[["O",.3,.5,"dot"],["O",.7,.5,"cross"]], bonds:[[0,1,2]],
+      done:"Each oxygen atom needed 2 more electrons, so the atoms share two pairs: a double bond." },
+    n2:  { name:"Nitrogen", formula:"N₂", group:"Elements",
+      atoms:[["N",.3,.5,"dot"],["N",.7,.5,"cross"]], bonds:[[0,1,3]],
+      done:"Each nitrogen atom needed 3 more electrons, so the atoms share three pairs: a triple bond." },
+    hcl: { name:"Hydrogen chloride", formula:"HCl", group:"Compounds",
+      atoms:[["Cl",.64,.5,"dot"],["H",.3,.5,"cross"]], bonds:[[0,1,1]],
+      done:"Hydrogen needed 1 more electron and so did chlorine, so one shared pair completes both shells." },
+    h2o: { name:"Water", formula:"H₂O", group:"Compounds",
+      atoms:[["O",.5,.5,"dot"],["H",.2,.26,"cross"],["H",.8,.74,"cross"]], bonds:[[0,1,1],[0,2,1]],
+      done:"Oxygen needed 2 more electrons and gets one from each hydrogen; each hydrogen needed 1 and gets it from oxygen. Two single bonds, and two pairs on oxygen left unshared." },
+    nh3: { name:"Ammonia", formula:"NH₃", group:"Compounds",
+      atoms:[["N",.5,.5,"dot"],["H",.18,.26,"cross"],["H",.82,.26,"cross"],["H",.5,.86,"cross"]], bonds:[[0,1,1],[0,2,1],[0,3,1]],
+      done:"Nitrogen needed 3 more electrons, one from each hydrogen. One pair on nitrogen is not shared with anything: a lone pair." },
+    ch4: { name:"Methane", formula:"CH₄", group:"Compounds",
+      atoms:[["C",.5,.5,"dot"],["H",.18,.2,"cross"],["H",.82,.2,"cross"],["H",.18,.8,"cross"],["H",.82,.8,"cross"]], bonds:[[0,1,1],[0,2,1],[0,3,1],[0,4,1]],
+      done:"Carbon had only 4 outer electrons and needed 4 more, so it shares a pair with each of four hydrogen atoms. Every electron in carbon's outer shell is now part of a bond." },
+    co2: { name:"Carbon dioxide", formula:"CO₂", group:"Compounds",
+      atoms:[["C",.5,.5,"dot"],["O",.16,.5,"cross"],["O",.84,.5,"cross"]], bonds:[[0,1,2],[0,2,2]],
+      done:"Carbon needed 4 more electrons and each oxygen needed 2, so carbon shares two pairs with each oxygen: two double bonds." },
+    c2h6: { name:"Ethane", formula:"C₂H₆", group:"Hydrocarbons",
+      atoms:[["C",.38,.5,"dot"],["C",.62,.5,"cross"],["H",.1,.2,"cross"],["H",.1,.8,"cross"],["H",.3,.9,"cross"],["H",.9,.2,"dot"],["H",.9,.8,"dot"],["H",.7,.1,"dot"]],
+      bonds:[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,1],[1,6,1],[1,7,1]],
+      done:"The two carbon atoms share one pair with each other, then each takes three hydrogen atoms to finish its shell." },
+    c2h4: { name:"Ethene", formula:"C₂H₄", group:"Hydrocarbons",
+      atoms:[["C",.38,.5,"dot"],["C",.62,.5,"cross"],["H",.1,.22,"cross"],["H",.1,.78,"cross"],["H",.9,.22,"dot"],["H",.9,.78,"dot"]],
+      bonds:[[0,1,2],[0,2,1],[0,3,1],[1,4,1],[1,5,1]],
+      done:"With only two hydrogen atoms each, the carbon atoms are still one electron short after sharing one pair, so they share a second: a carbon–carbon double bond." },
+    free: { name:"Build your own", formula:"", group:"Sandbox", atoms:[], bonds:null },
+  };
+  const ORDER = ["h2","cl2","o2","n2","hcl","h2o","nh3","ch4","co2","c2h6","c2h4","free"];
+
+  // Molecules the sandbox can name, keyed by composition in EL_ORDER.
+  const EL_ORDER = ["C","H","N","O","Cl"];
+  const KNOWN = {
+    H2:["H₂","hydrogen"], Cl2:["Cl₂","chlorine"], O2:["O₂","oxygen"], N2:["N₂","nitrogen"],
+    HCl:["HCl","hydrogen chloride"], H2O:["H₂O","water"], H3N:["NH₃","ammonia"], CH4:["CH₄","methane"],
+    CO2:["CO₂","carbon dioxide"], C2H6:["C₂H₆","ethane"], C2H4:["C₂H₄","ethene"], C2H2:["C₂H₂","ethyne"],
+    C3H8:["C₃H₈","propane"], C3H6:["C₃H₆","propene"], H2O2:["H₂O₂","hydrogen peroxide"], H4N2:["N₂H₄","hydrazine"],
+    CH4O:["CH₃OH","methanol"], CH2O:["HCHO","methanal"], CH5N:["CH₃NH₂","methylamine"],
+    CH3Cl:["CH₃Cl","chloromethane"], CH2Cl2:["CH₂Cl₂","dichloromethane"], CHCl3:["CHCl₃","trichloromethane"],
+    CCl4:["CCl₄","tetrachloromethane"], NCl3:["NCl₃","nitrogen trichloride"], OCl2:["Cl₂O","dichlorine monoxide"],
+    HOCl:["HOCl","chloric(I) acid"],
+  };
+
+  const SUB = "₀₁₂₃₄₅₆₇₈₉";
+  const sub = n => n===1 ? "" : String(n).replace(/\d/g, d=>SUB[d]);
+  const cap = s => s.charAt(0).toUpperCase()+s.slice(1);
+  const WORDS = ["no","one","two","three"];
+  const BOND_NAME = ["","single","double","triple"];
+
+  function cssVar(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+  function rgba(hex,a){
+    const n=parseInt(hex.slice(1),16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  }
+  function textOn(hex){
+    const n=parseInt(hex.slice(1),16);
+    const lum=(0.2126*((n>>16)&255)+0.7152*((n>>8)&255)+0.0722*(n&255))/255;
+    return lum>0.55 ? '#0d1117' : '#ffffff';
+  }
+
+  // ---------- state ----------
+  const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+  let dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  let W=0, H=0;
+  let atoms=[], bonds=[];
+  let tmplKey='h2o', tmpl=TEMPLATES.h2o;
+  let drag=null;        // {atom, dx, dy, px, py}
+  let hover=null;       // {atom, ok}: partner the dragged atom is touching
+  let selBond=null;
+  let showInner=false, showCounts=true;
+  let auto=null;        // "Build it for me" state
+  let ui=[];            // clickable things drawn on the canvas, refreshed each render
+  let rafId=null, lastTs=null, unsettled=false;
+  let fullWarned=null;
+
+  function makeAtom(el, x, y, mark){
+    const a = { el, E:ELEMENTS[el], x, y, vx:0, vy:0, mark, bonds:[], e:[], rot:-Math.PI/2 };
+    a.e = electronTargets(a);
+    return a;
+  }
+  const order  = a => a.bonds.reduce((s,b)=>s+b.order, 0);
+  const outer  = a => a.E.valence + order(a);
+  const free   = a => a.E.cap - outer(a);
+  const isFull = a => free(a)===0;
+  const partner = (b,a) => b.a===a ? b.b : b.a;
+  const findBond = (a,b) => a.bonds.find(x => partner(x,a)===b);
+  const bondLen = b => b.a.E.R + b.b.E.R - LENS;
+  const held = () => drag ? drag.atom : (auto && auto.moving ? auto.moving.mover : null);
+
+  // ---------- electrons ----------
+  // Where each of this atom's outer electrons should sit, as offsets
+  // from its centre. Shared pairs go in the lens between the two shells;
+  // whatever is left is spread around the rest of the ring, pairs first.
+  function electronTargets(a){
+    const T=[], dirs=[];
+    for(const b of a.bonds){
+      const o=partner(b,a);
+      const dx=o.x-a.x, dy=o.y-a.y, d=Math.hypot(dx,dy)||1, ux=dx/d, uy=dy/d;
+      dirs.push(Math.atan2(dy,dx));
+      // Each pair lies along the perpendicular bisector of the bond, this
+      // atom's electron on one side of the pair's centre and the
+      // partner's on the other (the partner's perpendicular points the
+      // opposite way, so the same offset lands it on the far side).
+      const cx=ux*(a.E.R-LENS/2), cy=uy*(a.E.R-LENS/2), px=-uy, py=ux;
+      for(let k=0;k<b.order;k++){
+        const t=(k-(b.order-1)/2)*STACK+PAIR_GAP;
+        T.push({ x:cx+px*t, y:cy+py*t });
+      }
+    }
+    const nslots=a.E.cap/2, used=order(a), slotsLeft=nslots-used, eLeft=a.E.valence-used;
+    const pairs=Math.max(0, eLeft-slotsLeft);
+    const angs=[];
+    if(!dirs.length){
+      for(let i=0;i<slotsLeft;i++) angs.push(a.rot + i*2*Math.PI/nslots);
+    } else {
+      // Share the free slots out among the gaps between bonds, in
+      // proportion to how wide each gap is.
+      dirs.sort((p,q)=>p-q);
+      const gaps=dirs.map((d,i)=>{ const nx=i+1<dirs.length ? dirs[i+1] : dirs[0]+2*Math.PI; return [d, nx-d]; });
+      const raw=gaps.map(g=>slotsLeft*g[1]/(2*Math.PI));
+      const cnt=raw.map(Math.floor);
+      let rem=slotsLeft-cnt.reduce((s,c)=>s+c,0);
+      const byRem=raw.map((r,i)=>[r-cnt[i],i]).sort((p,q)=>q[0]-p[0]);
+      for(const [,i] of byRem){ if(rem<=0) break; cnt[i]++; rem--; }
+      gaps.forEach(([d,g],i)=>{ for(let k=0;k<cnt[i];k++) angs.push(d + g*(k+1)/(cnt[i]+1)); });
+    }
+    angs.forEach((th,i)=>{
+      const cx=Math.cos(th)*a.E.R, cy=Math.sin(th)*a.E.R, tx=-Math.sin(th), ty=Math.cos(th);
+      if(i<pairs){ T.push({x:cx+tx*PAIR_GAP, y:cy+ty*PAIR_GAP}); T.push({x:cx-tx*PAIR_GAP, y:cy-ty*PAIR_GAP}); }
+      else T.push({x:cx, y:cy});
+    });
+    return T;
+  }
+
+  // Ease each electron towards the nearest free target so a newly shared
+  // pair slides into the lens rather than jumping.
+  function updateElectrons(a, dt){
+    const T=electronTargets(a);
+    if(a.e.length!==T.length){ a.e=T; return false; }
+    const cand=[];
+    for(let i=0;i<T.length;i++) for(let j=0;j<T.length;j++){
+      const dx=a.e[i].x-T[j].x, dy=a.e[i].y-T[j].y; cand.push([dx*dx+dy*dy,i,j]);
+    }
+    cand.sort((p,q)=>p[0]-q[0]);
+    const usedE=new Set(), usedT=new Set(), k=1-Math.exp(-dt*14);
+    let moving=false;
+    for(const [d2,i,j] of cand){
+      if(usedE.has(i)||usedT.has(j)) continue;
+      usedE.add(i); usedT.add(j);
+      if(d2>0.09){ moving=true; a.e[i].x+=(T[j].x-a.e[i].x)*k; a.e[i].y+=(T[j].y-a.e[i].y)*k; }
+      else { a.e[i].x=T[j].x; a.e[i].y=T[j].y; }
+    }
+    return moving;
+  }
+
+  // ---------- bonds ----------
+  function addBond(a,b){
+    // Dot-and-cross needs the two atoms in a pair to use different
+    // marks. Flip whichever has fewer other bonds to redraw.
+    if(a.mark===b.mark){
+      const flip = a.bonds.length<b.bonds.length ? a : b;
+      flip.mark = flip.mark==='dot' ? 'cross' : 'dot';
+    }
+    const bond={a,b,order:1};
+    bonds.push(bond); a.bonds.push(bond); b.bonds.push(bond);
+    onBondFormed(a,b);
+    refresh();
+  }
+  function removeBond(b){
+    bonds.splice(bonds.indexOf(b),1);
+    b.a.bonds.splice(b.a.bonds.indexOf(b),1);
+    b.b.bonds.splice(b.b.bonds.indexOf(b),1);
+    if(selBond===b) selBond=null;
+  }
+  function canAdd(b){ return b.order<3 && free(b.a)>0 && free(b.b)>0; }
+  function changeOrder(b, delta){
+    const who = b.a.el===b.b.el ? `The two ${b.a.E.name} atoms` : `${cap(b.a.E.name)} and ${b.b.E.name}`;
+    if(delta>0){
+      if(!canAdd(b)) return;
+      b.order++;
+      let s=`${who} now share ${WORDS[b.order]} pairs of electrons: a ${BOND_NAME[b.order]} bond.`;
+      s+=fullNote(b.a,b.b);
+      if(canAdd(b)) s+=` Both atoms still need more, so they can share another pair.`;
+      setMsg(s);
+    } else {
+      b.order--;
+      if(b.order===0){ removeBond(b); setMsg(`${who} are separate atoms again. Each has taken back its own electron.`); }
+      else setMsg(`${who} now share ${WORDS[b.order]} pair${b.order>1?'s':''} of electrons: a ${BOND_NAME[b.order]} bond.`);
+    }
+    refresh(); ensureLoop();
+  }
+  function fullNote(a,b){
+    const fulls=[a,b].filter(isFull);
+    if(fulls.length===2) return a.el===b.el ? ` Both shells are now full with ${a.E.cap} electrons.` : ` Both outer shells are now full.`;
+    if(fulls.length===1) return ` ${cap(fulls[0].E.name)}'s outer shell is now full with ${fulls[0].E.cap} electrons, so it can't form another bond.`;
+    return '';
+  }
+  function onBondFormed(a,b){
+    const who = a.el===b.el ? `The two ${a.E.name} atoms` : `${cap(a.E.name)} and ${b.E.name}`;
+    let s=`${who} now share a pair of electrons. The shared pair counts towards both outer shells.`;
+    s+=fullNote(a,b);
+    if(free(a)>0 && free(b)>0) s+=` Both atoms still need more electrons, so they can share a second pair: click the +.`;
+    setMsg(s);
+  }
+
+  // Called every frame for the atom being dragged (or moved by the
+  // auto-build): touching another shell highlights it, overlapping it
+  // far enough forms the bond.
+  function checkBonding(a){
+    hover=null;
+    // Nearest touching atom that could still bond wins; a full one is
+    // only reported when there's nothing better under the pointer.
+    let best=null, bd=Infinity, ok=false;
+    for(const o of atoms){
+      if(o===a || findBond(a,o)) continue;
+      const d=Math.hypot(o.x-a.x,o.y-a.y);
+      if(d>=a.E.R+o.E.R) continue;
+      const canO = free(a)>0 && free(o)>0;
+      if((canO && !ok) || (canO===ok && d<bd)){ bd=d; best=o; ok=canO; }
+    }
+    if(!best) return;
+    hover={atom:best, ok};
+    if(bd < a.E.R+best.E.R-LENS*0.7){
+      if(ok){ addBond(a,best); hover=null; }
+      else {
+        const key=[a,best].map(x=>atoms.indexOf(x)).sort().join(':');
+        if(fullWarned!==key){
+          fullWarned=key;
+          const f = free(a)>0 ? best : a;
+          setMsg(`${cap(f.E.name)} already has a full outer shell of ${f.E.cap} electrons, so it can't share any more. Try an atom whose shell still has room.`);
+        }
+      }
+    }
+  }
+
+  // A bonded partner follows the dragged atom through the bond spring,
+  // so a slow drag keeps the shells overlapping while a quick tug
+  // stretches the bond faster than the partner can follow. Once the
+  // shells have come apart there's nothing left to share, and the bond
+  // breaks; the partner is left drifting with whatever speed it had.
+  function checkSnapping(a){
+    for(const b of a.bonds.slice()){
+      const o=partner(b,a);
+      if(Math.hypot(o.x-a.x,o.y-a.y) < a.E.R+o.E.R+SNAP) continue;
+      const who = a.el===o.el ? `The two ${a.E.name} atoms` : `${cap(a.E.name)} and ${o.E.name}`;
+      removeBond(b);
+      setMsg(`${who} have been pulled apart, so they no longer share any electrons. Each has taken back its own.`);
+      refresh();
+    }
+  }
+
+  // ---------- physics ----------
+  function components(){
+    const seen=new Set(), out=[];
+    for(const a of atoms){
+      if(seen.has(a)) continue;
+      const comp=[], q=[a]; seen.add(a);
+      while(q.length){ const u=q.pop(); comp.push(u); for(const b of u.bonds){ const o=partner(b,u); if(!seen.has(o)){ seen.add(o); q.push(o); } } }
+      out.push(comp);
+    }
+    return out;
+  }
+  function step(dt){
+    const h=held();
+    let active=false;
+    for(const b of bonds){
+      const dx=b.b.x-b.a.x, dy=b.b.y-b.a.y, d=Math.hypot(dx,dy)||1, ext=d-bondLen(b);
+      if(Math.abs(ext)>0.5) active=true;
+      const f=K_BOND*ext, fx=f*dx/d, fy=f*dy/d;
+      b.a.vx+=fx*dt; b.a.vy+=fy*dt; b.b.vx-=fx*dt; b.b.vy-=fy*dt;
+    }
+    // Unbonded atoms push apart when their shells overlap; atoms of the
+    // same molecule push harder and from further away, which is what
+    // spreads the hydrogens evenly around a carbon.
+    const comp=new Map();
+    components().forEach((c,i)=>c.forEach(a=>comp.set(a,i)));
+    for(let i=0;i<atoms.length;i++) for(let j=i+1;j<atoms.length;j++){
+      const a=atoms[i], b=atoms[j];
+      if(a===h || b===h || findBond(a,b)) continue;
+      const same=comp.get(a)===comp.get(b);
+      const range=a.E.R+b.E.R+(same?120:10);
+      const dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy)||1;
+      if(d>=range) continue;
+      active=true;
+      const f=K_REP*(1-d/range), fx=f*dx/d, fy=f*dy/d;
+      a.vx-=fx*dt; a.vy-=fy*dt; b.vx+=fx*dt; b.vy+=fy*dt;
+    }
+    const damp=Math.exp(-DAMP*dt);
+    for(const a of atoms){
+      if(a===h){ a.vx=a.vy=0; continue; }
+      a.vx*=damp; a.vy*=damp;
+      a.x+=a.vx*dt; a.y+=a.vy*dt;
+      clampAtom(a);
+      if(Math.abs(a.vx)>0.5 || Math.abs(a.vy)>0.5) active=true;
+    }
+    return active;
+  }
+  function clampAtom(a){
+    const m=a.E.R+2;
+    if(a.x<m){ a.x=m; a.vx=0; } else if(a.x>W-m){ a.x=W-m; a.vx=0; }
+    if(a.y<m){ a.y=m; a.vy=0; } else if(a.y>H-m){ a.y=H-m; a.vy=0; }
+  }
+
+  // ---------- auto build ----------
+  function startAuto(){
+    if(!tmpl.bonds) return;
+    drag=null; selBond=null;
+    auto={ queue:tmpl.bonds.slice(), wait:0, moving:null };
+    ensureLoop();
+  }
+  function stepAuto(dt){
+    if(auto.wait>0){ auto.wait-=dt; return; }
+    if(auto.moving){
+      const {mover, target}=auto.moving;
+      const dx=target.x-mover.x, dy=target.y-mover.y, d=Math.hypot(dx,dy)||1;
+      const goal=mover.E.R+target.E.R-LENS;
+      if(d>goal){ const s=Math.min(280*dt, d-goal); mover.x+=dx/d*s; mover.y+=dy/d*s; }
+      checkBonding(mover);
+      if(findBond(mover,target)){ auto.moving=null; auto.wait=0.7; }
+      return;
+    }
+    while(auto.queue.length){
+      const [i,j,n]=auto.queue[0], A=atoms[i], B=atoms[j];
+      if(!A||!B){ auto.queue.shift(); continue; }
+      const b=findBond(A,B);
+      if(!b){ auto.moving={mover:B, target:A}; return; }
+      if(b.order<n){ changeOrder(b,1); auto.wait=0.8; return; }
+      auto.queue.shift();
+    }
+    auto=null;
+  }
+
+  // ---------- messages / stats ----------
+  const el = {
+    molName:document.getElementById('molName'), molState:document.getElementById('molState'),
+    legend:document.getElementById('legend'), fullCount:document.getElementById('fullCount'),
+    pairCount:document.getElementById('pairCount'), formula:document.getElementById('formula'),
+    headline:document.getElementById('headline'), tmpl:document.getElementById('tmpl'),
+    tray:document.getElementById('tray'), trayRow:document.getElementById('trayRow'),
+    countToggle:document.getElementById('countToggle'), innerToggle:document.getElementById('innerToggle'),
+    buildBtn:document.getElementById('buildBtn'), resetBtn:document.getElementById('resetBtn'),
+  };
+  function setMsg(s){ el.headline.innerHTML=s; }
+
+  function formulaOf(list){
+    const c={}; for(const a of list) c[a.el]=(c[a.el]||0)+1;
+    const key=EL_ORDER.filter(e=>c[e]).map(e=>e+(c[e]>1?c[e]:'')).join('');
+    const k=KNOWN[key];
+    return { formula: k ? k[0] : EL_ORDER.filter(e=>c[e]).map(e=>e+sub(c[e])).join(''), name: k ? k[1] : null };
+  }
+  function introMsg(){
+    if(!atoms.length) return "Add some atoms, then drag them together so their outer shells overlap. An atom keeps sharing until its outer shell is full.";
+    const seen=new Map();
+    for(const a of atoms) seen.set(a.el,(seen.get(a.el)||0)+1);
+    const parts=[];
+    for(const [e,n] of seen){
+      const E=ELEMENTS[e], v=E.valence, need=E.cap-v;
+      parts.push(`${cap(n>1?'each '+E.name:E.name)} has ${v} outer electron${v>1?'s':''} and needs ${need} more to make ${E.cap}.`);
+    }
+    return parts.join(' ')+' Drag an atom onto another so their outer shells overlap.';
+  }
+  function refresh(){
+    const n=atoms.length, full=atoms.filter(isFull).length;
+    const comps=components();
+    const done=comps.filter(c=>c.every(isFull)&&(c.length>1));
+    el.fullCount.textContent=`${full} of ${n}`;
+    el.pairCount.textContent=String(bonds.reduce((s,b)=>s+b.order,0));
+    el.formula.textContent = done.length ? done.map(c=>formulaOf(c).formula).join(' + ') : (n ? 'not yet' : '—');
+    const complete = n>0 && full===n && comps.length===1;
+    el.molState.textContent = complete ? 'Complete' : (n ? `${full} of ${n} full` : '');
+    el.molName.textContent = tmpl.formula ? `${tmpl.name} (${tmpl.formula})` : tmpl.name;
+    // legend: one entry per element/mark combination in use
+    const seen=new Map();
+    for(const a of atoms) seen.set(a.el+a.mark, a);
+    el.legend.innerHTML=[...seen.values()].map(a=>
+      `<span><span class="mk" style="color:var(--${a.el})">${a.mark==='dot'?'●':'✕'}</span>${a.E.name} electrons</span>`).join('')
+      + (n ? `<span><span class="ring"></span>full outer shell</span>` : '');
+    if(n && full===n){
+      if(comps.length===1){
+        const f=formulaOf(atoms);
+        if(tmpl.bonds) setMsg(`Every atom now has a full outer shell. This is ${tmpl.name.toLowerCase()}, ${tmpl.formula}. ${tmpl.done}`);
+        else setMsg(`Every atom now has a full outer shell. This is ${f.name ? f.name+', '+f.formula : 'a molecule with the formula '+f.formula}.`);
+      } else if(done.length===comps.length){
+        setMsg(`Every atom has a full outer shell, in ${WORDS[comps.length]||comps.length} separate molecules: ${done.map(c=>formulaOf(c).formula).join(', ')}.`);
+      }
+    }
+    el.buildBtn.disabled = !tmpl.bonds || complete;
+  }
+
+  // ---------- templates ----------
+  function loadTemplate(key){
+    tmplKey=key; tmpl=TEMPLATES[key];
+    atoms=[]; bonds=[]; selBond=null; hover=null; drag=null; auto=null; fullWarned=null;
+    for(const [e,fx,fy,mark] of tmpl.atoms) atoms.push(makeAtom(e, fx*W, fy*H, mark));
+    for(const a of atoms) clampAtom(a);
+    el.tray.style.display = key==='free' ? '' : 'none';
+    setMsg(introMsg());
+    refresh(); render(); ensureLoop();
+  }
+  function addFreeAtom(e){
+    const E=ELEMENTS[e];
+    let best=null, bs=-Infinity;
+    for(let t=0;t<40;t++){
+      const x=E.R+10+Math.random()*(W-2*E.R-20), y=E.R+10+Math.random()*(H-2*E.R-20-40);
+      let md=Infinity;
+      for(const a of atoms) md=Math.min(md, Math.hypot(a.x-x,a.y-y)-a.E.R-E.R);
+      if(md>bs){ bs=md; best={x,y}; }
+    }
+    const a=makeAtom(e, best.x, best.y, (e==='H'||e==='Cl') ? 'cross' : 'dot');
+    atoms.push(a);
+    setMsg(introMsg());
+    refresh(); render(); ensureLoop();
+  }
+  function removeAtom(a){
+    for(const b of a.bonds.slice()) removeBond(b);
+    atoms.splice(atoms.indexOf(a),1);
+    setMsg(atoms.length ? `${cap(a.E.name)} removed.` : introMsg());
+    refresh();
+  }
+  function binRect(){ return { x:W-138, y:H-44, w:126, h:32 }; }
+  function inBin(x,y){ const r=binRect(); return tmplKey==='free' && x>=r.x && x<=r.x+r.w && y>=r.y && y<=r.y+r.h; }
+
+  // ---------- rendering ----------
+  function size(){
+    const w=cv.parentElement.clientWidth-24;
+    const nw=Math.max(280,w), nh=Math.round(Math.min(520, Math.max(340, nw*0.58)));
+    if(W && H) for(const a of atoms){ a.x*=nw/W; a.y*=nh/H; }
+    W=nw; H=nh;
+    cv.style.height=H+'px';
+    cv.width=Math.round(W*dpr); cv.height=Math.round(H*dpr);
+    for(const a of atoms) clampAtom(a);
+  }
+
+  // The count label sits just outside the shell, on the side facing
+  // away from any bonded partners so labels don't pile up in a molecule.
+  function labelPos(a){
+    let ax=0, ay=1;
+    if(a.bonds.length){
+      // middle of the widest gap between bonds
+      const th=a.bonds.map(b=>{ const o=partner(b,a); return Math.atan2(o.y-a.y,o.x-a.x); }).sort((p,q)=>p-q);
+      let best=-1, mid=0;
+      th.forEach((t,i)=>{ const nx=i+1<th.length ? th[i+1] : th[0]+2*Math.PI; if(nx-t>best){ best=nx-t; mid=t+(nx-t)/2; } });
+      ax=Math.cos(mid); ay=Math.sin(mid);
+    }
+    const x=a.x+ax*(a.E.R+12), y=a.y+ay*(a.E.R+12);
+    return { x:Math.min(W-6,Math.max(6,x)), y:Math.min(H-8,Math.max(8,y)), align: ax<-0.3 ? 'right' : ax>0.3 ? 'left' : 'center' };
+  }
+
+  function render(){
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,W,H);
+    ui=[];
+    const col={}; for(const e in ELEMENTS) col[e]=cssVar('--'+e);
+    const C={ full:cssVar('--full'), gold:cssVar('--gold'), accent:cssVar('--accent'), muted:cssVar('--muted'), dim:cssVar('--muted-dim'), text:cssVar('--text'), edge:cssVar('--edge'), border:cssVar('--border'), surface:cssVar('--surface') };
+    const font=getComputedStyle(document.body).fontFamily;
+    const h=held();
+
+    // shell interiors: the lens where two overlap comes out darker
+    for(const a of atoms){
+      ctx.fillStyle=rgba(col[a.el],.12);
+      ctx.beginPath(); ctx.arc(a.x,a.y,a.E.R,0,Math.PI*2); ctx.fill();
+    }
+    // hover target for the atom being dragged
+    if(hover){
+      const o=hover.atom;
+      ctx.setLineDash([5,4]); ctx.lineWidth=1.5; ctx.strokeStyle=hover.ok?C.gold:C.accent;
+      ctx.beginPath(); ctx.arc(o.x,o.y,o.E.R+6,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    }
+    // outer shells
+    for(const a of atoms){
+      const full=isFull(a);
+      if(full){ ctx.strokeStyle=rgba(C.full,.28); ctx.lineWidth=8; ctx.beginPath(); ctx.arc(a.x,a.y,a.E.R,0,Math.PI*2); ctx.stroke(); }
+      ctx.strokeStyle=full?C.full:rgba(col[a.el],.8); ctx.lineWidth=full?2.4:2;
+      ctx.beginPath(); ctx.arc(a.x,a.y,a.E.R,0,Math.PI*2); ctx.stroke();
+      if(a===h){ ctx.strokeStyle=rgba(C.text,.25); ctx.lineWidth=1; ctx.beginPath(); ctx.arc(a.x,a.y,a.E.R+3,0,Math.PI*2); ctx.stroke(); }
+    }
+    // inner shells
+    if(showInner) for(const a of atoms){
+      a.E.inner.forEach((n,i)=>{
+        const r=a.E.core+(a.E.R-a.E.core)*(i+1)/(a.E.inner.length+1);
+        ctx.strokeStyle=rgba(col[a.el],.45); ctx.lineWidth=1;
+        ctx.beginPath(); ctx.arc(a.x,a.y,r,0,Math.PI*2); ctx.stroke();
+        ctx.fillStyle=rgba(col[a.el],.8);
+        for(let k=0;k<n;k++){
+          const th=a.rot+k*2*Math.PI/n+(n===8?Math.PI/8:0);
+          ctx.beginPath(); ctx.arc(a.x+Math.cos(th)*r,a.y+Math.sin(th)*r,2.4,0,Math.PI*2); ctx.fill();
+        }
+      });
+    }
+    // cores + symbols
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    for(const a of atoms){
+      ctx.fillStyle=col[a.el];
+      ctx.beginPath(); ctx.arc(a.x,a.y,a.E.core,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle=C.edge; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle=textOn(col[a.el]); ctx.font=`600 ${a.E.core>14?15:13}px ${font}`;
+      ctx.fillText(a.el, a.x, a.y+0.5);
+    }
+    // electrons
+    for(const a of atoms){
+      const c=col[a.el];
+      for(const e of a.e){
+        const x=a.x+e.x, y=a.y+e.y;
+        if(a.mark==='dot'){
+          ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x,y,E_R,0,Math.PI*2); ctx.fill();
+          ctx.strokeStyle=C.edge; ctx.lineWidth=1; ctx.stroke();
+        } else {
+          ctx.strokeStyle=C.edge; ctx.lineWidth=4.6; ctx.lineCap='round';
+          ctx.beginPath(); ctx.moveTo(x-4,y-4); ctx.lineTo(x+4,y+4); ctx.moveTo(x+4,y-4); ctx.lineTo(x-4,y+4); ctx.stroke();
+          ctx.strokeStyle=c; ctx.lineWidth=2.6;
+          ctx.beginPath(); ctx.moveTo(x-3.8,y-3.8); ctx.lineTo(x+3.8,y+3.8); ctx.moveTo(x+3.8,y-3.8); ctx.lineTo(x-3.8,y+3.8); ctx.stroke();
+          ctx.lineCap='butt';
+        }
+      }
+    }
+    // electron counts
+    if(showCounts){
+      ctx.font=`500 11px ${font}`;
+      for(const a of atoms){
+        const full=isFull(a);
+        const p=labelPos(a);
+        ctx.fillStyle=full?C.full:C.muted; ctx.textAlign=p.align;
+        ctx.fillText(full ? `${a.E.cap} of ${a.E.cap}: full` : `${outer(a)} of ${a.E.cap}`, p.x, p.y);
+      }
+      ctx.textAlign='center';
+    }
+    // bonds: the lens is clickable; "+" appears whenever another pair
+    // could be shared, "−" once the bond has been clicked
+    for(const b of bonds){
+      const dx=b.b.x-b.a.x, dy=b.b.y-b.a.y, d=Math.hypot(dx,dy)||1, ux=dx/d, uy=dy/d, px=-uy, py=ux;
+      const mx=b.a.x+ux*(b.a.E.R-LENS/2), my=b.a.y+uy*(b.a.E.R-LENS/2);
+      const half=(b.order-1)/2*STACK+PAIR_GAP+E_R;
+      ui.push({kind:'lens', bond:b, x:mx, y:my, r:half+4});
+      if(b===selBond){
+        ctx.strokeStyle=C.gold; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+        ctx.beginPath(); ctx.arc(mx,my,half+5,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+      }
+      // A bubble sits off the lens along the bond's perpendicular, with
+      // its label a little further out in the same direction.
+      const bubble=(kind,dx,dy,label)=>{
+        const sx=mx+dx*off, sy=my+dy*off;
+        ctx.fillStyle=C.surface; ctx.strokeStyle=C.gold; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.arc(sx,sy,11,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle=C.gold; ctx.font=`600 15px ${font}`; ctx.fillText(kind==='plus'?'+':'−', sx, sy+0.5);
+        ctx.font=`500 11px ${font}`; ctx.fillStyle=C.muted;
+        const side=Math.abs(dx)>0.5;
+        ctx.textAlign = side ? (dx>0?'left':'right') : 'center';
+        ctx.fillText(label, sx+dx*(side?15:0), sy+dy*(side?0:20)+0.5);
+        ctx.textAlign='center';
+        ui.push({kind, bond:b, x:sx, y:sy, r:11});
+      };
+      // "+" goes on the side of the bond nearer the top of the canvas,
+      // "−" on the other, unless that would push one off the edge
+      const off=half+22;
+      let s = py>0 ? 1 : -1;
+      if(my-py*s*off<24 || my-py*s*off>H-24) s=-s;
+      if(canAdd(b)) bubble('plus', -px*s, -py*s, 'share another pair');
+      if(b===selBond) bubble('minus', px*s, py*s, 'unshare');
+    }
+    // bin, in the sandbox
+    if(tmplKey==='free'){
+      const r=binRect(), over=drag && inBin(drag.px,drag.py);
+      ctx.fillStyle=over?rgba(C.accent,.18):rgba(C.text,.04); ctx.strokeStyle=over?C.accent:C.border; ctx.lineWidth=1;
+      ctx.setLineDash([4,3]); ctx.beginPath(); ctx.roundRect(r.x,r.y,r.w,r.h,6); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle=over?C.accent:C.dim; ctx.font=`500 11px ${font}`;
+      ctx.fillText('Drop here to remove', r.x+r.w/2, r.y+r.h/2+0.5);
+    }
+  }
+
+  // ---------- loop ----------
+  function needsLoop(){ return !!(drag||auto||unsettled); }
+  function ensureLoop(){ unsettled=true; if(!rafId){ lastTs=null; rafId=requestAnimationFrame(loop); } }
+  function loop(ts){
+    if(lastTs===null) lastTs=ts;
+    const dt=Math.min((ts-lastTs)/1000, 1/20); lastTs=ts;
+    if(auto) stepAuto(dt);
+    let active=step(dt);
+    if(drag){ checkSnapping(drag.atom); checkBonding(drag.atom); }
+    for(const a of atoms) if(updateElectrons(a,dt)) active=true;
+    unsettled=active;
+    render();
+    if(needsLoop()) rafId=requestAnimationFrame(loop); else rafId=null;
+  }
+
+  // ---------- pointer ----------
+  function pos(e){ const r=cv.getBoundingClientRect(); return { x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height) }; }
+  function atomAt(x,y){
+    let best=null, bs=Infinity;
+    for(const a of atoms){ const s=Math.hypot(a.x-x,a.y-y)/a.E.R; if(s<1 && s<bs){ bs=s; best=a; } }
+    return best;
+  }
+  function uiAt(x,y){ return ui.find(u=>Math.hypot(u.x-x,u.y-y)<u.r+2); }
+  cv.addEventListener('pointerdown', e=>{
+    if(e.button!==undefined && e.button!==0) return;
+    const {x,y}=pos(e);
+    auto=null;
+    const u=uiAt(x,y);
+    if(u){
+      if(u.kind==='plus') changeOrder(u.bond,1);
+      else if(u.kind==='minus') changeOrder(u.bond,-1);
+      else { selBond = selBond===u.bond ? null : u.bond; render(); }
+      return;
+    }
+    selBond=null;
+    const a=atomAt(x,y);
+    if(a){
+      drag={atom:a, dx:a.x-x, dy:a.y-y, px:x, py:y};
+      a.vx=a.vy=0; fullWarned=null;
+      cv.setPointerCapture(e.pointerId);
+      cv.style.cursor='grabbing';
+      ensureLoop();
+    }
+    render();
+  });
+  cv.addEventListener('pointermove', e=>{
+    const {x,y}=pos(e);
+    if(drag){
+      drag.px=x; drag.py=y;
+      drag.atom.x=x+drag.dx; drag.atom.y=y+drag.dy; clampAtom(drag.atom);
+      ensureLoop();
+      return;
+    }
+    cv.style.cursor = uiAt(x,y) ? 'pointer' : (atomAt(x,y) ? 'grab' : 'default');
+  });
+  function endDrag(){
+    if(!drag) return;
+    if(inBin(drag.px,drag.py)) removeAtom(drag.atom);
+    drag=null; hover=null;
+    cv.style.cursor='default';
+    ensureLoop();
+  }
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', endDrag);
+
+  // ---------- controls ----------
+  for(const k of ORDER){
+    const t=TEMPLATES[k];
+    let g=[...el.tmpl.querySelectorAll('optgroup')].find(o=>o.label===t.group);
+    if(!g){ g=document.createElement('optgroup'); g.label=t.group; el.tmpl.appendChild(g); }
+    const o=document.createElement('option'); o.value=k; o.textContent=t.formula ? `${t.name} (${t.formula})` : t.name;
+    g.appendChild(o);
+  }
+  el.tmpl.value=tmplKey;
+  el.tmpl.addEventListener('change', ()=>loadTemplate(el.tmpl.value));
+  for(const e of ["H","C","N","O","Cl"]){
+    const b=document.createElement('button');
+    b.type='button'; b.className='btn btn-ghost';
+    b.innerHTML=`<i style="background:var(--${e})"></i>${ELEMENTS[e].name}`;
+    b.addEventListener('click', ()=>addFreeAtom(e));
+    el.trayRow.appendChild(b);
+  }
+  el.resetBtn.addEventListener('click', ()=>loadTemplate(tmplKey));
+  el.buildBtn.addEventListener('click', startAuto);
+  el.countToggle.addEventListener('click', ()=>{ showCounts=!showCounts; el.countToggle.classList.toggle('active',showCounts); render(); });
+  el.innerToggle.addEventListener('click', ()=>{ showInner=!showInner; el.innerToggle.classList.toggle('active',showInner); render(); });
+  window.addEventListener('keydown', e=>{ if(e.key==='Escape'){ selBond=null; auto=null; render(); } });
+
+  new MutationObserver(render).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+
+  let rt;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(rt);
+    rt=setTimeout(()=>{ dpr=Math.min(window.devicePixelRatio||1, window.__simDprCap||2); size(); render(); reportHeight(); }, 120);
+  });
+  function reportHeight(){
+    const h=Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    window.parent.postMessage({ type:'simHeight', height:h }, '*');
+  }
+
+  // ---------- boot ----------
+  size();
+  loadTemplate(tmplKey);
+  requestAnimationFrame(()=>requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>

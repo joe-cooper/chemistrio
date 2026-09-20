@@ -37,7 +37,7 @@ const PAGES = PAGE_META.map(p => ({ ...p, init: PAGE_INITS[p.id] }));
    ========================================================= */
 
 function renderSimCategories() {
-  document.getElementById("simCategories").innerHTML = simCategoriesHtml(simulations);
+  document.getElementById("simCategories").innerHTML = simCategoriesHtml(simulations, undefined, topicOrder);
 }
 
 function renderResourceCategories() {
