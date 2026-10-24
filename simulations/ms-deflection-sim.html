@@ -174,7 +174,7 @@
     <!-- apparatus -->
     <div class="card">
       <div class="card-label">
-        <span>Ion path — mass-to-charge → colour</span>
+        <span>Ion path, coloured by mass-to-charge</span>
         <span class="right" id="phaseLabel">paused</span>
       </div>
       <canvas id="app" width="1240" height="920" aria-label="Deflection mass spectrometer apparatus" style="aspect-ratio: 620 / 460;"></canvas>
@@ -241,15 +241,15 @@
   <div class="notes">
     <strong>Model notes.</strong> Real physics drives every reading: ions are singly charged (z&nbsp;=&nbsp;+1),
     accelerate through p.d. <em>V</em> to speed v&nbsp;=&nbsp;√(2eV/m), then follow a semicircular path of radius
-    r&nbsp;=&nbsp;mv/(eB) through the magnetic sector — only ions whose radius matches the fixed detector radius
+    r&nbsp;=&nbsp;mv/(eB) through the magnetic sector. Only ions whose radius matches the fixed detector radius
     (15&nbsp;cm) reach the slit; everything else strikes the flight-tube wall. Isotopic abundances are literature
     (IUPAC) values.
     <ul>
       <li>Acceleration is treated as instantaneous (the field region's extent and transit time are ignored).</li>
-      <li>Animation speed is slowed by a large constant factor for visibility — real transit times are microseconds — but relative speeds between ions are physically accurate, so heavier ions do visibly cross the plates more slowly.</li>
+      <li>Animation speed is slowed by a large constant factor for visibility, since real transit times are microseconds, but relative speeds between ions are physically accurate, so heavier ions do visibly cross the plates more slowly.</li>
       <li>The detector accepts a narrow window around the exact resonant radius (equivalent to resolving isotopes differing by &lt;1 u); the drawn slit gap and the flight tube's width are widened purely for visibility and aren't what decides a hit.</li>
       <li>Because the animation is slowed so much, an ion's path is fixed by the field at the moment it enters the tube, and the detector count is delayed by the same transit time, so the count rises as ions on screen reach the slit rather than the instant the field is set.</li>
-      <li>The ions drawn on the canvas are a sparse sample of the beam, slowed for visibility; the detector counts the whole beam, so the ion count climbs far faster than the drawn ions land. Peak heights are the running fraction of detected ions per isotope, so early in a run (or after a single sweep) small-sample noise is expected — this mirrors why real spectrometers average many scans.</li>
+      <li>The ions drawn on the canvas are a sparse sample of the beam, slowed for visibility; the detector counts the whole beam, so the ion count climbs far faster than the drawn ions land. Peak heights are the running fraction of detected ions per isotope, so early in a run (or after a single sweep) small-sample noise is expected, which mirrors why real spectrometers average many scans.</li>
     </ul>
   </div>
 

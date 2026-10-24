@@ -190,62 +190,63 @@
         <div class="notes-body" id="notesBody">
           <div class="notes-content prose" id="notesContent" data-prerendered-for="ph-curve-sim"><!--prerender:notes:start-->
 <h2>Teaching notes</h2>
-<p>Choose a substance for the <strong>burette</strong> (titrant) and the <strong>conical flask</strong> (analyte), set their concentrations and the flask volume, then press <strong>Run</strong> to titrate — the burette empties, the flask&#39;s colour shifts with universal indicator, and the pH curve builds up point by point as it goes. Drag the <strong>volume added</strong> slider at any time to scrub to a specific point instead.</p>
+<p>Choose a substance for the <strong>burette</strong> (titrant) and the <strong>conical flask</strong> (analyte), set their concentrations and the flask volume, then press <strong>Run</strong> to titrate. The burette empties, the flask&#39;s colour shifts with universal indicator, and the pH curve builds up point by point as it goes. Drag the <strong>volume added</strong> slider at any time to scrub to a specific point instead.</p>
 <h3>Reading the curve</h3>
-<p>The x-axis is a <strong>fixed 0–50 cm³</strong>, matching a standard burette&#39;s capacity — it never rescales. Changing a concentration doesn&#39;t zoom the graph; it slides the steep jump left or right along that fixed scale, exactly as it would on paper with a real burette. Two dashed gold lines mark the <strong>titre</strong> — the volume at which moles of acid equivalents added equal moles of base equivalents originally in the flask (or vice versa) — and <strong>½ titre</strong>. At ½ titre, the pH equals the pK<sub>a</sub> of whichever weak species is present — a genuinely useful way to read Ka off a graph rather than just being told the formula. If your choices push the titre past 50 cm³, the burette would run dry before reaching equivalence, and the stats panel says so directly.</p>
-<h3>The five combinations worth trying</h3>
+<p>The x-axis is a <strong>fixed 0–50 cm³</strong>, matching a standard burette&#39;s capacity, and it never rescales. Changing a concentration doesn&#39;t zoom the graph; it slides the steep jump left or right along that fixed scale, exactly as it would on paper with a real burette.</p>
+<p>Two dashed gold lines mark the <strong>titre</strong> and <strong>½ titre</strong>. The titre is the volume at which moles of acid equivalents added equal moles of base equivalents originally in the flask, or vice versa. At ½ titre the pH equals the pK<sub>a</sub> of whichever weak species is present, which gives you a way to read K<sub>a</sub> straight off a graph instead of taking the formula on trust. If your choices push the titre past 50 cm³, the burette would run dry before reaching equivalence, and the stats panel says so directly.</p>
+<h3>Combinations to try</h3>
 <ul>
-<li><strong>Strong acid + strong base</strong> (default: HCl in the flask, NaOH in the burette). Nearly flat until right at the titre, then an enormous jump — several pH units within a single drop — before flattening out again. Equivalence pH = 7.00 exactly.</li>
-<li><strong>Weak acid + strong base</strong> (switch the flask to ethanoic acid). A shallower &quot;buffer region&quot; appears well before the titre, where pH resists change as acid and its conjugate base coexist. The jump at the titre is smaller, and the equivalence point sits <strong>above</strong> pH 7 (the leftover ethanoate ion is a weak base).</li>
-<li><strong>Weak base + strong acid</strong> (ammonia in the flask, HCl in the burette). The mirror image — equivalence point <strong>below</strong> pH 7, because the leftover ammonium ion is a weak acid.</li>
-<li><strong>Diprotic acid</strong> (H₂SO₄ in either vessel). Needs twice the moles of base to reach the titre, because each mole releases two H⁺. Concentrated H₂SO₄ also shows a little flattening near pH 2, from its second, genuinely weak dissociation (HSO₄⁻ ⇌ H⁺ + SO₄²⁻) — not something a &quot;diprotic acid = 2× monoprotic&quot; shortcut would show.</li>
-<li><strong>Two acids, or two bases, in both vessels.</strong> No neutralisation happens, so the curve just drifts gently with dilution — no sharp jump anywhere. This is itself the useful result: a jump only appears when the two vessels can actually react.</li>
+<li><strong>Strong acid + strong base</strong> (default: HCl in the flask, NaOH in the burette). Nearly flat until right at the titre, then an enormous jump of several pH units within a single drop, before flattening out again. Equivalence pH = 7.00 exactly.</li>
+<li><strong>Weak acid + strong base</strong> (switch the flask to ethanoic acid). A shallower &quot;buffer region&quot; appears well before the titre, where pH resists change as acid and its conjugate base coexist. The jump at the titre is smaller, and the equivalence point sits <strong>above</strong> pH 7, since the leftover ethanoate ion is a weak base.</li>
+<li><strong>Weak base + strong acid</strong> (ammonia in the flask, HCl in the burette). The mirror image, with the equivalence point <strong>below</strong> pH 7, because the leftover ammonium ion is a weak acid.</li>
+<li><strong>Diprotic acid</strong> (H₂SO₄ in either vessel). Needs twice the moles of base to reach the titre, because each mole releases two H⁺. Concentrated H₂SO₄ also shows a little flattening near pH 2, from its much weaker second dissociation (HSO₄⁻ ⇌ H⁺ + SO₄²⁻). A shortcut that treats a diprotic acid as simply twice a monoprotic one misses that detail entirely.</li>
+<li><strong>Two acids, or two bases, in both vessels.</strong> No neutralisation happens, so the curve drifts gently with dilution and never jumps. That is itself the useful result: a jump only appears when the two vessels can react with each other.</li>
 </ul>
 <h3>Suitable indicator</h3>
-<p>The stats panel computes, from the model, how much the pH changes over a single 0.05 cm³ drop either side of the titre, and checks whether that range covers methyl orange (pH 3.1–4.4) or phenolphthalein (pH 8.2–10.0). For strong-strong titrations both work; for a weak acid + strong base, only phenolphthalein works (methyl orange would change colour too early, well before the titre); for a weak base + strong acid, only methyl orange works. For anything without a sharp jump, neither does — a real limitation of indicator titrations, not just this simulation.</p>
+<p>The stats panel computes, from the model, how much the pH changes over a single 0.05 cm³ drop either side of the titre, and checks whether that range covers methyl orange (pH 3.1–4.4) or phenolphthalein (pH 8.2–10.0). For strong-strong titrations both work. For a weak acid with a strong base only phenolphthalein works, since methyl orange would change colour too early, well before the titre. For a weak base with a strong acid only methyl orange works. For anything without a sharp jump, neither does, and that is a limitation of indicator titrations generally rather than an artefact of this simulation.</p>
 <h3>Suggested use</h3>
 <ol>
 <li>Leave the defaults (0.100 mol dm⁻³ HCl in the flask, 0.100 mol dm⁻³ NaOH in the burette, 25.0 cm³ flask) and press Run. Watch the pH sit near 1 for most of the run, then leap past 7 in a single drop.</li>
 <li>Reset, switch the flask to ethanoic acid, and run again. Compare the shape: a flatter buffer region, a smaller jump, and an equivalence point you can read as being above 7.</li>
-<li>Use the ½ titre marker to check a Ka or Kb calculation: read the pH there, and confirm it matches the pKa printed in the model notes.</li>
+<li>Use the ½ titre marker to check a Ka or Kb calculation. Read the pH there, and confirm it matches the pKa printed in the model notes.</li>
 <li>Try H₂SO₄ against NaOH and check the titre stat is double what the same concentration of HCl would need.</li>
-<li>Set both vessels to acids (or both to bases) and confirm the curve has no jump at all — then use the swap button to put the same two substances the other way round and see the mirror-image curve.</li>
+<li>Set both vessels to acids (or both to bases) and confirm the curve has no jump at all. Then use the swap button to put the same two substances the other way round and see the mirror-image curve.</li>
 </ol>
 <h3>Key ideas</h3>
 <ul>
-<li>A titration&#39;s &quot;sharp jump&quot; happens because, right at the equivalence point, a single extra drop swings the solution from being dominated by one reactant to being dominated by the other — away from that point, there&#39;s a large buffering reservoir of unreacted material to absorb the change.</li>
-<li>The steeper/larger the jump, the more precisely the equivalence point can be found with an indicator or a pH meter — which is why strong-strong titrations are the easiest to do accurately, and weak-weak titrations are essentially unusable with an indicator.</li>
-<li>For a weak acid or weak base, the pH at half-titre equals its pKa (or the pKa of its conjugate acid, for a base) — the Henderson–Hasselbalch relationship, visible directly on the graph rather than derived separately.</li>
-<li>The equivalence point of a weak acid vs strong base titration is above pH 7, and a weak base vs strong acid titration is below pH 7, because the &quot;leftover&quot; conjugate ion is itself a weak base or weak acid respectively.</li>
-<li>Choosing the right indicator means choosing one whose colour-change range falls inside the sharp jump — not just &quot;changes colour somewhere near pH 7&quot;.</li>
+<li>A titration&#39;s sharp jump happens because, right at the equivalence point, a single extra drop swings the solution from being dominated by one reactant to being dominated by the other. Away from that point there is a large buffering reservoir of unreacted material to absorb the change.</li>
+<li>The larger and steeper the jump, the more precisely the equivalence point can be found with an indicator or a pH meter. This is why strong-strong titrations are the easiest to do accurately, and why weak-weak titrations are essentially unusable with an indicator.</li>
+<li>For a weak acid or weak base, the pH at half-titre equals its pKa, or the pKa of its conjugate acid in the case of a base. This is the Henderson–Hasselbalch relationship, and here it is readable straight off the graph.</li>
+<li>The equivalence point of a weak acid against a strong base is above pH 7, and that of a weak base against a strong acid is below pH 7, because the leftover conjugate ion is itself a weak base or weak acid respectively.</li>
+<li>Choosing the right indicator means choosing one whose colour-change range falls inside the sharp jump, not simply one that changes colour somewhere near pH 7.</li>
 </ul>
 <h3>Suggested questions</h3>
 <p><strong>Q1.</strong> Why does the pH barely change for most of a strong acid + strong base titration, then leap by several units within a single drop right at the titre?</p>
 <details class="qa">
 <summary>Show answer</summary>
 
-<p>Away from the titre, there&#39;s a large excess of one reactant (acid or base) still present, and adding a small extra volume of titrant is a small change relative to that excess — so pH moves only slightly. Right at the titre, both reactants are almost completely consumed, so a single extra drop isn&#39;t diluted by any leftover reactant — it&#39;s the first thing left to dominate the solution, causing a very large relative change in [H⁺] (and hence pH) for a tiny volume added.</p>
+<p>Away from the titre there is a large excess of one reactant still present, and adding a small extra volume of titrant is a small change relative to that excess, so the pH moves only slightly. Right at the titre both reactants are almost completely consumed. A single extra drop now has no leftover reactant to swamp it, so it becomes the species that dominates the solution, causing a very large relative change in [H⁺], and hence in pH, for a tiny volume added.</p>
 </details>
 
 <p><strong>Q2.</strong> A student titrates ethanoic acid (in the flask) with sodium hydroxide (in the burette) and finds the pH at the equivalence point is about 8.7, not 7.0. Why isn&#39;t it exactly neutral?</p>
 <details class="qa">
 <summary>Show answer</summary>
 
-<p>At the equivalence point, essentially all the ethanoic acid has been converted to its conjugate base, ethanoate (CH₃COO⁻), dissolved in water. Ethanoate is a weak base — it takes a proton from water, releasing OH⁻ — so the solution at equivalence is slightly basic, not neutral. The strong-acid/strong-base case gives exactly pH 7 only because neither Cl⁻ nor Na⁺ reacts with water at all.</p>
+<p>At the equivalence point, essentially all the ethanoic acid has been converted to its conjugate base, ethanoate (CH₃COO⁻), dissolved in water. Ethanoate is a weak base: it takes a proton from water and releases OH⁻, so the solution at equivalence is slightly basic rather than neutral. The strong-acid/strong-base case gives exactly pH 7 only because neither Cl⁻ nor Na⁺ reacts with water at all.</p>
 </details>
 
 <p><strong>Q3.</strong> Why does titrating sulfuric acid need twice the volume of the same concentration of sodium hydroxide as hydrochloric acid does, to reach the titre?</p>
 <details class="qa">
 <summary>Show answer</summary>
 
-<p>Each mole of H₂SO₄ can release two moles of H⁺ (it&#39;s diprotic), while each mole of HCl only releases one. Reaching the titre means matching moles of OH⁻ added to moles of H⁺ available — so a given amount of H₂SO₄ needs twice as many moles of NaOH, and therefore (at equal concentrations) twice the volume, compared with the same molar amount of HCl.</p>
+<p>Each mole of H₂SO₄ can release two moles of H⁺, since it is diprotic, while each mole of HCl releases only one. Reaching the titre means matching moles of OH⁻ added to moles of H⁺ available, so a given amount of H₂SO₄ needs twice as many moles of NaOH. At equal concentrations that means twice the volume, compared with the same molar amount of HCl.</p>
 </details>
 
 <p><strong>Q4.</strong> If you set both the burette and the flask to acids, why is there no sharp jump anywhere in the curve?</p>
 <details class="qa">
 <summary>Show answer</summary>
 
-<p>A sharp jump comes from a neutralisation reaction consuming one reactant faster than the other builds up — specifically, from one species running out. Two acids mixed together don&#39;t react with each other at all; adding more acid to an acidic solution just dilutes and adds to the existing H⁺ gradually, with no special point where anything runs out, so the pH drifts smoothly rather than jumping.</p>
+<p>A sharp jump comes from a neutralisation reaction consuming one reactant faster than the other builds up, and specifically from one species running out. Two acids mixed together don&#39;t react with each other at all. Adding more acid to an acidic solution dilutes it and adds to the existing H⁺ gradually, with no special point where anything runs out, so the pH drifts smoothly instead of jumping.</p>
 </details>
 
 
@@ -270,7 +271,7 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=c20598b4"></script>
+<script src="/assets/js/data.js?v=3cf5416c"></script>
 <script src="/assets/js/render.js?v=9f5aba17"></script>
 <script src="/assets/js/app.js?v=73d8f9a9"></script>
 </body>

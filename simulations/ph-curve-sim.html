@@ -153,11 +153,11 @@
 
   <details class="note">
     <summary>Model notes &amp; assumptions</summary>
-    <p><b>Method.</b> Rather than special-casing "strong acid vs weak base" and so on, the simulation solves one general <b>charge-balance equation</b> for [H⁺] at every volume added, built from whichever species are actually present. This is the same systematic-equilibrium approach used in quantitative analytical chemistry, and it reduces to the familiar textbook formulas automatically — a strong acid/strong base pair gives the simple sharp jump, a weak acid with strong base gives a buffered region with the equivalence point above pH 7, and so on — without those cases being coded separately.</p>
-    <p><b>Constants used (25 °C).</b> K<sub>w</sub> = 1.0×10⁻¹⁴; ethanoic acid K<sub>a</sub> = 1.74×10⁻⁵ (pK<sub>a</sub> = 4.76); ammonia K<sub>b</sub> = 1.8×10⁻⁵ (pK<sub>a</sub> of NH₄⁺ = 9.25). Sulfuric acid's first proton is treated as fully dissociated (strong); its second (HSO₄⁻ ⇌ H⁺ + SO₄²⁻) is modelled as a genuine weak equilibrium with K<sub>a2</sub> = 1.2×10⁻² rather than assumed complete — real enough that concentrated H₂SO₄ shows a little buffering near pH 2 that a "both protons strong" model would miss.</p>
-    <p><b>Titre.</b> The titre is defined stoichiometrically — the volume at which moles of acidic H⁺ equivalents added equal the moles of basic OH⁻ equivalents (or vice versa) initially in the flask, using 2 equivalents per mole for H₂SO₄ and 1 for everything else. If you pick two acids (or two bases) for both vessels there's no real neutralisation, so this "titre" just marks where equal equivalents have mixed — the curve stays gentle throughout, which is itself the point: <b>only</b> a genuine acid + base pair produces a sharp end-point.</p>
-    <p><b>The x-axis is a fixed 0–50 cm³</b>, matching a standard burette's capacity, regardless of what's chosen. Raising or lowering a concentration doesn't rescale the graph — it slides the steep jump left or right along that fixed scale, exactly like it would on paper using a real burette. If your choices push the titre past 50 cm³, the stats panel flags it: that burette would run dry before reaching equivalence.</p>
-    <p><b>Simplifications.</b> Activity coefficients are ignored (concentrations are treated as activities, fine at school-lab dilutions); temperature is fixed at 25 °C; the "jump per drop" reading uses a 0.05 cm³ drop regardless of the volumes chosen.</p>
+    <p><b>Method.</b> Rather than special-casing "strong acid vs weak base" and so on, the simulation solves one general <b>charge-balance equation</b> for [H⁺] at every volume added, built from whichever species are present. This is the same systematic-equilibrium approach used in quantitative analytical chemistry, and it reduces to the familiar textbook formulas automatically, without those cases being coded separately. A strong acid and strong base pair gives the simple sharp jump; a weak acid with a strong base gives a buffered region with the equivalence point above pH 7; and so on.</p>
+    <p><b>Constants used (25 °C).</b> K<sub>w</sub> = 1.0×10⁻¹⁴; ethanoic acid K<sub>a</sub> = 1.74×10⁻⁵ (pK<sub>a</sub> = 4.76); ammonia K<sub>b</sub> = 1.8×10⁻⁵ (pK<sub>a</sub> of NH₄⁺ = 9.25). Sulfuric acid's first proton is treated as fully dissociated (strong), while its second (HSO₄⁻ ⇌ H⁺ + SO₄²⁻) is modelled as a real weak equilibrium with K<sub>a2</sub> = 1.2×10⁻² rather than assumed complete. That is close enough to reality that concentrated H₂SO₄ shows a little buffering near pH 2, which a "both protons strong" model would miss.</p>
+    <p><b>Titre.</b> The titre is defined stoichiometrically, as the volume at which moles of acidic H⁺ equivalents added equal the moles of basic OH⁻ equivalents initially in the flask, or vice versa, using 2 equivalents per mole for H₂SO₄ and 1 for everything else. If you pick two acids, or two bases, for both vessels there is no real neutralisation, so this "titre" only marks where equal equivalents have mixed. The curve stays gentle throughout, which is itself the point: a sharp end-point needs an acid and a base.</p>
+    <p><b>The x-axis is a fixed 0–50 cm³</b>, matching a standard burette's capacity, regardless of what's chosen. Raising or lowering a concentration doesn't rescale the graph; it slides the steep jump left or right along that fixed scale, exactly as it would on paper using a real burette. If your choices push the titre past 50 cm³, the stats panel flags it: that burette would run dry before reaching equivalence.</p>
+    <p><b>Simplifications.</b> Activity coefficients are ignored, with concentrations treated as activities, which is fine at school-lab dilutions; temperature is fixed at 25 °C; and the "jump per drop" reading uses a 0.05 cm³ drop regardless of the volumes chosen.</p>
   </details>
 
 </div>
@@ -368,7 +368,7 @@
       const s = SUBSTANCES[key];
       const opt = document.createElement('option');
       opt.value = key;
-      opt.textContent = s.display + ' — ' + s.name + ' (' + s.note + ')';
+      opt.textContent = s.display + ' · ' + s.name + ' (' + s.note + ')';
       (s.kind==='acid' ? acidGroup : baseGroup).appendChild(opt);
     });
     sel.appendChild(acidGroup); sel.appendChild(baseGroup);
@@ -420,7 +420,7 @@
   function updateIndicatorReadout(){
     const ind = INDICATORS[currentIndicator];
     if(currentIndicator==='none'){
-      el.indicatorReadout.innerHTML = '<span class="indicator-swatch" style="background:'+NO_INDICATOR_COLOR+'"></span><span>no indicator added — liquid stays colourless at every pH</span>';
+      el.indicatorReadout.innerHTML = '<span class="indicator-swatch" style="background:'+NO_INDICATOR_COLOR+'"></span><span>no indicator added, so the liquid stays colourless at every pH</span>';
       disableRangeToggle();
       el.flaskColorLegend.textContent = 'Flask colour = fixed (no indicator added)';
     } else if(currentIndicator==='universal'){
@@ -492,7 +492,7 @@
 
     let msg;
     if(titreOffScale){
-      msg = 'The titre (' + Vtitre.toFixed(1) + ' cm³) is beyond this 50 cm³ burette\'s capacity — it would run dry before reaching the equivalence point. Try a higher burette concentration, or a lower flask concentration/volume.';
+      msg = 'The titre (' + Vtitre.toFixed(1) + ' cm³) is beyond this 50 cm³ burette\'s capacity, so it would run dry before reaching the equivalence point. Try a higher burette concentration, or a lower flask concentration/volume.';
     } else {
       const moLo = volumeAtPH(3.1), moHi = volumeAtPH(4.4);
       const phLo = volumeAtPH(8.2), phHi = volumeAtPH(10.0);
@@ -504,11 +504,11 @@
       if(methylOK) suitable.push('methyl orange (pH 3.1–4.4)');
       if(phenolOK) suitable.push('phenolphthalein (pH 8.2–10.0)');
       if(suitable.length){
-        msg = 'Suitable indicator' + (suitable.length>1?'s':'') + ': ' + suitable.join(' or ') + ' — its colour-change band is crossed over less than ' + SHARP_SPAN_CM3.toFixed(0) + ' cm³, right where the curve is steep.';
+        msg = 'Suitable indicator' + (suitable.length>1?'s':'') + ': ' + suitable.join(' or ') + ': its colour-change band is crossed over less than ' + SHARP_SPAN_CM3.toFixed(0) + ' cm³, right where the curve is steep.';
       } else if(jump < 0.5){
-        msg = 'The pH changes gradually throughout, with no sharp end-point — no indicator would give a clean colour change (typical when both vessels hold an acid, both hold a base, or a weak acid is titrated against a weak base).';
+        msg = 'The pH changes gradually throughout, with no sharp end-point, so no indicator would give a clean colour change (typical when both vessels hold an acid, both hold a base, or a weak acid is titrated against a weak base).';
       } else {
-        msg = 'Neither common school indicator brackets this titration well — its equivalence pH (≈ ' + pHNow(Vtitre).toFixed(1) + ') falls outside both colour-change ranges, or the jump crosses them too gradually.';
+        msg = 'Neither common school indicator brackets this titration well: its equivalence pH (≈ ' + pHNow(Vtitre).toFixed(1) + ') falls outside both colour-change ranges, or the jump crosses them too gradually.';
       }
     }
     el.indicatorNote.innerHTML = '<b>*Jump per drop</b> uses a ' + DROP.toFixed(2) + ' cm³ drop either side of the titre. ' + msg;

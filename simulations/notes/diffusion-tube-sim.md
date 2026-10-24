@@ -4,7 +4,7 @@
 
 This simulates the GCSE demonstration of diffusion of hydrogen chloride and ammonia gases in a long tube. It is not designed as a replacement for the actual demonstration. If possible, perform the demonstration and then use this simulation to model what is happening on a particle-level.
 
-Press Start with the default settings and watch where the ring of NH₄Cl (grey dots) forms. Turn on "Expected position" in the legend to compare where it ends up against the theoretical prediction from Graham's law. the two should agree quite well, though it is not perfect due to the relatively small number of particles used in the simulation. Clicking "Air (N₂/O₂)" on the legend will show the air particles.
+Press Start with the default settings and watch where the ring of NH₄Cl (grey dots) forms. Turn on "Expected position" in the legend to compare where it ends up against the theoretical prediction from Graham's law. The two should agree quite well, though it is not perfect due to the relatively small number of particles used in the simulation. Clicking "Air (N₂/O₂)" on the legend will show the air particles.
 
 The temperature slider allows the temperature of the system to be changed. At higher temperatures, particles will have more kinetic energy so will diffuse faster. The ring should form in roughly the same place as before as the ratio of their diffusion rates stays the same.
 
@@ -44,7 +44,7 @@ $$
 \frac{v_{\text{NH}_3}}{v_{\text{NH}_3} + v_{\text{HCl}}} \approx 59\%
 $$
 
-of the way along from the NH₃ end — i.e. much nearer the HCl end, exactly as the simulation shows.
+of the way along from the NH₃ end, which is much nearer the HCl end, exactly as the simulation shows.
 
 ### Suggested questions
 
@@ -57,7 +57,7 @@ $$
 \frac{v_{\text{NH}_3}}{v_{\text{NH}_3}+v_{\text{HBr}}} = \frac{\sqrt{81}}{\sqrt{17}+\sqrt{81}} = \frac{9}{4.12+9} \approx 69\%
 $$
 
-A bit further than the NH₃/HCl case (roughly 69% rather than 59%) — HBr is heavier still than HCl, so the ring shifts further towards the HBr end. Even so, the shift is modest compared with how much heavier HBr is than HCl (more than double the molar mass), because the square root compresses large mass differences into much smaller speed differences.
+A bit further than the NH₃/HCl case (roughly 69% rather than 59%), since HBr is heavier still than HCl, so the ring shifts further towards the HBr end. Even so, the shift is modest compared with how much heavier HBr is than HCl (more than double the molar mass), because the square root compresses large mass differences into much smaller speed differences.
 
 </details>
 
@@ -66,7 +66,7 @@ A bit further than the NH₃/HCl case (roughly 69% rather than 59%) — HBr is h
 <details class="qa">
 <summary>Show answer</summary>
 
-Student B is right. The ring position is set purely by relative *speeds*, which come from the mass difference via Graham's law — nothing to do with density or sinking. Student A's explanation doesn't hold up: the tube is horizontal, and even if it were vertical, gases mix by diffusion far faster than they separate by density, so a "denser gas sinks" argument doesn't explain a *ring position* at all — it would just predict HCl pooling at the bottom.
+Student B is right. The ring position is set purely by relative *speeds*, which come from the mass difference via Graham's law, and has nothing to do with density or sinking. Student A's explanation doesn't hold up: the tube is horizontal, and even if it were vertical, gases mix by diffusion far faster than they separate by density, so a "denser gas sinks" argument doesn't explain a *ring position* at all; it would just predict HCl pooling at the bottom.
 
 </details>
 
@@ -75,6 +75,6 @@ Student B is right. The ring position is set purely by relative *speeds*, which 
 <details class="qa">
 <summary>Show answer</summary>
 
-Temperature increases the speed of *every* gas particle by the same factor ($v \propto \sqrt{T}$), so both NH₃ and HCl speed up together — their ratio, and hence the ring position, is unchanged. What would shift the position is anything that changes the *relative* masses or starting distances involved — for example, using a different acid (changing $M_{\text{HCl}}$), or setting up the cotton wool plugs at unequal distances from the ends of the tube.
+Temperature increases the speed of *every* gas particle by the same factor ($v \propto \sqrt{T}$), so both NH₃ and HCl speed up together, leaving their ratio, and hence the ring position, unchanged. What would shift the position is anything that changes the *relative* masses or starting distances involved: for example, using a different acid (changing $M_{\text{HCl}}$), or setting up the cotton wool plugs at unequal distances from the ends of the tube.
 
 </details>

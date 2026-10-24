@@ -190,37 +190,37 @@
         <div class="notes-body" id="notesBody">
           <div class="notes-content prose" id="notesContent" data-prerendered-for="weak-acid-sim"><!--prerender:notes:start-->
 <h2>Teaching notes</h2>
-<p>Pick a preset weak acid (or drag pKa directly) and drag <strong>[HA]₀</strong> across its full range. The graph plots pH against [HA]₀ on a log scale, for both models at once: the dashed grey <strong>approximation</strong> curve, which assumes [H⁺]=[A⁻] and [HA]≈[HA]₀, and the solid gold <strong>exact</strong> curve, which solves the full charge balance with no such assumptions. The panel on the left reads off both pH values, plus the percentage of the acid that actually dissociates according to the exact model, at whatever concentration the slider is set to.</p>
-<h3>The two assumptions, made explicit</h3>
+<p>Pick a preset weak acid (or drag pKa directly) and drag <strong>[HA]₀</strong> across its full range. The graph plots pH against [HA]₀ on a log scale, for both models at once: the dashed grey <strong>approximation</strong> curve, which assumes [H⁺]=[A⁻] and [HA]≈[HA]₀, and the solid gold <strong>exact</strong> curve, which solves the full charge balance with no such assumptions. The panel on the left reads off both pH values, plus the percentage of the acid that dissociates according to the exact model, at whatever concentration the slider is set to.</p>
+<h3>The two assumptions</h3>
 <p>The textbook shortcut for a weak acid&#39;s pH rests on two separate simplifications, both named in the sliders&#39; output:</p>
 <ol>
-<li><strong>[H⁺]=[A⁻]</strong> — assumes the only source of H⁺ is the acid&#39;s own dissociation, ignoring the tiny contribution water itself always makes.</li>
-<li><strong>[HA]=[HA]₀</strong> — assumes so little of the acid ionises that the concentration of un-ionised HA is barely changed from what you weighed out.</li>
+<li><strong>[H⁺]=[A⁻]</strong> assumes the only source of H⁺ is the acid&#39;s own dissociation, ignoring the tiny contribution water itself always makes.</li>
+<li><strong>[HA]=[HA]₀</strong> assumes so little of the acid ionises that the concentration of un-ionised HA is barely changed from what you weighed out.</li>
 </ol>
-<p>Combining both with K<sub>a</sub>=[H⁺][A⁻]/[HA] gives the familiar pH = ½(pK<sub>a</sub> − log[HA]₀). The exact curve makes neither assumption: it solves [H⁺] − [OH⁻] − [HA]₀K<sub>a</sub>/(K<sub>a</sub>+[H⁺]) = 0 directly, which uses the <em>actual</em> mass balance ([HA]+[A⁻]=[HA]₀, letting [HA] fall as dissociation proceeds) and the <em>actual</em> charge balance (including water&#39;s own [OH⁻]).</p>
-<h3>Where the two curves diverge — and why</h3>
+<p>Combining both with K<sub>a</sub>=[H⁺][A⁻]/[HA] gives the familiar pH = ½(pK<sub>a</sub> − log[HA]₀). The exact curve makes neither assumption. It solves [H⁺] − [OH⁻] − [HA]₀K<sub>a</sub>/(K<sub>a</sub>+[H⁺]) = 0 directly, using the <em>actual</em> mass balance ([HA]+[A⁻]=[HA]₀, letting [HA] fall as dissociation proceeds) and the <em>actual</em> charge balance, including water&#39;s own [OH⁻].</p>
+<h3>Why the curves diverge</h3>
 <p>Watch the two curves converge and diverge as [HA]₀ moves:</p>
 <ul>
-<li><strong>High concentration, weak Ka</strong> (e.g. ethanoic acid at 0.1 mol dm⁻³): the curves sit almost on top of each other. Only a tiny fraction of the acid dissociates, so both assumptions hold well.</li>
-<li><strong>Low concentration</strong>: the curves peel apart. As [HA]₀ falls, a <em>larger fraction</em> of it must dissociate to satisfy K<sub>a</sub>, so [HA]≈[HA]₀ stops holding — and at extremely low concentrations, water&#39;s own autoionisation starts to matter too, which the approximation has no way to capture (it will happily predict a pH above 7 for an acid, which is obviously wrong).</li>
+<li><strong>High concentration, weak Ka</strong> (for example ethanoic acid at 0.1 mol dm⁻³): the curves sit almost on top of each other. Only a tiny fraction of the acid dissociates, so both assumptions hold well.</li>
+<li><strong>Low concentration</strong>: the curves peel apart. As [HA]₀ falls, a <em>larger fraction</em> of it must dissociate to satisfy K<sub>a</sub>, so [HA]≈[HA]₀ stops holding. At extremely low concentrations water&#39;s own autoionisation starts to matter too, which the approximation has no way to capture; it will happily predict a pH above 7 for an acid, which is obviously wrong.</li>
 <li><strong>Stronger Ka (lower pKa)</strong>: the same divergence appears at higher concentrations, since a larger K<sub>a</sub> pushes more dissociation for the same [HA]₀.</li>
 </ul>
 <p>The &quot;% dissociated&quot; readout and the &quot;reasonable / breaks down&quot; badge track the standard classroom rule of thumb: the approximation is considered safe once [HA]₀/K<sub>a</sub> ≳ 400, corresponding to less than about 5% dissociation.</p>
 <h3>Suggested use</h3>
 <ol>
-<li>Leave the defaults (ethanoic acid, [HA]₀ = 0.1 mol dm⁻³) — the badge reads &quot;reasonable&quot; and the two pH values agree closely.</li>
+<li>Leave the defaults (ethanoic acid, [HA]₀ = 0.1 mol dm⁻³). The badge reads &quot;reasonable&quot; and the two pH values agree closely.</li>
 <li>Drag [HA]₀ down towards 10⁻⁵ mol dm⁻³. Watch the percentage dissociated climb, the badge flip to &quot;breaks down&quot;, and the two curves separate visibly on the graph.</li>
-<li>Switch to HCN or phenol (much larger pKa, much weaker acids) and see how much higher a concentration is needed before the badge flips back to &quot;reasonable&quot; — a very weak acid needs to be reasonably concentrated before the [HA]≈[HA]₀ assumption is safe.</li>
+<li>Switch to HCN or phenol, which have much larger pKa and are much weaker acids, and see how much higher a concentration is needed before the badge flips back to &quot;reasonable&quot;. A very weak acid needs to be reasonably concentrated before the [HA]≈[HA]₀ assumption is safe.</li>
 <li>Switch to methanoic or benzoic acid (smaller pKa, stronger weak acids) and find how much <em>higher</em> a concentration is now needed for the same 5% cutoff, compared with ethanoic acid.</li>
-<li>Drag the pKa slider directly to a very low value (a &quot;weak&quot; acid approaching fully strong) and see the divergence appear even at fairly high concentrations, since K<sub>a</sub> itself is now large enough to force substantial dissociation.</li>
+<li>Drag the pKa slider directly to a very low value, giving a &quot;weak&quot; acid approaching fully strong, and see the divergence appear even at fairly high concentrations, since K<sub>a</sub> itself is now large enough to force substantial dissociation.</li>
 </ol>
 <h3>Key ideas</h3>
 <ul>
 <li>Every weak-acid shortcut formula is really two separate assumptions bundled together, and each one can fail independently.</li>
 <li>The [HA]≈[HA]₀ assumption gets worse as concentration falls, because the <em>fraction</em> dissociated must rise to satisfy a fixed K<sub>a</sub> as the total amount present shrinks.</li>
-<li>The [H⁺]=[A⁻] assumption gets worse as [H⁺] from the acid approaches the ~10⁻⁷ mol dm⁻³ that water supplies on its own — at that point the acid&#39;s own dissociation is no longer the dominant source of H⁺.</li>
-<li>The exact charge-balance approach makes neither assumption and stays valid across the whole range — it&#39;s the same style of equation used to model buffers and titrations exactly, just for a solution with no added conjugate base or salt.</li>
-<li>The rule of thumb &quot;valid when [HA]₀/K<sub>a</sub> ≥ 400&quot; is not arbitrary — it is exactly the condition under which the two curves in this simulation are indistinguishable to within about a hundredth of a pH unit.</li>
+<li>The [H⁺]=[A⁻] assumption gets worse as [H⁺] from the acid approaches the ~10⁻⁷ mol dm⁻³ that water supplies on its own. At that point the acid&#39;s own dissociation is no longer the dominant source of H⁺.</li>
+<li>The exact charge-balance approach makes neither assumption and stays valid across the whole range. It is the same style of equation used to model buffers and titrations exactly, just for a solution with no added conjugate base or salt.</li>
+<li>The rule of thumb that the shortcut is valid when [HA]₀/K<sub>a</sub> ≥ 400 is not arbitrary. It is the condition under which the two curves in this simulation are indistinguishable to within about a hundredth of a pH unit.</li>
 </ul>
 
           <!--prerender:notes:end--></div>
@@ -244,7 +244,7 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=c20598b4"></script>
+<script src="/assets/js/data.js?v=3cf5416c"></script>
 <script src="/assets/js/render.js?v=9f5aba17"></script>
 <script src="/assets/js/app.js?v=73d8f9a9"></script>
 </body>

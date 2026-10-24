@@ -258,7 +258,7 @@
   <footer>
     <strong style="color:var(--muted)">Model.</strong> Elementary kinetics assumed, so orders equal the stoichiometric coefficients:
     rate<sub>f</sub> = k<sub>f</sub>·∏[reactant]<sup>coeff</sup>, rate<sub>r</sub> = k<sub>r</sub>·∏[product]<sup>coeff</sup>.
-    At equilibrium the rates are equal, which rearranges to <code>K<sub>c</sub> = k<sub>f</sub>/k<sub>r</sub></code>. The plotted Q<sub>c</sub> is that same expression at the current concentrations — equal to K<sub>c</sub> only once equilibrium is reached. Rate-constant units are illustrative.
+    At equilibrium the rates are equal, which rearranges to <code>K<sub>c</sub> = k<sub>f</sub>/k<sub>r</sub></code>. The plotted Q<sub>c</sub> is that same expression at the current concentrations, and it equals K<sub>c</sub> only once equilibrium is reached. Rate-constant units are illustrative.
   </footer>
 </div>
 
@@ -334,8 +334,8 @@ function recalcRateConstants(){
 }
 function updateVHHint(){
   const el=$("vhHint"); if(!el) return;
-  if(dH<-3) el.innerHTML="Exothermic (ΔH&lt;0): heating <b>lowers</b> K<sub>c</sub> — equilibrium shifts back to reactants.";
-  else if(dH>3) el.innerHTML="Endothermic (ΔH&gt;0): heating <b>raises</b> K<sub>c</sub> — equilibrium shifts towards products.";
+  if(dH<-3) el.innerHTML="Exothermic (ΔH&lt;0): heating <b>lowers</b> K<sub>c</sub>, so equilibrium shifts back to reactants.";
+  else if(dH>3) el.innerHTML="Endothermic (ΔH&gt;0): heating <b>raises</b> K<sub>c</sub>, so equilibrium shifts towards products.";
   else el.innerHTML="≈ Thermoneutral: temperature changes the rate but barely moves K<sub>c</sub>.";
 }
 
@@ -424,8 +424,8 @@ function step(sec){let rem=sec;while(rem>1e-9){const h=Math.min(HSTEP,rem);state
 function frame(){if(running){step(SIM_PER_FRAME*speed);draw();updateReadout(currentSnapshot());refreshEqStatus();}raf=requestAnimationFrame(frame);}
 function currentSnapshot(){const{rf,rr}=rates(state,rx,kf,kr);return{conc:{...state},rf,rr,Q:quotient(state,rx)};}
 function refreshEqStatus(){
-  if(atEq) setStatus("Equilibrium reached — rates equal, Q<sub>c</sub> = K<sub>c</sub>",true);
-  else setStatus(eqEvents.length?"Conditions changed — re-establishing equilibrium…":"Approaching equilibrium…",false);
+  if(atEq) setStatus("Equilibrium reached: rates equal, Q<sub>c</sub> = K<sub>c</sub>",true);
+  else setStatus(eqEvents.length?"Conditions changed, re-establishing equilibrium…":"Approaching equilibrium…",false);
 }
 function setStatus(t,eq){const el=$("rd_status");el.innerHTML=t;el.classList.toggle("eq",!!eq);}
 

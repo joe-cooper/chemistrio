@@ -14,7 +14,7 @@ There are some key features of the Maxwell-Boltzmann curve:
 - It reaches a maximum near the average speed of particles. The mean speed is slightly higher than the curve maximum (the modal speed) as the curve is not symmetric.
 - The curve decreases to an asymptote at higher speeds. The curve never touches the $x$-axis.
 
-You can run the simulation again with different numbers of particles and different initial speeds (corresponding to different temperatures). The same dsitribution is reached regardless of the starting conditions. The actual graphs will be stretched/squished, but the underlying behaviour is the same.
+You can run the simulation again with different numbers of particles and different initial speeds (corresponding to different temperatures). The same distribution is reached regardless of the starting conditions. The actual graphs will be stretched/squished, but the underlying behaviour is the same.
 
 The Maxwell-Boltzmann distribution helps explain a few things about how the rate of a reaction changes with temperature:
 
@@ -32,9 +32,9 @@ $$
 
 where:
 
-- $m$ — mass of one molecule
-- $k_B$ — Boltzmann constant
-- $T$ — absolute temperature (K)
+- $m$: mass of one molecule
+- $k_B$: Boltzmann constant
+- $T$: absolute temperature (K)
 
 The $v^2$ term causes the curve to increase from the origin and the $\mathrm{e}^{-v^2}$ term causes the later decrease and asymptote.
 
@@ -56,7 +56,7 @@ The peak shifts to a **higher speed** and becomes lower and broader. The area un
 <details class="qa">
 <summary>Show answer</summary>
 
-Reaction rate depends exponentially on temperature (the Arrhenius equation, $k = Ae^{-E_a/RT}$), because only molecules in the high-energy tail beyond $E_a$ can react. A small rise in $T$ shifts the whole distribution only slightly, but it disproportionately increases the fraction of molecules out in that tail — so the rate jumps by a much larger factor than the temperature change itself.
+Reaction rate depends exponentially on temperature (the Arrhenius equation, $k = Ae^{-E_a/RT}$), because only molecules in the high-energy tail beyond $E_a$ can react. A small rise in $T$ shifts the whole distribution only slightly, but it disproportionately increases the fraction of molecules out in that tail, so the rate jumps by a much larger factor than the temperature change itself.
 
 </details>
 
@@ -65,6 +65,6 @@ Reaction rate depends exponentially on temperature (the Arrhenius equation, $k =
 <details class="qa">
 <summary>Show answer</summary>
 
-At the same temperature, all gases have the same *average kinetic energy*. Since $KE = \frac{1}{2}mv^2$, a heavier molecule needs a lower speed for the same energy — so a heavier gas has a curve shifted to **lower speeds**, and it's taller and narrower (less spread out) than a lighter gas's curve.
+At the same temperature, all gases have the same *average kinetic energy*. Since $KE = \frac{1}{2}mv^2$, a heavier molecule needs a lower speed for the same energy, so a heavier gas has a curve shifted to **lower speeds**, taller and narrower than a lighter gas's curve.
 
 </details>

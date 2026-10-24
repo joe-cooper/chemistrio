@@ -10,13 +10,13 @@ The most intuitive understanding of an orbital is *where the electron is likely 
 
 You will notice that the orbitals have different shapes. How these shapes vary can be broken down into two parts: a radial component (based on the distance from the nucleus) and the angular component (based on the angles around the nucleus).
 
-### Angluar component
+### Angular component
 
 The angular component depends entirely on what type of orbital it is: $s$, $p$, $d$ or $f$.
 
 $s$ orbitals are spherically symmetric and look the same in every direction. Their wavefunctions do not depend on any angles, only the distance from the nucleus $r$.
 
-$p$ orbitals have two 'lobes' on opposite sides. Between the two lobes is a plane where electrons are not found; this is known as a node (analagous to a node on a vibrating string where there is no movement). These are called _angular nodes_. You can see from the plane slices that the three p orbitals have nodes in one of the three planes perpendicular to one of the Cartesian axes. This is where their names come from; $p_x$ has a node in the axis perpendicular to the $x$-axis, for example.
+$p$ orbitals have two 'lobes' on opposite sides. Between the two lobes is a plane where electrons are not found; this is known as a node (analogous to a node on a vibrating string where there is no movement). These are called _angular nodes_. You can see from the plane slices that the three p orbitals have nodes in one of the three planes perpendicular to one of the Cartesian axes. This is where their names come from; $p_x$ has a node in the axis perpendicular to the $x$-axis, for example.
 
 $d$ orbitals have more 'lobes'. The $xy$, $yz$, $xz$ and $x^2-y^2$ orbitals have four lobes arising from two angular nodes in perpendicular planes. The $z^2$ orbital is different; it has a torus (doughnut) shaped ring with two lobes above and below. This is because its angular nodes are cones rather than planes.
 
@@ -26,7 +26,7 @@ The radial component depends on both the type of orbital ($s$, $p$, $d$ or $f$) 
 
 All orbital wavefunctions decay exponentially from the nucleus. The $1s$ does so simply, decreasing from a maximum value at the nucleus. The $2s$ is more involved; it has a maximum at the nucleus and decays exponentially at large distances, but has a 'gap' at an intermediate distance. This is called a _radial node_ and is a set distance from the nucleus where the electron is not found.
 
-## Mathematical Basis
+## Mathematical basis
 
 Wavefunctions are fundamentally mathematical expressions. Looking at these expressions can help us see why they have their different shapes. You may have encountered expressions in three dimensions that use Cartesian coordinates ($x$, $y$ and $z$). These are less helpful for orbital wavefunctions so we use spherical polar coordinates ($r$, $\phi$, $\theta$) instead. $r$ is the distance from the nucleus (centred at the origin), $\phi$ is the angle in the $xy$-plane measured from the $x$ axis (similar to longitude) and $\theta$ is the angle measured from the $z$ axis (similar to latitude). $\phi$ takes values from $0\degree$ to $360\degree$ and $\theta$ takes values from $0\degree$ to $180\degree$.
 

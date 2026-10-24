@@ -99,7 +99,7 @@
     <!-- reaction vessel -->
     <div class="card">
       <div class="card-label">
-        <span id="eqnLabel">Reaction vessel — A → B</span>
+        <span id="eqnLabel">Reaction vessel: A → B</span>
         <span class="right" id="phaseLabel">ready</span>
       </div>
       <canvas id="box" aria-label="Particle simulation box"></canvas>
@@ -856,7 +856,7 @@
 
   function applyReactionModeUI(){
     const isA2 = reactionMode==='A2';
-    el.eqnLabel.textContent = 'Reaction vessel — ' + (isA2 ? 'A + B → C' : 'A → B');
+    el.eqnLabel.textContent = 'Reaction vessel: ' + (isA2 ? 'A + B → C' : 'A → B');
     for(const btn of el.reactionSeg.querySelectorAll('button')){
       btn.classList.toggle('active', btn.dataset.mode===reactionMode);
     }
@@ -912,7 +912,7 @@
       el.legendBox.innerHTML = SURF_LEGEND;
       el.sALabel.textContent = 'Solid remaining';
       el.sBLabel.textContent = 'Dissolved';
-      el.eqnLabel.textContent = 'Reaction vessel — solid + fluid';
+      el.eqnLabel.textContent = 'Reaction vessel: solid + fluid';
     } else {
       applyReactionModeUI(); // sets legend, sALabel/sBLabel, eqnLabel and bSliderRow for the active reaction mode
     }

@@ -190,7 +190,7 @@
           <div class="notes-content prose" id="notesContent" data-prerendered-for="rates-collision-sim"><!--prerender:notes:start-->
 <h2>Teaching notes</h2>
 <p>For a reaction to happen, particles must <strong>collide</strong> with each other. Even then, not every collision succeeds. The simulation has three tabs, each isolating one factor that raises the rate: <strong>Concentration</strong>, which changes how <em>often</em> particles collide; <strong>Temperature</strong>, which changes how often and how successfully they collide; and <strong>Surface area</strong>, which changes how much of a solid reactant is available to react at all.</p>
-<p>The first two tabs share the same reaction vessel and the same choice of reaction. In <strong>A → B</strong>, a collision converts both particles to product, so the total particle count never changes. In <strong>2A → B</strong>, a collision converts one particle and removes the other, so the total falls as the reaction proceeds. That second case is a simplification, made so that the 2:1 stoichiometry is visible on screen.</p>
+<p>The first two tabs share the same reaction vessel and the same choice of reaction. In <strong>A → B</strong>, two A particles have to meet, and both convert to B. In <strong>A + B → C</strong>, one A and one B have to meet, and both convert to C. Either way the particle count is conserved: nothing is created or destroyed, only converted.</p>
 <h3>The Concentration tab</h3>
 <p>Every qualifying collision has the same fixed chance of reacting, set directly by the <strong>Collision success chance</strong> slider. This tab is about how often collisions happen; the chance of any one of them succeeding stays wherever you put it.</p>
 <p>There are two independent ways to raise concentration here. You can add more particles to the fixed-size box, or you can shrink the box itself with the <strong>Vessel volume</strong> slider while holding the particle count still. Both routes raise the same underlying quantity, particles per unit volume, and both raise the rate the same way.</p>
@@ -200,10 +200,10 @@
 <p>Both sliders update live, without resetting the run. Dragging Temperature mid-run rescales every particle already in the box, much as heating a reaction that is already going would. Activation energy behaves the same way, and lowering it <em>without</em> touching temperature is exactly what a catalyst does, which a later module will build on directly.</p>
 <p><strong>Suggested use.</strong> Begin cold and press Run; reactions should be rare. Drag the temperature up while it is running and watch both effects happen together, as particles visibly speed up and the Success chance readout climbs. Reset, then try compensating for a temperature rise by also raising Activation energy. A high enough barrier can keep a reaction slow even when it is hot.</p>
 <h3>The Surface area tab</h3>
-<p>This tab looks and behaves quite differently from the other two, because the chemistry is different. A <strong>solid</strong> reactant (blue) sits in a <strong>fluid</strong> reactant (teal), like marble chips in acid, rather than two gases mixing freely. The solid is always exactly <strong>100 particles</strong>, and that never changes. Only how those 100 particles are <strong>arranged</strong> changes, via the <strong>Number of pieces</strong> slider.</p>
+<p>This tab looks and behaves quite differently from the other two, because the chemistry is different. A <strong>solid</strong> reactant (blue) sits in a <strong>fluid</strong> reactant (teal), like marble chips in acid, rather than two gases mixing freely. The solid is always exactly <strong>120 particles</strong>, and that never changes. Only how those 120 particles are <strong>arranged</strong> changes, via the <strong>Number of pieces</strong> slider. The slider lands only on values that divide 120 exactly, so every piece is always the same size.</p>
 <p>A fluid particle can only trigger a reaction with a solid particle it can physically touch, meaning one on the exposed surface of a piece. Particles buried inside a block are shielded until the layers above them dissolve away, so a single lump erodes from the outside in rather than dissolving all at once. The simulation gets this from the geometry rather than by assumption: it tracks which particles lie on a boundary and recomputes that after every dissolution.</p>
-<p>The <strong>Exposed surface</strong> stat is the number to watch. Splitting the same 100 particles into more, smaller pieces exposes dramatically more surface for an identical amount of solid. That is the whole mechanism behind the effect of surface area on rate, and here you can watch it happen directly.</p>
-<p><strong>Suggested use.</strong> Set the slider to 1 piece (a single 10×10 block) and press Run. The reaction should be slow, since only the block&#39;s outer edge is reachable. Reset with the same fluid count and probability, but set pieces to something like 25 or 100, and compare. Exposed surface jumps enormously even though Solid remaining still starts at 100 either way, and the rate readout follows suit. Use &quot;Show previous run&quot; to overlay the two directly.</p>
+<p>The <strong>Exposed surface</strong> stat is the number to watch. Splitting the same 120 particles into more, smaller pieces exposes dramatically more surface for an identical amount of solid. That is the whole mechanism behind the effect of surface area on rate, and here you can watch it happen directly.</p>
+<p><strong>Suggested use.</strong> Set the slider to 1 piece, a single block holding all 120 particles, and press Run. The reaction should be slow, since only the block&#39;s outer edge is reachable. Reset with the same fluid count and probability, but set pieces to something like 20 or 60, and compare. Exposed surface jumps enormously even though Solid remaining still starts at 120 either way, and the rate readout follows suit. Use &quot;Show previous run&quot; to overlay the two directly.</p>
 <h3>Key ideas</h3>
 <ul>
 <li>Rate of reaction depends on how often particles collide <strong>and</strong> what fraction of those collisions succeed.</li>
@@ -235,11 +235,11 @@
 <p>It gets close at the highest temperatures and the lowest activation energies, but the simulation never quite lets it reach 100%. Real reactions have requirements this simulation does not model, such as the orientation of the two particles as they meet, so some collisions still fail even at high temperature.</p>
 </details>
 
-<p><strong>Q4.</strong> On the Surface area tab, two students both start with 100 solid particles, but one uses 1 piece and the other uses 100 pieces. Whose reaction finishes first, and why doesn&#39;t the <em>amount</em> of solid reactant matter here?</p>
+<p><strong>Q4.</strong> On the Surface area tab, two students both start with 120 solid particles, but one uses 1 piece and the other uses 60 pieces. Whose reaction finishes first, and why doesn&#39;t the <em>amount</em> of solid reactant matter here?</p>
 <details class="qa">
 <summary>Show answer</summary>
 
-<p>The 100-piece student&#39;s reaction finishes far faster, even though both started with exactly the same amount of solid. What the amount of solid sets is how much <em>product</em> eventually forms. The rate depends instead on the exposed surface available at any moment, and splitting the solid into many small pieces exposes almost all of it immediately, while a single lump only exposes its outer layer at first.</p>
+<p>The 60-piece student&#39;s reaction finishes far faster, even though both started with exactly the same amount of solid. What the amount of solid sets is how much <em>product</em> eventually forms. The rate depends instead on the exposed surface available at any moment, and splitting the solid into many small pieces exposes almost all of it immediately, while a single lump only exposes its outer layer at first.</p>
 </details>
 
 
@@ -264,7 +264,7 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=c20598b4"></script>
+<script src="/assets/js/data.js?v=3cf5416c"></script>
 <script src="/assets/js/render.js?v=9f5aba17"></script>
 <script src="/assets/js/app.js?v=73d8f9a9"></script>
 </body>

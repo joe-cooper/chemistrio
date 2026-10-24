@@ -2,7 +2,7 @@
 
 For a reaction to happen, particles must **collide** with each other. Even then, not every collision succeeds. The simulation has three tabs, each isolating one factor that raises the rate: **Concentration**, which changes how *often* particles collide; **Temperature**, which changes how often and how successfully they collide; and **Surface area**, which changes how much of a solid reactant is available to react at all.
 
-The first two tabs share the same reaction vessel and the same choice of reaction. In **A → B**, a collision converts both particles to product, so the total particle count never changes. In **2A → B**, a collision converts one particle and removes the other, so the total falls as the reaction proceeds. That second case is a simplification, made so that the 2:1 stoichiometry is visible on screen.
+The first two tabs share the same reaction vessel and the same choice of reaction. In **A → B**, two A particles have to meet, and both convert to B. In **A + B → C**, one A and one B have to meet, and both convert to C. Either way the particle count is conserved: nothing is created or destroyed, only converted.
 
 ### The Concentration tab
 
@@ -22,13 +22,13 @@ Both sliders update live, without resetting the run. Dragging Temperature mid-ru
 
 ### The Surface area tab
 
-This tab looks and behaves quite differently from the other two, because the chemistry is different. A **solid** reactant (blue) sits in a **fluid** reactant (teal), like marble chips in acid, rather than two gases mixing freely. The solid is always exactly **100 particles**, and that never changes. Only how those 100 particles are **arranged** changes, via the **Number of pieces** slider.
+This tab looks and behaves quite differently from the other two, because the chemistry is different. A **solid** reactant (blue) sits in a **fluid** reactant (teal), like marble chips in acid, rather than two gases mixing freely. The solid is always exactly **120 particles**, and that never changes. Only how those 120 particles are **arranged** changes, via the **Number of pieces** slider. The slider lands only on values that divide 120 exactly, so every piece is always the same size.
 
 A fluid particle can only trigger a reaction with a solid particle it can physically touch, meaning one on the exposed surface of a piece. Particles buried inside a block are shielded until the layers above them dissolve away, so a single lump erodes from the outside in rather than dissolving all at once. The simulation gets this from the geometry rather than by assumption: it tracks which particles lie on a boundary and recomputes that after every dissolution.
 
-The **Exposed surface** stat is the number to watch. Splitting the same 100 particles into more, smaller pieces exposes dramatically more surface for an identical amount of solid. That is the whole mechanism behind the effect of surface area on rate, and here you can watch it happen directly.
+The **Exposed surface** stat is the number to watch. Splitting the same 120 particles into more, smaller pieces exposes dramatically more surface for an identical amount of solid. That is the whole mechanism behind the effect of surface area on rate, and here you can watch it happen directly.
 
-**Suggested use.** Set the slider to 1 piece (a single 10×10 block) and press Run. The reaction should be slow, since only the block's outer edge is reachable. Reset with the same fluid count and probability, but set pieces to something like 25 or 100, and compare. Exposed surface jumps enormously even though Solid remaining still starts at 100 either way, and the rate readout follows suit. Use "Show previous run" to overlay the two directly.
+**Suggested use.** Set the slider to 1 piece, a single block holding all 120 particles, and press Run. The reaction should be slow, since only the block's outer edge is reachable. Reset with the same fluid count and probability, but set pieces to something like 20 or 60, and compare. Exposed surface jumps enormously even though Solid remaining still starts at 120 either way, and the rate readout follows suit. Use "Show previous run" to overlay the two directly.
 
 ### Key ideas
 
@@ -68,12 +68,12 @@ It gets close at the highest temperatures and the lowest activation energies, bu
 
 </details>
 
-**Q4.** On the Surface area tab, two students both start with 100 solid particles, but one uses 1 piece and the other uses 100 pieces. Whose reaction finishes first, and why doesn't the *amount* of solid reactant matter here?
+**Q4.** On the Surface area tab, two students both start with 120 solid particles, but one uses 1 piece and the other uses 60 pieces. Whose reaction finishes first, and why doesn't the *amount* of solid reactant matter here?
 
 <details class="qa">
 <summary>Show answer</summary>
 
-The 100-piece student's reaction finishes far faster, even though both started with exactly the same amount of solid. What the amount of solid sets is how much *product* eventually forms. The rate depends instead on the exposed surface available at any moment, and splitting the solid into many small pieces exposes almost all of it immediately, while a single lump only exposes its outer layer at first.
+The 60-piece student's reaction finishes far faster, even though both started with exactly the same amount of solid. What the amount of solid sets is how much *product* eventually forms. The rate depends instead on the exposed surface available at any moment, and splitting the solid into many small pieces exposes almost all of it immediately, while a single lump only exposes its outer layer at first.
 
 </details>
 

@@ -4,12 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Buffer Solutions Simulation | A-level Chemistry</title>
-<meta name="description" content="Add acid or base to a buffer and and compare to water and an unbuffered solution. Free interactive A-level chemistry simulation with teaching notes.">
+<meta name="description" content="Add acid or base to a buffer and compare it with water and with an unbuffered solution. Free interactive A-level chemistry simulation with teaching notes.">
 <link rel="canonical" href="https://chemistr.io/sims/buffer-sim/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="chemistr.io">
 <meta property="og:title" content="Buffer Solutions Simulation | A-level Chemistry">
-<meta property="og:description" content="Add acid or base to a buffer and and compare to water and an unbuffered solution. Free interactive A-level chemistry simulation with teaching notes.">
+<meta property="og:description" content="Add acid or base to a buffer and compare it with water and with an unbuffered solution. Free interactive A-level chemistry simulation with teaching notes.">
 <meta property="og:url" content="https://chemistr.io/sims/buffer-sim/">
 <meta name="twitter:card" content="summary_large_image">
 <!--prerender:head:start-->
@@ -44,7 +44,7 @@
       "@id": "https://chemistr.io/sims/buffer-sim/#webpage",
       "url": "https://chemistr.io/sims/buffer-sim/",
       "name": "Buffer Solutions Simulation | A-level Chemistry",
-      "description": "Add acid or base to a buffer and and compare to water and an unbuffered solution. Free interactive A-level chemistry simulation with teaching notes.",
+      "description": "Add acid or base to a buffer and compare it with water and with an unbuffered solution. Free interactive A-level chemistry simulation with teaching notes.",
       "isPartOf": {
         "@id": "https://chemistr.io/#website"
       },
@@ -86,7 +86,7 @@
       "@id": "https://chemistr.io/sims/buffer-sim/#resource",
       "name": "Buffer Solutions",
       "url": "https://chemistr.io/sims/buffer-sim/",
-      "description": "Add acid or base to a buffer and and compare to water and an unbuffered solution.",
+      "description": "Add acid or base to a buffer and compare it with water and with an unbuffered solution.",
       "learningResourceType": "Interactive simulation",
       "educationalLevel": "A-level",
       "about": {
@@ -173,7 +173,7 @@
         <span id="fsLabel">Full screen</span>
       </button>
     </div>
-    <p class="vdesc" id="viewerDesc">Add acid or base to a buffer and and compare to water and an unbuffered solution.</p>
+    <p class="vdesc" id="viewerDesc">Add acid or base to a buffer and compare it with water and with an unbuffered solution.</p>
     <div class="viewer-layout">
       <!-- app.js clears this and drops the simulation's iframe in. Until
            then it holds a plain link to the simulation's own page, which
@@ -190,34 +190,37 @@
         <div class="notes-body" id="notesBody">
           <div class="notes-content prose" id="notesContent" data-prerendered-for="buffer-sim"><!--prerender:notes:start-->
 <h2>Teaching notes</h2>
-<p>Choose a buffer system and set the concentrations of its acid form and base form (this sets both the pH and the ratio), then either drag the <strong>volume added</strong> slider or press <strong>Run</strong>. The x-axis is bidirectional and centred on zero: dragging left computes what happens if you add that much <strong>HCl</strong>, dragging right computes what happens if you add that much <strong>NaOH</strong> — both starting from the same untouched buffer recipe, plotted together so you can compare a buffer&#39;s response to acid and to base on one picture. At whatever point you&#39;ve reached, the same titrant is applied identically to three vessels at once: the <strong>buffer</strong>, a beaker of <strong>pure water</strong>, and a solution of unbuffered strong acid or base that has been chosen to start at <strong>exactly the buffer&#39;s own pH</strong>. Watching all three respond to the same addition is the point — the buffer barely moves while the other two swing wildly, on either side.</p>
-<p>Note that the left and right halves are two independent &quot;what if&quot; calculations sharing one starting buffer and one axis, not one continuous experiment — moving from the HCl side back through zero to the NaOH side doesn&#39;t mean &quot;the HCl got neutralised first.&quot; Each point on the curve is worked out fresh from the original recipe, the same way any titration curve is, just with both directions of titrant drawn on the same graph instead of two separate ones.</p>
-<h3>Why the &quot;same starting pH&quot; comparison matters</h3>
-<p>Comparing a buffer only against water is the classic classroom demo, but it mixes two effects together: water starts at pH 7, while most buffers don&#39;t. The <strong>same-pH curve</strong> removes that confound — it starts at the identical pH to the buffer and receives the identical additions to the identical volume, so any difference that appears between the buffer curve and the same-pH curve is caused by nothing except the presence of the conjugate acid/base pair. This is the more rigorous test of &quot;does buffering actually work,&quot; and it&#39;s what the <strong>buffering factor</strong> stat quantifies directly: how many times smaller the buffer&#39;s pH change is, compared with what an otherwise-identical unbuffered solution would have done.</p>
-<h3>Henderson–Hasselbalch, made visible</h3>
-<p>The recipe card shows both the <strong>Henderson–Hasselbalch prediction</strong>, pH = pK<sub>a</sub> + log([base]/[acid]), and the <strong>exact model pH</strong> side by side. They agree closely across most of the useful range — try setting the two concentration sliders equal (ratio 1:1) and check the exact pH matches the system&#39;s pK<sub>a</sub>. Push the ratio to an extreme (e.g. 20:1) or drop both concentrations very low, and the two numbers start to drift apart — a direct, visible demonstration of where the textbook approximation quietly assumes the buffer components are far more concentrated than any [H⁺] or [OH⁻] shift caused by water itself, and where that assumption stops holding.</p>
-<h3>Buffer capacity has a hard limit — on both sides independently</h3>
-<p>A buffer&#39;s flat region isn&#39;t infinite, and it has a <em>separate</em> limit in each direction. Every mole of acid added consumes one mole of the base form (and vice versa for base added), so the HCl-side capacity bar and the NaOH-side capacity bar in the recipe card empty independently — pushing hard on the HCl side doesn&#39;t touch the NaOH-side reserve at all. Once a side&#39;s reserve runs out, that side&#39;s <strong>capacity point</strong> marker on the graph lights up, and the curve bends up or down on that half just as sharply as the two unbuffered curves. Try raising the titrant concentration slider: at low concentration neither side&#39;s capacity is exceeded across the full ±20 cm³ range shown, but at high concentration you can watch the flat middle region end abruptly, on one or both sides.</p>
+<p>Choose a buffer system and set the concentrations of its acid form and base form, which together fix both the pH and the ratio, then either drag the <strong>volume added</strong> slider or press <strong>Run</strong>. The x-axis is bidirectional and centred on zero. Dragging left computes what happens if you add that much <strong>HCl</strong>; dragging right computes what happens if you add that much <strong>NaOH</strong>. Both start from the same untouched buffer recipe and are plotted together, so you can compare a buffer&#39;s response to acid and to base on one picture.</p>
+<p>At whatever point you have reached, the same titrant is applied identically to three vessels at once: the <strong>buffer</strong>, a beaker of <strong>pure water</strong>, and a solution of unbuffered strong acid or base chosen to start at <strong>exactly the buffer&#39;s own pH</strong>. Watching all three respond to the same addition is the point. The buffer barely moves while the other two swing wildly, on either side.</p>
+<p>Note that the left and right halves are two independent &quot;what if&quot; calculations sharing one starting buffer and one axis, rather than one continuous experiment. Moving from the HCl side back through zero to the NaOH side does not mean the HCl got neutralised first. Each point on the curve is worked out fresh from the original recipe, the same way any titration curve is, just with both directions of titrant drawn on the same graph instead of two separate ones.</p>
+<h3>The same-pH comparison</h3>
+<p>Comparing a buffer only against water is the classic classroom demo, but it mixes two effects together: water starts at pH 7, while most buffers don&#39;t. The <strong>same-pH curve</strong> removes that confound. It starts at the identical pH to the buffer and receives the identical additions to the identical volume, so any difference between the buffer curve and the same-pH curve is caused by nothing except the presence of the conjugate acid/base pair. This is the more rigorous test of whether buffering works, and it is what the <strong>buffering factor</strong> stat quantifies: how many times smaller the buffer&#39;s pH change is, compared with what an otherwise identical unbuffered solution would have done.</p>
+<h3>The Henderson–Hasselbalch ratio</h3>
+<p>The recipe card shows the <strong>Henderson–Hasselbalch prediction</strong>, pH = pK<sub>a</sub> + log([base]/[acid]), alongside the <strong>exact model pH</strong>. They agree closely across most of the useful range. Try setting the two concentration sliders equal, giving a 1:1 ratio, and check that the exact pH matches the system&#39;s pK<sub>a</sub>.</p>
+<p>Push the ratio to an extreme such as 20:1, or drop both concentrations very low, and the two numbers start to drift apart. The approximation assumes the buffer components are far more concentrated than any shift in [H⁺] or [OH⁻] caused by water itself, and here you can see where that assumption stops holding.</p>
+<h3>Buffer capacity</h3>
+<p>A buffer&#39;s flat region isn&#39;t infinite, and it has a <em>separate</em> limit in each direction. Every mole of acid added consumes one mole of the base form, and vice versa for base added, so the HCl-side capacity bar and the NaOH-side capacity bar in the recipe card empty independently. Pushing hard on the HCl side doesn&#39;t touch the NaOH-side reserve at all.</p>
+<p>Once a side&#39;s reserve runs out, that side&#39;s <strong>capacity point</strong> marker on the graph lights up, and the curve bends up or down on that half just as sharply as the two unbuffered curves. Try raising the titrant concentration slider. At low concentration neither side&#39;s capacity is exceeded across the full ±20 cm³ range shown, but at high concentration you can watch the flat middle region end abruptly, on one or both sides.</p>
 <h3>The three systems</h3>
 <ul>
-<li><strong>Ethanoic acid / sodium ethanoate</strong> (pK<sub>a</sub> 4.76) — the standard A-level weak-acid buffer.</li>
-<li><strong>Ammonia / ammonium chloride</strong> (pK<sub>a</sub> 9.25) — the standard A-level weak-base buffer; note the ratio still reads as [base]/[acid] = [NH₃]/[NH₄⁺].</li>
-<li><strong>Sodium dihydrogenphosphate / disodium hydrogenphosphate</strong> (pK<sub>a</sub> 7.21) — a real buffer used constantly in biology and biochemistry labs (it&#39;s the phosphate half of PBS, &quot;phosphate-buffered saline&quot;), and a useful bridge to why living systems can hold pH close to 7.4 despite constantly producing acidic and basic waste products.</li>
+<li><strong>Ethanoic acid / sodium ethanoate</strong> (pK<sub>a</sub> 4.76): the standard A-level weak-acid buffer.</li>
+<li><strong>Ammonia / ammonium chloride</strong> (pK<sub>a</sub> 9.25): the standard A-level weak-base buffer. Note that the ratio still reads as [base]/[acid] = [NH₃]/[NH₄⁺].</li>
+<li><strong>Sodium dihydrogenphosphate / disodium hydrogenphosphate</strong> (pK<sub>a</sub> 7.21): a real buffer used constantly in biology and biochemistry labs, since it is the phosphate half of PBS, or phosphate-buffered saline. It is also a useful bridge to why living systems can hold pH close to 7.4 despite constantly producing acidic and basic waste products.</li>
 </ul>
 <h3>Suggested use</h3>
 <ol>
-<li>Leave the defaults (ethanoic acid/sodium ethanoate, both 0.10 mol dm⁻³, 25 cm³, titrant 0.5 mol dm⁻³) and press Run. Watch the animation sweep from full HCl on the left, through the untouched buffer at the centre, to full NaOH on the right — the buffer&#39;s curve stays comparatively flat across the middle while the water and same-pH curves crash almost immediately on both sides.</li>
-<li>Drag the slider to a small volume on the HCl side (e.g. −1 cm³) and check the stats panel: note how much smaller ΔpH is for the buffer than for the same-pH curve, and read off the buffering factor. Repeat on the NaOH side.</li>
+<li>Leave the defaults (ethanoic acid/sodium ethanoate, both 0.10 mol dm⁻³, 25 cm³, titrant 0.5 mol dm⁻³) and press Run. Watch the animation sweep from full HCl on the left, through the untouched buffer at the centre, to full NaOH on the right. The buffer&#39;s curve stays comparatively flat across the middle while the water and same-pH curves crash almost immediately on both sides.</li>
+<li>Drag the slider to a small volume on the HCl side, say −1 cm³, and check the stats panel. Note how much smaller ΔpH is for the buffer than for the same-pH curve, and read off the buffering factor. Repeat on the NaOH side.</li>
 <li>Raise the titrant concentration to 2 mol dm⁻³ and re-run. Find the volumes at which each capacity bar empties and each half of the buffer curve breaks away from flat.</li>
-<li>Set the two concentration sliders to a 10:1 ratio and check the exact-model pH against pK<sub>a</sub> ± 1 — the usual &quot;buffers work over pK<sub>a</sub> ± 1&quot; rule of thumb.</li>
-<li>Switch to the ammonia system to see a weak-base buffer: its flat region now sits up near pH 9.25, but the same symmetric picture (HCl on the left, NaOH on the right) still applies.</li>
-<li>Switch to the phosphate system and reduce both concentrations to their minimum. Compare how much sooner each side&#39;s capacity is used up than the default 0.10 mol dm⁻³ ethanoic acid buffer, at the same titrant concentration.</li>
+<li>Set the two concentration sliders to a 10:1 ratio and check the exact-model pH against pK<sub>a</sub> ± 1, the usual rule of thumb for the range over which buffers work.</li>
+<li>Switch to the ammonia system to see a weak-base buffer. Its flat region now sits up near pH 9.25, but the same symmetric picture, HCl on the left and NaOH on the right, still applies.</li>
+<li>Switch to the phosphate system and reduce both concentrations to their minimum. Compare how much sooner each side&#39;s capacity is used up than for the default 0.10 mol dm⁻³ ethanoic acid buffer, at the same titrant concentration.</li>
 </ol>
 <h3>Key ideas</h3>
 <ul>
-<li>A buffer resists pH change because the added H⁺ or OH⁻ reacts with a large reservoir of the conjugate species already present, rather than accumulating freely in solution — an unbuffered solution has no such reservoir, so the same small addition directly sets its [H⁺].</li>
-<li>Henderson–Hasselbalch, pH = pK<sub>a</sub> + log([base]/[acid]), shows that pH depends only on the <strong>ratio</strong> of the two forms, not on the absolute concentrations — but <strong>capacity</strong> (how much acid or base the buffer can absorb before failing) depends on the absolute amounts present.</li>
-<li>Buffering is most effective when [base] ≈ [acid], i.e. pH ≈ pK<sub>a</sub>; the practical working range is usually quoted as pK<sub>a</sub> ± 1, because outside that the ratio becomes so lopsided that one component nears exhaustion for only a small addition.</li>
+<li>A buffer resists pH change because the added H⁺ or OH⁻ reacts with a large reservoir of the conjugate species already present, rather than accumulating freely in solution. An unbuffered solution has no such reservoir, so the same small addition directly sets its [H⁺].</li>
+<li>Henderson–Hasselbalch, pH = pK<sub>a</sub> + log([base]/[acid]), shows that pH depends only on the <strong>ratio</strong> of the two forms. <strong>Capacity</strong>, meaning how much acid or base the buffer can absorb before failing, depends instead on the absolute amounts present.</li>
+<li>Buffering is most effective when [base] ≈ [acid], which is to say when pH ≈ pK<sub>a</sub>. The practical working range is usually quoted as pK<sub>a</sub> ± 1, because outside that the ratio becomes so lopsided that one component nears exhaustion for only a small addition.</li>
 <li>Every buffer has a finite capacity, and a separate one in each direction: the base form is the reserve against acid, the acid form is the reserve against base, and each can be used up independently of the other.</li>
 <li>Comparing against a solution that starts at the <em>same</em> pH isolates the effect of the conjugate pair itself, rather than mixing it up with the effect of starting at a different pH.</li>
 </ul>
@@ -226,28 +229,28 @@
 <details class="qa">
 <summary>Show answer</summary>
 
-<p>In water, there is nothing to react with the added H⁺ apart from a negligible amount of OH⁻, so almost all of it stays as free H⁺, and because the total volume is small, even a tiny number of moles produces a large concentration change. In the buffer, the added H⁺ instead reacts with the ethanoate ions (CH₃COO⁻ + H⁺ → CH₃COOH), converting some of the conjugate base into the weak acid rather than existing as free H⁺ — as long as there is still ethanoate left to react with, the free [H⁺], and hence the pH, changes only slightly.</p>
+<p>In water, there is nothing to react with the added H⁺ apart from a negligible amount of OH⁻, so almost all of it stays as free H⁺. Because the total volume is small, even a tiny number of moles produces a large concentration change. In the buffer, the added H⁺ instead reacts with the ethanoate ions (CH₃COO⁻ + H⁺ → CH₃COOH), converting some of the conjugate base into the weak acid rather than existing as free H⁺. As long as there is still ethanoate left to react with, the free [H⁺], and hence the pH, changes only slightly.</p>
 </details>
 
 <p><strong>Q2.</strong> Why does comparing the buffer to a solution that already starts at the same pH give more convincing evidence for &quot;buffering&quot; than comparing it to plain water?</p>
 <details class="qa">
 <summary>Show answer</summary>
 
-<p>Comparing to water conflates two different things: water starts at a different pH from the buffer, so some of the apparent &quot;resistance&quot; could just be an artefact of the two solutions being different to begin with, rather than proof the buffering mechanism itself is doing anything. Matching the starting pH exactly means the only difference between the two solutions is the presence of the acid/conjugate-base pair — so any difference in how much their pH changes afterwards can only be due to that pair.</p>
+<p>Comparing to water conflates two different things. Water starts at a different pH from the buffer, so some of the apparent resistance could be an artefact of the two solutions being different to begin with, rather than proof that the buffering mechanism itself is doing anything. Matching the starting pH exactly means the only difference between the two solutions is the presence of the acid/conjugate-base pair, so any difference in how much their pH changes afterwards can only be due to that pair.</p>
 </details>
 
 <p><strong>Q3.</strong> A buffer made from equal concentrations of ethanoic acid and sodium ethanoate is titrated with a large amount of strong acid. Describe and explain what eventually happens to the pH curve.</p>
 <details class="qa">
 <summary>Show answer</summary>
 
-<p>Initially the pH falls only slightly, because the added H⁺ converts ethanoate ions into ethanoic acid, keeping free [H⁺] low. This continues only as long as ethanoate ions remain. Once all the ethanoate has been converted, there is no more conjugate base left to absorb further H⁺, so any additional acid added accumulates directly as free H⁺ — the pH then falls sharply, just as it would in an unbuffered solution.</p>
+<p>Initially the pH falls only slightly, because the added H⁺ converts ethanoate ions into ethanoic acid, keeping free [H⁺] low. This continues only as long as ethanoate ions remain. Once all the ethanoate has been converted, there is no more conjugate base left to absorb further H⁺, so any additional acid accumulates directly as free H⁺. The pH then falls sharply, just as it would in an unbuffered solution.</p>
 </details>
 
 <p><strong>Q4.</strong> Two ethanoic acid/sodium ethanoate buffers have the same pH but different total concentrations (one is ten times more concentrated than the other). Which one can absorb more added acid before its pH starts to change rapidly, and why?</p>
 <details class="qa">
 <summary>Show answer</summary>
 
-<p>The more concentrated buffer. Both buffers have the same pH because Henderson–Hasselbalch depends only on the ratio [CH₃COO⁻]/[CH₃COOH], which is the same in both — but the more concentrated buffer contains ten times as many moles of ethanoate ion in the same volume, so it takes ten times as much added acid before that reserve is used up and the pH begins to change sharply.</p>
+<p>The more concentrated buffer. Both have the same pH because Henderson–Hasselbalch depends only on the ratio [CH₃COO⁻]/[CH₃COOH], which is the same in both. The more concentrated buffer, though, contains ten times as many moles of ethanoate ion in the same volume, so it takes ten times as much added acid before that reserve is used up and the pH begins to change sharply.</p>
 </details>
 
           <!--prerender:notes:end--></div>
@@ -271,7 +274,7 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=c20598b4"></script>
+<script src="/assets/js/data.js?v=3cf5416c"></script>
 <script src="/assets/js/render.js?v=9f5aba17"></script>
 <script src="/assets/js/app.js?v=73d8f9a9"></script>
 </body>

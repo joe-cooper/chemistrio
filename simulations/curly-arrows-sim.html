@@ -149,9 +149,9 @@
   </header>
 
   <div class="instructions">
-    <span class="step">1.</span> Click a <b>lone pair</b> (pair of dots) or a <b>bond</b> to start an arrow — it turns gold.<br>
+    <span class="step">1.</span> Click a <b>lone pair</b> (pair of dots) or a <b>bond</b> to start an arrow; it turns gold.<br>
     <span class="step">2.</span> Click the <b>atom</b> the arrow should point to, to complete it.<br>
-    <span class="step">3.</span> Draw all the arrows needed for this step, then press <b>Check mechanism</b> to see the product — right or wrong.
+    <span class="step">3.</span> Draw all the arrows needed for this step, then press <b>Check mechanism</b> to see the product, right or wrong.
   </div>
 
   <div class="mech-bar">
@@ -609,7 +609,7 @@ function resolveOverlaps(atoms, anchorAtomId, minDist){
         if (dist>=minDist) continue;
         changed = true;
         let ux, uy, effectiveDist;
-        if (dist<0.01){ ux=1; uy=0; effectiveDist=0; } // exact coincidence: already-normalized arbitrary direction
+        if (dist<0.01){ ux=1; uy=0; effectiveDist=0; } // exact coincidence: already-normalised arbitrary direction
         else { ux=dx/dist; uy=dy/dist; effectiveDist=dist; }
         const overlap = minDist-effectiveDist;
         const aAnchor=a.id===anchorAtomId, bAnchor=b.id===anchorAtomId;
@@ -622,14 +622,14 @@ function resolveOverlaps(atoms, anchorAtomId, minDist){
   return atoms;
 }
 
-function normalizeBondsForCompare(bonds){
+function normaliseBondsForCompare(bonds){
   return bonds
     .map(b => [b.a,b.b].sort().concat(b.order).join('|'))
     .sort();
 }
 function structuresMatch(resultA, resultB){
-  const bondsA = normalizeBondsForCompare(resultA.bonds);
-  const bondsB = normalizeBondsForCompare(resultB.bonds);
+  const bondsA = normaliseBondsForCompare(resultA.bonds);
+  const bondsB = normaliseBondsForCompare(resultB.bonds);
   if (bondsA.length !== bondsB.length) return false;
   if (bondsA.some((v,i)=>v!==bondsB[i])) return false;
   for (const a of resultA.atoms){

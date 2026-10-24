@@ -145,7 +145,7 @@
   <div class="note">
     <span class="marker">Model</span>
     <p>Every electron pair around the central atom is treated as a point charge on a sphere, and every pair pushes every other pair away with a repulsion that falls off with the square of the distance between them. Nothing here is told where to sit: the shapes you see are what that repulsion settles into on its own. Bonds also have a length they prefer, so an atom pulled in or out springs back.</p>
-    <p>Drag any outer atom (or any lone pair) and let go. The rest of the molecule responds while you drag, and the whole thing relaxes back to the same arrangement afterwards. <b>Shake</b> throws everything off at once, which is a quicker way to see that the geometry is a genuine minimum rather than a starting position. Drag the empty space to turn the molecule round.</p>
+    <p>Drag any outer atom (or any lone pair) and let go. The rest of the molecule responds while you drag, and the whole thing relaxes back to the same arrangement afterwards. <b>Shake</b> throws everything off at once, which is a quicker way to see that the geometry is a real minimum rather than a starting position. Drag the empty space to turn the molecule round.</p>
     <p>The angles under <b>Measured</b> are the real ones, from experiment. For carbon dioxide, borane, methane, phosphorus pentachloride and sulfur hexafluoride the model reaches them with no help at all: equal charges repelling on a sphere give 180&deg;, 120&deg;, 109.5&deg;, 90&deg; and 120&deg;, and every one of those is fixed by symmetry anyway.</p>
     <p>The last entry in the row, AX<sub>n</sub>E<sub>m</sub>, is not a substance. Set any number of bonding and lone pairs, up to six between them, and the model builds whatever those pairs settle into &mdash; including the see-saw, the T-shape and the square plane, which need five or six pairs and are easier to believe once you have watched them form. Where the lone pairs go is not written down anywhere: the model costs every arrangement and keeps the cheapest. Nothing here has a measured angle to be checked against, so that column reads as a dash.</p>
     <p>Ammonia and water are different. A lone pair sits closer to the nucleus than a bonding pair and is not pulled towards a second atom, so it takes up more room and presses the bonds together &mdash; but nothing in the model works out how much more room. That one number is set by hand for each molecule, to whatever reproduces the measured angle: 107&deg; for ammonia, 104.5&deg; for water. It is worth knowing which of these shapes the model predicts and which it has been told.</p>
@@ -875,7 +875,7 @@
 
   function updateStatic(){
     const nb = mol.bonds.length, nl = mol.lp.length;
-    el.molName.innerHTML = mol.name + ' — ' + mol.html;
+    el.molName.innerHTML = mol.name + ' · ' + mol.html;
     el.axeLabel.innerHTML = mol.axe;
     el.rBond.textContent = nb;
     el.rLone.textContent = nl;
@@ -1089,12 +1089,12 @@
   }
   ChemTour.init([
     { target:null, title:'Electron pair repulsion',
-      body:'Electron pairs around a central atom repel each other, so they end up as far apart as they can get. Everything on this page follows from that. Nothing is told where to sit — each shape is what the repulsion settles into.' },
+      body:'Electron pairs around a central atom repel each other, so they end up as far apart as they can get. Everything on this page follows from that. Nothing is told where to sit; each shape is what the repulsion settles into.' },
     { target:'#molRow', title:'Choosing a molecule',
       body:'These are in order of how many electron pairs the central atom has: one, two, three, four, five, six. Working along the row is the same as working down the list of shapes.',
       before:()=>pickMol('CH4') },
     { target:'#scene', title:'Pulling an atom out of place',
-      body:'Drag one of the hydrogens away from where it sits, then let go. The other three shift while you hold it, and everything springs back afterwards — the tetrahedron is a genuine minimum, not a drawing.',
+      body:'Drag one of the hydrogens away from where it sits, then let go. The other three shift while you hold it, and everything springs back afterwards, because the tetrahedron is a real minimum rather than a fixed drawing.',
       before:()=>pickMol('CH4') },
     { target:'#shakeBtn', title:'Shake',
       body:'A quicker version of the same test. Every atom is thrown off at once, and the molecule finds its way back to exactly the same arrangement.' },
@@ -1108,7 +1108,7 @@
       body:'Water closes further still, to 104.5 degrees, because there are now two lone pairs doing the pressing instead of one. "Model, now" is read live from the molecule as it stands, so pull an atom about and watch it leave the measured value behind.',
       before:()=>pickMol('H2O') },
     { target:'#molRow', title:'Five electron pairs',
-      body:'Try phosphorus pentachloride. Five pairs cannot be spread evenly over a sphere, so two positions end up different from the other three — which is why there are two bond angles here, 90 and 120 degrees, and not one.',
+      body:'Try phosphorus pentachloride. Five pairs cannot be spread evenly over a sphere, so two positions end up different from the other three. That is why there are two bond angles here, 90 and 120 degrees, rather than one.',
       before:()=>pickMol('PCl5') },
     { target:'#modelRow', title:'Any combination of pairs',
       body:'The last entry in the row is not a substance. Set any number of bonding and lone pairs, up to six between them, and the model builds the shape. Four bonding and one lone gives the see-saw; four and two gives square planar. Nothing is looked up: the lone pairs find the least crowded positions on their own.',

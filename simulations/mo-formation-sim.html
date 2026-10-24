@@ -159,7 +159,7 @@
 <body>
 <div class="container">
 <h1>Molecular Orbital Formation &amp; Bond Order</h1>
-<p class="subtitle">Two 1s orbitals combining by linear combination (LCAO) — choose a nucleus and electron count to explore H₂⁺, H₂, He₂⁺, He₂ and more</p>
+<p class="subtitle">Two 1s orbitals combining by linear combination (LCAO). Choose a nucleus and an electron count to explore H₂⁺, H₂, He₂⁺, He₂ and more.</p>
 
 <div class="controls">
   <div class="slider-block">
@@ -225,11 +225,11 @@
 
 <div class="panel-grid">
   <div class="panel">
-    <div class="panel-title">Bonding orbital — σ(1s), in phase <span class="tag">ψ = 1s<sub>A</sub> + 1s<sub>B</sub></span></div>
+    <div class="panel-title">Bonding orbital: σ(1s), in phase <span class="tag">ψ = 1s<sub>A</sub> + 1s<sub>B</sub></span></div>
     <canvas id="canvas-bond" height="260"></canvas>
   </div>
   <div class="panel">
-    <div class="panel-title">Antibonding orbital — σ*(1s), out of phase <span class="tag">ψ = 1s<sub>A</sub> − 1s<sub>B</sub></span></div>
+    <div class="panel-title">Antibonding orbital: σ*(1s), out of phase <span class="tag">ψ = 1s<sub>A</sub> − 1s<sub>B</sub></span></div>
     <canvas id="canvas-anti" height="260"></canvas>
   </div>
 </div>
@@ -258,24 +258,27 @@
 
 <div class="notes">
   <details>
-    <summary>Model notes &amp; honesty check</summary>
+    <summary>Model notes &amp; assumptions</summary>
     <p style="margin-top:8px;">
-      <b>Orbital shapes.</b> The contour plots use the LCAO treatment of the one-electron two-centre problem — real hydrogenic 1s functions, ψ₁ₛ ∝ e<sup><span>−</span>Zr/a₀</sup>, combined as ψ<sub>±</sub> = 1s<sub>A</sub> ± 1s<sub>B</sub>. This system (one electron, two nuclei of charge Z) is exactly solvable, but not with a simple closed-form wavefunction like this one — the true solution needs prolate spheroidal coordinates — so the shapes shown are the standard textbook approximation: right in every qualitative respect (constructive/destructive interference, the node in σ*), not exact in detail. Switching to He (Z=2) correctly contracts the clouds — real physics, not a rendering choice.
+      <b>Orbital shapes.</b> The contour plots use the LCAO treatment of the one-electron two-centre problem: real hydrogenic 1s functions, ψ₁ₛ ∝ e<sup><span>−</span>Zr/a₀</sup>, combined as ψ<sub>±</sub> = 1s<sub>A</sub> ± 1s<sub>B</sub>. This system, one electron with two nuclei of charge Z, is exactly solvable, but not with a simple closed-form wavefunction like this one; the true solution needs prolate spheroidal coordinates. So the shapes shown are the standard textbook approximation, right in every qualitative respect (constructive and destructive interference, the node in σ*) while not exact in detail. Switching to He (Z=2) correctly contracts the clouds, and that contraction is physical.
     </p>
     <p>
       <b>Bond order and electron filling.</b> Electrons are filled into σ(1s) then σ*(1s) via the Aufbau principle (2 per level, matching the levels' own energy ordering), and bond order = (electrons in σ − electrons in σ*)/2.
     </p>
     <p>
-      <b>σ(1s) / σ*(1s) reference curves and MO levels — nuclear repulsion included.</b> These come from the LCAO integrals (J, K, S), generalized to any nuclear charge Z via the exact scaling relation for this one-electron problem: the electronic energy at charge Z and separation R equals Z² times the charge-1 electronic energy at the scaled separation Z·R. The nuclear repulsion (plus the screening correction described below) is shared out evenly across however many electrons are actually present, rather than each level carrying a full, unshared Z²/R — otherwise a lone unscreened electron in He's field would never dip below the isolated-atom reference, making multi-electron He species show their <i>bonding</i> level sitting <i>above</i> the AO line (backwards from what a bonding orbital is supposed to do). A pure-electronic version (nuclear repulsion entirely excluded, closer to strict textbook convention) was tried and reverted: without it, the antibonding level sits <i>below</i> the AO reference for roughly 84% of this slider's range — nuclear repulsion is what normally keeps antibonding above the AO line at these separations, so removing it broke that far more often than it fixed the rarer case below. With sharing, both levels correctly approach the AO reference at large R for any electron count, and always sum (weighted by occupation) to exactly the total energy curve below. For H₂⁺ specifically (N=1, no sharing needed), this predicts R<sub>e</sub> ≈ 1.32 Å and a 1.76 eV well, a known LCAO approximation of the real (exactly solvable) R<sub>e</sub> = 1.06 Å, D<sub>e</sub> = 2.79 eV.
+      <b>σ(1s) / σ*(1s) reference curves and MO levels, with nuclear repulsion included.</b> These come from the LCAO integrals (J, K, S), generalised to any nuclear charge Z via the exact scaling relation for this one-electron problem: the electronic energy at charge Z and separation R equals Z² times the charge-1 electronic energy at the scaled separation Z·R. The nuclear repulsion, plus the screening correction described below, is shared out evenly across however many electrons are present, rather than each level carrying a full, unshared Z²/R. Otherwise a lone unscreened electron in He's field would never dip below the isolated-atom reference, making multi-electron He species show their <i>bonding</i> level sitting <i>above</i> the AO line, backwards from what a bonding orbital is supposed to do. A pure-electronic version, with nuclear repulsion entirely excluded and closer to strict textbook convention, was tried and reverted: without it, the antibonding level sits <i>below</i> the AO reference for roughly 84% of this slider's range. Nuclear repulsion is what normally keeps antibonding above the AO line at these separations, so removing it broke that far more often than it fixed the rarer case below. With sharing, both levels correctly approach the AO reference at large R for any electron count, and always sum, weighted by occupation, to exactly the total energy curve below. For H₂⁺ specifically (N=1, no sharing needed), this predicts R<sub>e</sub> ≈ 1.32 Å and a 1.76 eV well, a known LCAO approximation of the real, exactly solvable R<sub>e</sub> = 1.06 Å, D<sub>e</sub> = 2.79 eV.
     </p>
     <p>
-      <b>Total energy curve (bold) — includes a screening correction.</b> Naively summing N independent σ/σ* electron energies plus a single Z²/R nuclear term is only exact when N ≤ Z (at most enough electrons for one neutral atom) — which is why it was already exactly right for H₂⁺. For N > Z, each added electron's orbital energy carries its own residual ~1/R attraction to the far nucleus, and only one nuclear repulsion term is there to balance it — so extra electrons leave an uncancelled, spuriously attractive tail. That's what previously made this simple sum predict He₂ as strongly bound by tens of eV, which is backwards. The fix used here isn't a fudge: once N > Z, one fragment can genuinely become a neutral atom at dissociation (using Z of the N electrons), leaving the other with charge Z−(N−Z) — so the correct long-range interaction is between a neutral atom and an ion, i.e. zero, not the leftover naive sum. Subtracting exactly that difference (Z·max(0, N−Z)/R) restores the correct dissociation limit for every species without touching anything about H₂⁺, which never needed it. Checked against literature: He₂⁺ comes out at R<sub>e</sub> ≈ 1.11 Å, D<sub>e</sub> ≈ 2.07 eV, versus the experimental 1.08 Å / 2.47 eV — the same size of gap as H₂⁺'s own LCAO-vs-exact discrepancy, which is a good sign the correction is doing the right kind of thing rather than papering over the wrong one. He₂ (bond order 0) correctly shows no well at all — matching reality, where He₂ has no covalent bond (its minuscule real binding is van der Waals dispersion, a completely different, electron-correlation-driven effect this model doesn't touch).
+      <b>Total energy curve (bold), including a screening correction.</b> Naively summing N independent σ/σ* electron energies plus a single Z²/R nuclear term is only exact when N ≤ Z, meaning at most enough electrons for one neutral atom, which is why it was already exactly right for H₂⁺. For N > Z, each added electron's orbital energy carries its own residual ~1/R attraction to the far nucleus, and only one nuclear repulsion term is there to balance it, so extra electrons leave an uncancelled, spuriously attractive tail. That is what previously made this simple sum predict He₂ as strongly bound by tens of eV, which is backwards.
     </p>
     <p>
-      <b>Why H₂ and H₂⁺ land on the same bond length here.</b> In reality H₂'s bond (0.74 Å) is noticeably shorter than H₂⁺'s (1.06 Å) — but in this model both come out at the same R<sub>e</sub> ≈ 1.32 Å. The reason is exact, not approximate: H₂'s total-energy curve here is precisely <i>double</i> H₂⁺'s at every separation (its second electron just occupies the identical σ(1s) shape the first one does, and the nuclear repulsion plus correction scale by exactly 2 alongside it) — and multiplying a curve by a constant factor moves its depth, never the position of its minimum. The model does correctly show H₂ as more strongly bound (its well is twice as deep) — what it can't show is the bond <i>contracting</i>, because that requires the orbital's own shape to relax in response to how many electrons occupy it, which this fixed-shape LCAO treatment doesn't allow. A proper account would let the effective nuclear charge felt by each electron adjust with occupation (variational reoptimization); here the same one-electron orbital is simply reused and stacked, unchanged, for every species.
+      The fix used here follows from the physics. Once N > Z, one fragment can become a neutral atom at dissociation, using Z of the N electrons, leaving the other with charge Z−(N−Z). The correct long-range interaction is therefore between a neutral atom and an ion, which is zero, rather than the leftover naive sum. Subtracting exactly that difference (Z·max(0, N−Z)/R) restores the correct dissociation limit for every species without touching anything about H₂⁺, which never needed it. Checked against the literature, He₂⁺ comes out at R<sub>e</sub> ≈ 1.11 Å, D<sub>e</sub> ≈ 2.07 eV, against the experimental 1.08 Å and 2.47 eV. That is the same size of gap as H₂⁺'s own LCAO-versus-exact discrepancy, which is a good sign the correction is doing the right kind of thing rather than papering over the wrong one. He₂ (bond order 0) correctly shows no well at all, matching reality, where He₂ has no covalent bond; its minuscule real binding is van der Waals dispersion, a completely different, electron-correlation-driven effect this model doesn't touch.
     </p>
     <p>
-      <b>What's still not attempted.</b> This correction fixes the long-range dissociation limit, not the near-field electron-electron repulsion within the bonded region — so absolute well depths (like H₂'s 3.53 eV here vs. the real 4.52 eV) remain approximate, same spirit as H₂⁺'s own known gap. A fully quantitative multi-electron treatment needs real electron-electron interaction (Hartree-Fock or better); this stays a one-electron model with a physically-motivated correction to its worst failure mode, not a full many-body calculation.
+      <b>Why H₂ and H₂⁺ land on the same bond length here.</b> In reality H₂'s bond (0.74 Å) is noticeably shorter than H₂⁺'s (1.06 Å), yet in this model both come out at the same R<sub>e</sub> ≈ 1.32 Å. The reason is exact rather than approximate. H₂'s total-energy curve here is precisely <i>double</i> H₂⁺'s at every separation, since its second electron just occupies the identical σ(1s) shape the first one does, and the nuclear repulsion plus correction scale by exactly 2 alongside it. Multiplying a curve by a constant factor moves its depth, never the position of its minimum. The model does correctly show H₂ as more strongly bound, with a well twice as deep. What it can't show is the bond <i>contracting</i>, because that requires the orbital's own shape to relax in response to how many electrons occupy it, which this fixed-shape LCAO treatment doesn't allow. A proper account would let the effective nuclear charge felt by each electron adjust with occupation, by variational reoptimisation; here the same one-electron orbital is simply reused and stacked, unchanged, for every species.
+    </p>
+    <p>
+      <b>What's still not attempted.</b> This correction fixes the long-range dissociation limit, leaving the near-field electron-electron repulsion within the bonded region untouched, so absolute well depths (H₂'s 3.53 eV here against the real 4.52 eV) remain approximate, in the same spirit as H₂⁺'s own known gap. A fully quantitative multi-electron treatment needs real electron-electron interaction, from Hartree-Fock or better. This stays a one-electron model with a physically-motivated correction to its worst failure mode.
     </p>
   </details>
 </div>
@@ -610,9 +613,9 @@
     if (isInterior){
       presetEqBtn.title = '';
     } else if (!showNuclearRepulsion){
-      presetEqBtn.title = 'Electronic energy alone has no interior minimum — it always favours getting closer. Try including nuclear repulsion.';
+      presetEqBtn.title = 'Electronic energy alone has no interior minimum, since it always favours getting closer. Try including nuclear repulsion.';
     } else {
-      presetEqBtn.title = 'This species has bond order ' + bondOrder() + ' — the total energy curve has no interior minimum, so there\'s nothing to jump to. See the model notes below.';
+      presetEqBtn.title = 'This species has bond order ' + bondOrder() + ', so the total energy curve has no interior minimum and there\'s nothing to jump to. See the model notes below.';
     }
   }
   function updateSpeciesReadout(){
@@ -972,7 +975,7 @@
       ctx.fillStyle = css('--text-dim');
       ctx.font = '10px -apple-system, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('σ(1s) sits above the AO — too few electrons to', midX, h - 18);
+      ctx.fillText('σ(1s) sits above the AO: too few electrons to', midX, h - 18);
       ctx.fillText('overcome the Z²/R nuclear repulsion here', midX, h - 6);
     }
   }

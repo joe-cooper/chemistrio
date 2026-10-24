@@ -189,25 +189,36 @@
         </button>
         <div class="notes-body" id="notesBody">
           <div class="notes-content prose" id="notesContent" data-prerendered-for="mo-formation-homonuclear-sim"><!--prerender:notes:start-->
-<h2>Teaching Notes</h2>
-<p>This simulation shows the complete valence molecular-orbital (MO) diagram for a homonuclear diatomic — all the MOs built from its valence atomic orbitals at once, filled with the correct number of electrons for whichever molecule you pick, from H₂ through the period-2 row up to F₂. It&#39;s a companion to the 1s-1s and s/p-overlap simulations, but trades their single-orbital-pair focus (and, in the s/p-overlap case, its potential-energy curve) for the full picture used to predict bond order and magnetism.</p>
-<p>H₂ is the simplest case: just σ(1s)/σ*(1s), no 2p, no mixing. Li₂ and Be₂ have real 2s/2p atomic orbitals but no 2p valence electrons, so σ(2p)/π(2p) are dropped from their diagrams entirely rather than shown empty — B₂ through F₂ are where the full six-level 2s/2p diagram (and the s–p mixing toggle) actually applies.</p>
+<h2>Teaching notes</h2>
+<p>This simulation shows the complete valence molecular-orbital (MO) diagram for a homonuclear diatomic: all the MOs built from its valence atomic orbitals at once, filled with the correct number of electrons for whichever molecule you pick, from H₂ through the period-2 row up to F₂. It is a companion to the 1s-1s and s/p-overlap simulations. Those focus on a single orbital pair, and in the s/p-overlap case on its potential-energy curve; this one gives the full picture used to predict bond order and magnetism.</p>
+<p>H₂ is the simplest case: just σ(1s)/σ*(1s), with no 2p and no mixing. Li₂ and Be₂ have real 2s/2p atomic orbitals but no 2p valence electrons, so σ(2p)/π(2p) are dropped from their diagrams entirely rather than shown empty. B₂ through F₂ are where the full six-level 2s/2p diagram, and the s–p mixing toggle, actually apply.</p>
 <h2>Building the diagram</h2>
-<p>Two 2s orbitals combine head-on to give σ(2s) (bonding) and σ*(2s) (antibonding), exactly like the 1s-1s case. Two 2p orbitals aligned along the bond axis combine head-on to give σ(2p)/σ*(2p); the two pairs of 2p orbitals perpendicular to the axis combine side-on to give a doubly-degenerate π(2p)/π*(2p) pair — one bonding, one antibonding, each existing as two orbitals at right angles to each other. Only the 2s/2p (valence) orbitals are shown; the 1s core is left out entirely, since it stays non-bonding and its filled bonding/antibonding pair cancels exactly in the bond-order sum regardless.</p>
+<p>Two 2s orbitals combine head-on to give σ(2s) (bonding) and σ*(2s) (antibonding), exactly like the 1s-1s case. Two 2p orbitals aligned along the bond axis combine head-on to give σ(2p)/σ*(2p). The two pairs of 2p orbitals perpendicular to the axis combine side-on to give a doubly-degenerate π(2p)/π*(2p) pair, one bonding and one antibonding, each existing as two orbitals at right angles to each other. Only the 2s/2p valence orbitals are shown. The 1s core is left out entirely, since it stays non-bonding and its filled bonding/antibonding pair cancels exactly in the bond-order sum regardless.</p>
 <h2>s–p mixing</h2>
-<p>σ(2s) and σ(2p) share the same symmetry, so when their atomic energies are close enough they genuinely mix — and this pushes σ(2p) <em>above</em> π(2p) in energy. That&#39;s the case for Li₂ through N₂, where the 2s–2p atomic energy gap is still small (real values, not estimates: 0.7 eV for Li₂ up to 12.4 eV for N₂). The gap widens across the row as nuclear charge increases — reaching 16.5 eV at O₂ and 27.6 eV at F₂ — and past a certain point mixing can no longer overcome it, restoring the &quot;obvious&quot; order with σ(2p) below π(2p). Use the toggle to switch between the two orderings for any molecule; the stats row shows the actual gap for whichever element is selected.</p>
-<p>Bond order is usually unaffected by which ordering you pick — σ(2p) and π(2p) tend to be either both empty or both completely full regardless of fill order. The exception is when the electron count lands <em>between</em> the two:</p>
+<p>σ(2s) and σ(2p) share the same symmetry, so when their atomic energies are close enough they mix, and that mixing pushes σ(2p) <em>above</em> π(2p) in energy. This is the case for Li₂ through N₂, where the 2s–2p atomic energy gap is still small (real values rather than estimates: 0.7 eV for Li₂ up to 12.4 eV for N₂). The gap widens across the row as nuclear charge increases, reaching 16.5 eV at O₂ and 27.6 eV at F₂, and past a certain point mixing can no longer overcome it. That restores the obvious order, with σ(2p) below π(2p). Use the toggle to switch between the two orderings for any molecule; the stats row shows the gap for whichever element is selected.</p>
+<p>Bond order is usually unaffected by which ordering you pick, since σ(2p) and π(2p) tend to be either both empty or both completely full whatever the fill order. The exception is when the electron count lands <em>between</em> the two:</p>
 <ul>
-<li><strong>B₂</strong> (2 electrons to place): with mixing, they go one each into the degenerate π(2p) pair (Hund&#39;s rule) → paramagnetic, matching experiment. Without mixing, both pair up in σ(2p) → wrongly predicted diamagnetic.</li>
-<li><strong>C₂</strong> (4 electrons to place): with mixing, all four fill the doubly-degenerate π(2p) pair, two each, fully paired → diamagnetic, matching experiment. Without mixing, two pair up in σ(2p) first and the remaining two split across π(2p) → wrongly predicted paramagnetic.</li>
+<li><strong>B₂</strong> has 2 electrons to place. With mixing, they go one each into the degenerate π(2p) pair by Hund&#39;s rule, making B₂ paramagnetic, which matches experiment. Without mixing, both pair up in σ(2p) and the prediction comes out diamagnetic.</li>
+<li><strong>C₂</strong> has 4 electrons to place. With mixing, all four fill the doubly-degenerate π(2p) pair, two each and fully paired, giving diamagnetic, which matches experiment. Without mixing, two pair up in σ(2p) first and the remaining two split across π(2p), giving a paramagnetic prediction.</li>
 </ul>
-<p>Same bond order either way for both molecules — only the magnetism prediction flips, which is exactly why the real ordering matters.</p>
+<p>Both molecules come out with the same bond order either way. Only the magnetism prediction flips, which is exactly why the real ordering matters.</p>
 <h2>Bond order and filling</h2>
-<p>Electrons fill the six valence levels lowest-energy-first (Aufbau), two per orbital, with the two degenerate π levels filled singly before pairing (Hund&#39;s rule) — the same arrows-in-boxes picture used for atomic orbitals. Bond order is:</p>
+<p>Electrons fill the six valence levels lowest-energy-first (Aufbau), two per orbital, with the two degenerate π levels filled singly before pairing (Hund&#39;s rule). It is the same arrows-in-boxes picture used for atomic orbitals. Bond order is:</p>
 <p>$$\text{bond order} = \frac{(\text{electrons in bonding MOs}) - (\text{electrons in antibonding MOs})}{2}$$</p>
-<p>Selecting each species shows this play out across the row: Li₂ (bond order 1) → Be₂ (0 — only very weakly bound in reality, beyond what this simple picture predicts) → B₂ (1, paramagnetic with mixing) → C₂ (2) → N₂ (3, the familiar triple bond) → O₂ (2, paramagnetic — the classic case simple Lewis structures get wrong) → F₂ (1).</p>
+<p>Selecting each species in turn shows this play out across the row:</p>
+<ul>
+<li>Li₂, bond order 1</li>
+<li>Be₂, bond order 0, and only very weakly bound in reality, beyond what this simple picture predicts</li>
+<li>B₂, bond order 1, paramagnetic with mixing</li>
+<li>C₂, bond order 2</li>
+<li>N₂, bond order 3, the familiar triple bond</li>
+<li>O₂, bond order 2 and paramagnetic, the classic case simple Lewis structures get wrong</li>
+<li>F₂, bond order 1</li>
+</ul>
 <h2>Reading the diagram</h2>
-<p>Atomic 2s and 2p levels sit either side (labelled with the element, 2p drawn as three parallel lines since a free atom&#39;s three 2p orbitals are degenerate), the six molecular levels sit in the middle, connected by faint correlation lines — bonding levels in one colour, antibonding in another. The vertical axis is real electron energy in eV, not a schematic placeholder: both the AO positions and the six MO levels are computed (see the &quot;Model notes&quot; panel for how), so the <em>spacing</em> between levels is genuine too — notice how compressed Li₂&#39;s whole valence manifold is compared with F₂&#39;s, or how far below the 2p-derived set σ*(2s) sits for N₂, matching its real photoelectron spectrum. Click any level to see its actual shape in the panel on the right: the contour plot uses that molecule&#39;s real bond length and an orbital exponent derived from Slater&#39;s rules for that specific element, so the size and spread of the orbital genuinely changes as you move across the row. The &quot;Model notes &amp; honesty check&quot; panel goes into the details of exactly what&#39;s real data, what&#39;s a standard approximation (Wolfsberg–Helmholz), and what&#39;s a calibrated simplification (the s–p mixing coupling strength).</p>
+<p>Atomic 2s and 2p levels sit either side, labelled with the element, with 2p drawn as three parallel lines since a free atom&#39;s three 2p orbitals are degenerate. The six molecular levels sit in the middle, connected by faint correlation lines, bonding levels in one colour and antibonding in another.</p>
+<p>The vertical axis is real electron energy in eV rather than a schematic placeholder. Both the AO positions and the six MO levels are computed, as the &quot;Model notes&quot; panel explains, so the <em>spacing</em> between levels carries information too. Notice how compressed Li₂&#39;s whole valence manifold is compared with F₂&#39;s, or how far below the 2p-derived set σ*(2s) sits for N₂, matching its real photoelectron spectrum.</p>
+<p>Click any level to see its shape in the panel on the right. The contour plot uses that molecule&#39;s real bond length and an orbital exponent derived from Slater&#39;s rules for that specific element, so the size and spread of the orbital change as you move across the row. The &quot;Model notes &amp; assumptions&quot; panel goes into exactly what is real data, what is a standard approximation (Wolfsberg–Helmholz), and what is a calibrated simplification (the s–p mixing coupling strength).</p>
 
           <!--prerender:notes:end--></div>
         </div>
@@ -230,7 +241,7 @@
 </footer>
 
 <script src="/assets/js/home-bg.js?v=c5e865e9"></script>
-<script src="/assets/js/data.js?v=c20598b4"></script>
+<script src="/assets/js/data.js?v=3cf5416c"></script>
 <script src="/assets/js/render.js?v=9f5aba17"></script>
 <script src="/assets/js/app.js?v=73d8f9a9"></script>
 </body>
