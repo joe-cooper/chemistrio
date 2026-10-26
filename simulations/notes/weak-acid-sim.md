@@ -36,3 +36,11 @@ The "% dissociated" readout and the "reasonable / breaks down" badge track the s
 - The [H⁺]=[A⁻] assumption gets worse as [H⁺] from the acid approaches the ~10⁻⁷ mol dm⁻³ that water supplies on its own. At that point the acid's own dissociation is no longer the dominant source of H⁺.
 - The exact charge-balance approach makes neither assumption and stays valid across the whole range. It is the same style of equation used to model buffers and titrations exactly, just for a solution with no added conjugate base or salt.
 - The rule of thumb that the shortcut is valid when [HA]₀/K<sub>a</sub> ≥ 400 is not arbitrary. It is the condition under which the two curves in this simulation are indistinguishable to within about a hundredth of a pH unit.
+
+## Model notes and assumptions
+
+**The exact model.** The charge-balance equation given above is solved numerically for pH at every concentration plotted. Because it includes water's own ionisation, it stays correct for very weak or very dilute acids, where water's contribution to [H⁺] is no longer negligible.
+
+**Constants (25 °C).** K<sub>w</sub> = 1.0×10⁻¹⁴. Preset K<sub>a</sub> values: methanoic acid 1.78×10⁻⁴ (pK<sub>a</sub> 3.75), ethanoic acid 1.74×10⁻⁵ (pK<sub>a</sub> 4.76), benzoic acid 6.28×10⁻⁵ (pK<sub>a</sub> 4.20), HCN 6.2×10⁻¹⁰ (pK<sub>a</sub> 9.21), phenol 1.0×10⁻¹⁰ (pK<sub>a</sub> 10.0).
+
+**Simplifications.** Activity coefficients are ignored, so concentrations stand in for activities; the temperature is fixed at 25 °C; and only monoprotic acids are included.

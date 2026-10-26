@@ -54,7 +54,7 @@ Every individual collision between the pollen grain and a water molecule obeys e
 
 </details>
 
-**Q3.** Explain, using the idea of equipartition of energy, why Brownian motion is only visible for particles within a fairly narrow range of sizes — not for individual molecules, and not for large visible objects like a grain of sand.
+**Q3.** Explain, using the idea of equipartition of energy, why Brownian motion is only visible for particles within a fairly narrow range of sizes, and cannot be seen for individual molecules or for large visible objects like a grain of sand.
 
 <details class="qa">
 <summary>Show answer</summary>

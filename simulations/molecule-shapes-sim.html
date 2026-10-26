@@ -56,13 +56,6 @@
   .toggle-row{display:flex;gap:8px;flex-wrap:wrap;}
   #lpToggle.active{background:var(--raised);color:var(--LP);border-color:var(--LP);}
 
-  .note p{margin:0 0 8px;}
-  .note p:last-child{margin-bottom:0;}
-  .note .marker{
-    font-family:var(--font);font-weight:600;font-size:10.5px;letter-spacing:.02em;
-    color:var(--gold-dim);display:block;margin-bottom:8px;
-  }
-
   @media(max-width:860px){ .stage{grid-template-columns:1fr;} }
 </style>
 </head>
@@ -142,15 +135,6 @@
     </div>
   </div>
 
-  <div class="note">
-    <span class="marker">Model</span>
-    <p>Every electron pair around the central atom is treated as a point charge on a sphere, and every pair pushes every other pair away with a repulsion that falls off with the square of the distance between them. Nothing here is told where to sit: the shapes you see are what that repulsion settles into on its own. Bonds also have a length they prefer, so an atom pulled in or out springs back.</p>
-    <p>Drag any outer atom (or any lone pair) and let go. The rest of the molecule responds while you drag, and the whole thing relaxes back to the same arrangement afterwards. <b>Shake</b> throws everything off at once, which is a quicker way to see that the geometry is a real minimum rather than a starting position. Drag the empty space to turn the molecule round.</p>
-    <p>The angles under <b>Measured</b> are the real ones, from experiment. For carbon dioxide, borane, methane, phosphorus pentachloride and sulfur hexafluoride the model reaches them with no help at all: equal charges repelling on a sphere give 180&deg;, 120&deg;, 109.5&deg;, 90&deg; and 120&deg;, and every one of those is fixed by symmetry anyway.</p>
-    <p>The last entry in the row, AX<sub>n</sub>E<sub>m</sub>, is not a substance. Set any number of bonding and lone pairs, up to six between them, and the model builds whatever those pairs settle into &mdash; including the see-saw, the T-shape and the square plane, which need five or six pairs and are easier to believe once you have watched them form. Where the lone pairs go is not written down anywhere: the model costs every arrangement and keeps the cheapest. Nothing here has a measured angle to be checked against, so that column reads as a dash.</p>
-    <p>Ammonia and water are different. A lone pair sits closer to the nucleus than a bonding pair and is not pulled towards a second atom, so it takes up more room and presses the bonds together &mdash; but nothing in the model works out how much more room. That one number is set by hand for each molecule, to whatever reproduces the measured angle: 107&deg; for ammonia, 104.5&deg; for water. It is worth knowing which of these shapes the model predicts and which it has been told.</p>
-  </div>
-
 </div>
 
 <script>
@@ -222,7 +206,7 @@
       bondLen:1.20, order:1, lpQ:1.2326, measured:'—',
       bonds:[{el:'H', dir:[1,0,0]}],
       lp:[[-T3,R3,0],[-T3,-0.4714,0.8165],[-T3,-0.4714,-0.8165]],
-      note:'Only one bond, so there is no bond angle to measure. Two atoms lie on a straight line whatever the three lone pairs do &mdash; every diatomic molecule is linear.' },
+      note:'Only one bond, so there is no bond angle to measure. Two atoms lie on a straight line whatever the three lone pairs do. Every diatomic molecule is linear.' },
 
     { id:'CO2', html:'CO<sub>2</sub>', name:'Carbon dioxide', central:'C',
       shape:'Linear', arrangement:'Linear', axe:'AX<sub>2</sub>',
@@ -250,7 +234,7 @@
       bondLen:1.06, order:1, lpQ:1.2209, measured:'107°',
       bonds:[{el:'H',dir:TETRA[0]},{el:'H',dir:TETRA[1]},{el:'H',dir:TETRA[2]}],
       lp:[TETRA[3]],
-      note:'Four pairs again, so the arrangement is still tetrahedral &mdash; but one vertex holds a lone pair rather than an atom, and the <i>shape</i> we name is the shape of the atoms alone.' },
+      note:'Four pairs again, so the arrangement is still tetrahedral, but one vertex holds a lone pair rather than an atom, and the <i>shape</i> we name is the shape of the atoms alone.' },
 
     { id:'H2O', html:'H<sub>2</sub>O', name:'Water', central:'O',
       shape:'Bent', arrangement:'Tetrahedron', axe:'AX<sub>2</sub>E<sub>2</sub>',
@@ -267,7 +251,7 @@
       // Looked at slightly from above and turned so that no equatorial
       // chlorine sits straight in front of the phosphorus.
       lp:[], cam:[-0.35, 0.38],
-      note:'Five is the first number of pairs that cannot be spread out evenly &mdash; the two axial positions are not equivalent to the three equatorial ones, which is why there are two different bond angles here and not one.' },
+      note:'Five is the first number of pairs that cannot be spread out evenly. The two axial positions are not equivalent to the three equatorial ones, which is why there are two different bond angles here and not one.' },
 
     { id:'SF6', html:'SF<sub>6</sub>', name:'Sulfur hexafluoride', central:'S',
       shape:'Octahedral', arrangement:'Octahedron', axe:'AX<sub>6</sub>',
@@ -352,7 +336,7 @@
       ? 'One electron pair, with nothing to be pushed away from. Any two atoms lie on a straight line, so this is linear whatever else is going on.'
       : nl === 0
         ? n + ' electron pairs, which spread out into ' + SPREAD[n] + '. All of them hold an atom, so the shape of the molecule is the same as the arrangement of the pairs.'
-        : n + ' electron pairs, which spread out into ' + SPREAD[n] + '. Only ' + nb + ' of them hold an atom, and the shape we name describes where those atoms are. The lone pairs have gone to whichever positions leave them least crowded &mdash; the model works that out rather than being told.';
+        : n + ' electron pairs, which spread out into ' + SPREAD[n] + '. Only ' + nb + ' of them hold an atom, and the shape we name describes where those atoms are. The lone pairs have gone to whichever positions leave them least crowded, and the model works that out for itself.';
   }
   configureModel(4, 0);
   MOLECULES.push(MODEL);

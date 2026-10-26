@@ -693,7 +693,7 @@ const MECHANISMS = [
           { tailType:'lonepair', tailAtom:'O1', headAtom:'C1' },
           { tailType:'bond', tailBond:'b5', headAtom:'Br1' },
         ],
-        correctMsg: "The lone pair on O forms the new O\u2013C bond, and the C\u2013Br bond breaks onto Br, giving methanol and a bromide ion \u2014 formal charges balance out to neutral O and \u22121 on Br.",
+        correctMsg: "The lone pair on O forms the new O\u2013C bond, and the C\u2013Br bond breaks onto Br, giving methanol and a bromide ion. The formal charges balance: O ends up neutral and Br carries \u22121.",
       },
     ],
   },
@@ -730,7 +730,7 @@ const MECHANISMS = [
           { tailType:'bond', tailBond:'c1c2', headAtom:'H3' },
           { tailType:'bond', tailBond:'h3br', headAtom:'Br1' },
         ],
-        correctMsg: "The \u03c0 bond attacks the electrophilic H, forming a new C\u2013H bond and leaving the other carbon short an electron pair \u2014 a carbocation. The H\u2013Br bond breaks heterolytically onto Br, giving a bromide ion.",
+        correctMsg: "The \u03c0 bond attacks the electrophilic H, forming a new C\u2013H bond. The other carbon is left short of an electron pair, so it becomes a carbocation. The H\u2013Br bond breaks heterolytically onto Br, giving a bromide ion.",
       },
       {
         instructions: "Step 2 of 2: Draw the curly arrow(s) to show the final step in the electrophilic addition of HBr to ethene.",
@@ -776,7 +776,7 @@ const MECHANISMS = [
           { tailType:'lonepair', tailAtom:'C2', headAtom:'C1' },
           { tailType:'bond', tailBond:'co', headAtom:'O1' },
         ],
-        correctMsg: "The cyanide carbon's lone pair forms the new C\u2013C bond, and the C=O \u03c0 bond breaks onto oxygen, giving a tetrahedral alkoxide intermediate \u2014 negatively charged O, neutral everywhere else.",
+        correctMsg: "The cyanide carbon's lone pair forms the new C\u2013C bond, and the C=O \u03c0 bond breaks onto oxygen, giving a tetrahedral alkoxide intermediate, with a negative charge on O and every other atom neutral.",
       },
       {
         instructions: "Step 2 of 2: Draw the curly arrow(s) to show the final step in the nucleophilic addition of cyanide to methanal.",
@@ -822,7 +822,7 @@ const MECHANISMS = [
           { tailType:'lonepair', tailAtom:'O1', headAtom:'H2' },
           { tailType:'bond', tailBond:'h2br1', headAtom:'Br1' },
         ],
-        correctMsg: "Protonating the oxygen converts \u2013OH into \u2013OH<sub>2</sub><sup>+</sup> \u2014 a far better leaving group than hydroxide, which is the entire purpose of the acid catalyst here.",
+        correctMsg: "Protonating the oxygen converts \u2013OH into \u2013OH<sub>2</sub><sup>+</sup>, a much better leaving group than hydroxide. Making this leaving group is the job of the acid catalyst.",
       },
       {
         instructions: "Step 2 of 2: Draw the curly arrow(s) to show the final step in the acid-catalysed nucleophilic substitution of methanol by HBr.",
@@ -831,7 +831,7 @@ const MECHANISMS = [
           { tailType:'lonepair', tailAtom:'Br1', headAtom:'C1' },
           { tailType:'bond', tailBond:'c1o1', headAtom:'O1' },
         ],
-        correctMsg: "Bromide attacks the carbon as the C\u2013O bond breaks \u2014 and because the leaving group is neutral water rather than hydroxide, this step happens far more readily than it could without the acid. That's the whole reason this reaction needs an acid catalyst.",
+        correctMsg: "Bromide attacks the carbon as the C\u2013O bond breaks. The leaving group is a neutral water molecule and not hydroxide, so this step happens far more readily than it would without the acid. This is why the reaction needs an acid catalyst.",
       },
     ],
   },
@@ -879,7 +879,7 @@ const MECHANISMS = [
           { tailType:'lonepair', tailAtom:'O1', headAtom:'C2' },
           { tailType:'bond', tailBond:'c2cl1', headAtom:'Cl1' },
         ],
-        correctMsg: "The alkoxide's lone pair re-forms the C=O \u03c0 bond as the C\u2013Cl bond breaks, ejecting chloride. Overall, one oxygen (from hydroxide) has replaced chlorine on the carbon \u2014 the tetrahedral intermediate lasted only briefly on the way to a fully neutral carboxylic acid product.",
+        correctMsg: "The alkoxide's lone pair re-forms the C=O \u03c0 bond as the C\u2013Cl bond breaks, ejecting chloride. Overall, an oxygen from hydroxide has replaced chlorine on the carbon. The tetrahedral intermediate lasts only briefly before giving the neutral carboxylic acid.",
       },
     ],
   },
@@ -951,7 +951,7 @@ const MECHANISMS = [
           [ { tailType:'ringArc', tailAtom:'C6', headAtom:'N' }, { tailType:'bond', tailBond:'noa', headAtom:'Oa' } ],
           [ { tailType:'ringArc', tailAtom:'C6', headAtom:'N' }, { tailType:'bond', tailBond:'nob', headAtom:'Ob' } ],
         ],
-        correctMsg: "That carbon's arc forms the new C\u2013N bond, and one N=O \u03c0 bond breaks onto oxygen so nitrogen never exceeds four bonds. This gives a non-aromatic Wheland intermediate \u2014 the attacking carbon is now sp3 and carries the positive charge, while the ring's remaining five carbons keep their own arcs.",
+        correctMsg: "That carbon's arc forms the new C\u2013N bond, and one N=O \u03c0 bond breaks onto oxygen so nitrogen never exceeds four bonds. This gives a non-aromatic Wheland intermediate. The attacking carbon is now sp3 and carries the positive charge, while the other five ring carbons keep their arcs.",
       },
       {
         instructions: "Step 2 of 2: Draw the curly arrow(s) to show the final step in the electrophilic aromatic substitution of methylbenzene by NO\u2082\u207a. Hover over the delocalised ring to select where the electrons will move from or to.",
@@ -972,7 +972,7 @@ const MECHANISMS = [
           if (!hBond) return [];
           return [ { tailType:'bond', tailBond:hBond.id, headAtom:spent.id } ];
         },
-        correctMsg: "The C\u2013H bond's electrons flow back onto that carbon, restoring its arc and full delocalisation across the ring, while the proton leaves \u2014 in practice picked up by a base such as HSO\u2084\u207b, not shown explicitly here. Net result: one ring hydrogen has been replaced by a nitro group.",
+        correctMsg: "The C\u2013H bond's electrons flow back onto that carbon, restoring its arc and full delocalisation across the ring, while the proton leaves. In practice a base such as HSO\u2084\u207b picks up the proton; it is not shown here. Overall, one ring hydrogen has been replaced by a nitro group.",
       },
     ],
   },
@@ -1040,7 +1040,7 @@ const MECHANISMS = [
           [ { tailType:'ringArc', tailAtom:'C5', headAtom:'N' }, { tailType:'bond', tailBond:'noa', headAtom:'Oa' } ],
           [ { tailType:'ringArc', tailAtom:'C5', headAtom:'N' }, { tailType:'bond', tailBond:'nob', headAtom:'Ob' } ],
         ],
-        correctMsg: "That carbon's arc forms the new C\u2013N bond, and one N=O \u03c0 bond breaks onto oxygen so nitrogen never exceeds four bonds. This gives a non-aromatic Wheland intermediate \u2014 the attacking carbon is now sp3 and carries the positive charge. Attacking meta keeps that positive charge away from the carbon bearing the existing nitro group; attacking ortho or para would instead place positive charge directly on, or next to, that carbon \u2014 severely destabilised by the nitro group's electron withdrawal, which is exactly why nitro is meta-directing.",
+        correctMsg: "That carbon's arc forms the new C\u2013N bond, and one N=O \u03c0 bond breaks onto oxygen so nitrogen never exceeds four bonds. This gives a non-aromatic Wheland intermediate, with the positive charge on the attacking carbon, which is now sp3. Attack at the meta position keeps that positive charge away from the carbon bearing the nitro group. Attack at ortho or para would put positive charge on, or next to, that carbon, where the electron-withdrawing nitro group destabilises it badly. This is why nitro is meta-directing.",
       },
       {
         instructions: "Step 2 of 2: Draw the curly arrow(s) to show the final step in the electrophilic aromatic substitution of nitrobenzene by NO\u2082\u207a. Hover over the delocalised ring to select where the electrons will move from or to.",
@@ -1061,7 +1061,7 @@ const MECHANISMS = [
           if (!hBond) return [];
           return [ { tailType:'bond', tailBond:hBond.id, headAtom:spent.id } ];
         },
-        correctMsg: "The C\u2013H bond's electrons flow back onto that carbon, restoring its arc and full delocalisation across the ring, while the proton leaves \u2014 in practice picked up by a base such as HSO\u2084\u207b, not shown explicitly here. Net result: one ring hydrogen has been replaced by a second nitro group, giving 1,3-dinitrobenzene.",
+        correctMsg: "The C\u2013H bond's electrons flow back onto that carbon, restoring its arc and full delocalisation across the ring, while the proton leaves. In practice a base such as HSO\u2084\u207b picks up the proton; it is not shown here. Overall, one ring hydrogen has been replaced by a second nitro group, giving 1,3-dinitrobenzene.",
       },
     ],
   },
@@ -1096,14 +1096,14 @@ const MECHANISMS = [
     ],
     steps: [
       {
-        instructions: "Draw the curly arrow(s) to show the E2 elimination of bromoethane by hydroxide \u2014 this happens in one concerted step, so all the arrows are drawn together.",
+        instructions: "Draw the curly arrow(s) to show the E2 elimination of bromoethane by hydroxide. This happens in one concerted step, so all the arrows are drawn together.",
         hint: "Hydroxide is a strong base as well as a nucleophile. It removes a proton from the carbon beta to the leaving group; the C\u2013H bond's electrons form the new \u03c0 bond as the C\u2013Br bond breaks, all at once.",
         expectedArrows: [
           { tailType:'lonepair', tailAtom:'O1', headAtom:'Hx' },
           { tailType:'bond', tailBond:'c2hx', headAtom:'C1' },
           { tailType:'bond', tailBond:'c1br1', headAtom:'Br1' },
         ],
-        correctMsg: "Hydroxide's lone pair forms the new O\u2013H bond, the C\u2013H bond's electrons shift across to form the new C=C \u03c0 bond, and the C\u2013Br bond breaks onto bromine \u2014 all in a single concerted step, giving ethene, water and a bromide ion.",
+        correctMsg: "Hydroxide's lone pair forms the new O\u2013H bond, the C\u2013H bond's electrons shift across to form the new C=C \u03c0 bond, and the C\u2013Br bond breaks onto bromine. All of this happens in a single concerted step, giving ethene, water and a bromide ion.",
       },
     ],
   },
@@ -1151,7 +1151,7 @@ const MECHANISMS = [
         expectedArrows: [
           { tailType:'bond', tailBond:'c1br1', headAtom:'Br1' },
         ],
-        correctMsg: "The C\u2013Br bond breaks heterolytically onto bromine, giving a bromide ion and a secondary carbocation \u2014 this slow, rate-determining ionisation step is exactly what E1 shares with SN1.",
+        correctMsg: "The C\u2013Br bond breaks heterolytically onto bromine, giving a bromide ion and a secondary carbocation. E1 and SN1 share this slow, rate-determining ionisation step.",
       },
       {
         instructions: "Step 2 of 2: Draw the curly arrow(s) to show the final step of the E1 elimination of 2-bromopropane.",
@@ -1170,7 +1170,7 @@ const MECHANISMS = [
           [ { tailType:'lonepair', tailAtom:'O1', headAtom:'He' }, { tailType:'bond', tailBond:'c3he', headAtom:'C1' } ],
           [ { tailType:'lonepair', tailAtom:'O1', headAtom:'Hf' }, { tailType:'bond', tailBond:'c3hf', headAtom:'C1' } ],
         ],
-        correctMsg: "Water's lone pair forms the new O\u2013H bond as the C\u2013H bond's electrons shift across to form the new C=C \u03c0 bond directly onto the carbocation, neutralising it. This gives propene and a hydronium ion \u2014 unlike E2, the leaving group had already left in a separate step before this one.",
+        correctMsg: "Water's lone pair forms the new O\u2013H bond as the C\u2013H bond's electrons shift across to form the new C=C \u03c0 bond directly onto the carbocation, neutralising it. This gives propene and a hydronium ion. Unlike E2, the leaving group had already left in a separate, earlier step.",
       },
     ],
   },
@@ -1223,15 +1223,15 @@ const MECHANISMS = [
         expectedArrows: [
           { tailType:'bond', tailBond:'c1br1', headAtom:'Br1' },
         ],
-        correctMsg: "The C\u2013Br bond breaks heterolytically onto bromine, giving a bromide ion and a secondary carbocation \u2014 this slow, rate-determining ionisation step is exactly what SN1 shares with E1.",
+        correctMsg: "The C\u2013Br bond breaks heterolytically onto bromine, giving a bromide ion and a secondary carbocation. SN1 and E1 share this slow, rate-determining ionisation step.",
       },
       {
         instructions: "Step 2 of 3: Draw the curly arrow to show water attacking the carbocation.",
-        hint: "Water is nucleophilic, and the carbocation is a strong electrophile with an empty p orbital \u2014 water's lone pair can form a bond directly to it.",
+        hint: "Water is nucleophilic, and the carbocation is a strong electrophile with an empty p orbital, so water's lone pair can form a bond directly to it.",
         expectedArrows: [
           { tailType:'lonepair', tailAtom:'O1', headAtom:'C1' },
         ],
-        correctMsg: "Water's lone pair forms the new C\u2013O bond directly onto the carbocation, giving a protonated alcohol (an oxonium ion). Because the carbocation is flat and planar, water can approach from either face equally \u2014 the reason SN1 at a stereocentre gives racemisation, unlike the inversion seen in SN2.",
+        correctMsg: "Water's lone pair forms the new C\u2013O bond directly onto the carbocation, giving a protonated alcohol (an oxonium ion). Because the carbocation is planar, water can attack either face equally. This is why SN1 at a stereocentre gives racemisation, unlike the inversion seen in SN2.",
       },
       {
         instructions: "Step 3 of 3: Draw the curly arrow(s) to show a second water molecule removing a proton from the oxonium ion.",
@@ -2069,8 +2069,8 @@ checkBtn.addEventListener('click', ()=>{
     stepSolved = true;
     productHint.textContent = 'matches the expected step';
     if (isLastStep){
-      fbTitle.textContent = 'That\u2019s correct \u2014 mechanism complete.';
-      fbBody.innerHTML = step.correctMsg + ' That\u2019s the final product for this mechanism.';
+      fbTitle.textContent = "That's correct. The mechanism is complete.";
+      fbBody.innerHTML = step.correctMsg + " That's the final product for this mechanism.";
       nextStepBtn.style.display = 'none';
     } else {
       // Continue from the student's OWN result, not the fixed canonical
@@ -2078,7 +2078,7 @@ checkBtn.addEventListener('click', ()=>{
       // one valid answer: whichever one they actually did is what the
       // next step picks up from.
       sessionStates[stepIdx+1] = { atoms: laidOutAtoms, bonds: userResult.bonds };
-      fbTitle.textContent = 'That\u2019s the correct step.';
+      fbTitle.textContent = "That's the correct step.";
       fbBody.innerHTML = step.correctMsg + ' Press <b>Next step</b> to continue the mechanism from this product.';
       nextStepBtn.style.display = '';
     }
@@ -2086,8 +2086,8 @@ checkBtn.addEventListener('click', ()=>{
     stepSolved = false;
     nextStepBtn.style.display = 'none';
     productHint.textContent = 'this is what your arrows give';
-    fbTitle.textContent = 'That\u2019s not the expected step.';
-    fbBody.innerHTML = 'Check your mechanism again. Remember that arrows must start from a pair of electrons (a lone pair, bond or delocalised ring) and end at an atom or bond that can accept them. Electrons tend to move from nucelophiles to electrophiles, and negative charges tend to end on electronegative atoms.';
+    fbTitle.textContent = "That's not the expected step.";
+    fbBody.innerHTML = 'Check your mechanism again. Remember that arrows must start from a pair of electrons (a lone pair, bond or delocalised ring) and end at an atom or bond that can accept them. Electrons tend to move from nucleophiles to electrophiles, and negative charges tend to end on electronegative atoms.';
   }
 });
 

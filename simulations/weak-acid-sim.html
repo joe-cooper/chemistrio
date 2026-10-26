@@ -91,15 +91,6 @@
     </div>
   </div>
 
-  <details class="note">
-    <summary>Model notes &amp; assumptions</summary>
-    <p><b>The approximation.</b> The usual A-level shortcut for a weak acid HA assumes that (i) the only source of H⁺ is the acid's own dissociation, so [H⁺] = [A⁻], and (ii) so little of the acid dissociates that its concentration is barely changed, so [HA] ≈ [HA]₀. Substituting both into K<sub>a</sub> = [H⁺][A⁻]/[HA] gives K<sub>a</sub> ≈ [H⁺]²/[HA]₀, so [H⁺] = √(K<sub>a</sub>[HA]₀) and pH = ½(pK<sub>a</sub> − log[HA]₀).</p>
-    <p><b>The exact model.</b> No such assumptions are made. A single charge-balance equation, [H⁺] − [OH⁻] − [HA]₀·K<sub>a</sub>/(K<sub>a</sub>+[H⁺]) = 0, is solved numerically for pH at every concentration shown. This uses the real mass balance [HA]+[A⁻] = [HA]₀ (so [HA] is allowed to drop below [HA]₀ as dissociation proceeds) and includes water's own autoionisation ([H⁺] − [OH⁻] rather than just [H⁺]), so it stays correct even when the acid is extremely weak or extremely dilute and water's own contribution to [H⁺] is no longer negligible.</p>
-    <p><b>Where the approximation breaks down.</b> Two things push the two curves apart: a large K<sub>a</sub> relative to [HA]₀ (so a large fraction of the acid actually dissociates, breaking [HA]≈[HA]₀), and very low [HA]₀ (so [H⁺] from the acid becomes comparable to the ~10⁻⁷ mol dm⁻³ that water itself supplies, breaking [H⁺]=[A⁻]). The traditional rule of thumb is that the approximation is reasonable once [HA]₀/K<sub>a</sub> ≳ 400 (dissociation below about 5%), and the "% dissociated" readout and badge in the solution panel track this directly. Try dragging [HA]₀ down at a fixed pKa and watch the two curves diverge as this ratio falls, or push pKa low (a strong-ish weak acid) and watch the same divergence appear at higher concentrations.</p>
-    <p><b>Constants used (25 °C).</b> K<sub>w</sub> = 1.0×10⁻¹⁴. Preset K<sub>a</sub> values: methanoic acid 1.78×10⁻⁴ (pK<sub>a</sub> 3.75), ethanoic acid 1.74×10⁻⁵ (pK<sub>a</sub> 4.76), benzoic acid 6.28×10⁻⁵ (pK<sub>a</sub> 4.20), HCN 6.2×10⁻¹⁰ (pK<sub>a</sub> 9.21), phenol 1.0×10⁻¹⁰ (pK<sub>a</sub> 10.0).</p>
-    <p><b>Simplifications.</b> Activity coefficients are ignored (concentrations stand in for activities); temperature fixed at 25 °C; only monoprotic weak acids are modelled.</p>
-  </details>
-
 </div>
 
 <script>

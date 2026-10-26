@@ -82,3 +82,13 @@ Initially the pH falls only slightly, because the added H⁺ converts ethanoate 
 The more concentrated buffer. Both have the same pH because Henderson–Hasselbalch depends only on the ratio [CH₃COO⁻]/[CH₃COOH], which is the same in both. The more concentrated buffer, though, contains ten times as many moles of ethanoate ion in the same volume, so it takes ten times as much added acid before that reserve is used up and the pH begins to change sharply.
 
 </details>
+
+## Model notes and assumptions
+
+**Method.** As in the titration simulation, one charge-balance equation is solved for pH at every volume added, so the different buffer systems are not treated as separate cases. The acid form and base form of the buffer have a fixed total concentration, and adding titrant only changes how that total is split between them. Each also brings a spectator counter-ion (Na⁺ from sodium ethanoate, Cl⁻ from ammonium chloride) that takes no part in the equilibrium. Solving [H⁺] − [OH⁻] + (net spectator charge) + (charge from the acid/base pair at that pH) = 0 gives the Henderson–Hasselbalch result in the buffering region. The same equation also gives the sharp change once one side's reserve is used up, without any special treatment.
+
+**Why the water and same-pH curves often overlap.** For most systems the two unbuffered curves join within a small fraction of a cm³ either side of zero and stay together for the rest of the graph. They are drawn with different dash patterns so that both stay visible where they coincide. The starting [H⁺] or [OH⁻] of a dilute unbuffered solution is tiny compared with any titrant concentration used in a burette, so after even a small addition both solutions are controlled by the titrant, whatever pH they started at. Only the buffer has a reserve of weak acid and base to react with the titrant. The difference shows most clearly in the stats panel at a small volume added.
+
+**Constants (25 °C).** K<sub>w</sub> = 1.0×10⁻¹⁴; ethanoic acid K<sub>a</sub> = 1.74×10⁻⁵ (pK<sub>a</sub> = 4.76); ammonium ion K<sub>a</sub> = 5.56×10⁻¹⁰ (pK<sub>a</sub> = 9.25, from ammonia's K<sub>b</sub> = 1.8×10⁻⁵); dihydrogenphosphate K<sub>a2</sub> = 6.2×10⁻⁸ (pK<sub>a</sub> = 7.21).
+
+**Simplifications.** Activity coefficients are ignored, so concentrations stand in for activities, and the temperature is fixed at 25 °C. The Henderson–Hasselbalch pH is shown next to the exact model pH. The two agree closely except at very low concentrations or extreme ratios, where Henderson–Hasselbalch's assumption that [HA] ≈ C<sub>acid</sub> and [A⁻] ≈ C<sub>base</sub> starts to fail, because the shift caused by the acid's own dissociation and by water's ionisation is no longer small.

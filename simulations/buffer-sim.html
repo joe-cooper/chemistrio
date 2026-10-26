@@ -160,17 +160,6 @@
     </div>
   </div>
 
-  <details class="note">
-    <summary>Model notes &amp; assumptions</summary>
-    <p><b>Method.</b> As with the titration simulation, one general charge-balance equation is solved for pH at every volume added, rather than special-casing each buffer system. A buffer's acid form and conjugate base form share a fixed total concentration, so their sum never changes and adding titrant just redistributes it, while each contributes a fixed "spectator" counter-ion (Na⁺ from sodium ethanoate, Cl⁻ from ammonium chloride) that never takes part in the equilibrium. Solving H⁺ − OH⁻ + (net spectator charge) + (charge from the acid/base pair at that pH) = 0 for pH reproduces the Henderson–Hasselbalch result in the buffering region, and with no extra code it also captures what happens once the buffer's capacity runs out.</p>
-    <p><b>Reading the bidirectional axis.</b> The graph is <i>two independent hypothetical experiments</i>, both starting from the same pristine buffer and sharing one axis for comparison, rather than one continuous addition. Moving left computes what would happen if this much HCl, and only HCl, had been added; moving right computes the same for NaOH. That is why moving the slider from the HCl side to the NaOH side doesn't pass through HCl being neutralised. Each point on the curve is calculated fresh from the original buffer recipe, exactly as a normal titration curve is, just with both directions of titrant drawn on one picture instead of two separate graphs.</p>
-    <p><b>The "same starting pH" comparison.</b> This is a solution of a strong acid or strong base, with no conjugate pair at all, whose concentration is chosen so its initial pH exactly matches the buffer's. Because both start at the same pH and receive the same additions to the same volume, any difference that develops between the two curves is caused <i>only</i> by the presence of the buffering pair. It is not a side-effect of comparing two solutions that started differently, which is what makes it a fairer test than comparing against plain water alone.</p>
-    <p><b>Why the water and same-pH curves often look identical.</b> For most systems here, both unbuffered curves collapse onto almost the same line within a tiny fraction of a cm³ on either side, and stay indistinguishable for the rest of the graph. This is real behaviour, not a rendering fault, and the graph gives them different dash rhythms on purpose so both lines stay visible even where they coincide. A dilute solution's own starting [H⁺] or [OH⁻] is minuscule next to any titrant concentration worth putting in a burette, so as soon as a real amount of titrant is added, both unbuffered solutions are overwhelmingly set by the titrant rather than by whatever pH they began at. Only the buffer, which holds a reserve of reactive acid and base to consume that titrant, keeps its own identity for longer. Read the stats panel at a small volume added, rather than over the full sweep, to see the effect most clearly: that is where the contrast is largest.</p>
-    <p><b>Constants used (25 °C).</b> K<sub>w</sub> = 1.0×10⁻¹⁴; ethanoic acid K<sub>a</sub> = 1.74×10⁻⁵ (pK<sub>a</sub> = 4.76); ammonium ion K<sub>a</sub> = 5.56×10⁻¹⁰ (pK<sub>a</sub> = 9.25, from ammonia's K<sub>b</sub> = 1.8×10⁻⁵); dihydrogenphosphate K<sub>a2</sub> = 6.2×10⁻⁸ (pK<sub>a</sub> = 7.21).</p>
-    <p><b>Buffer capacity, on both sides at once.</b> The HCl side and the NaOH side each have their own, independent capacity: adding HCl depletes the base form's reserve while leaving the acid form's reserve untouched, and vice versa for NaOH, because the two sides are separate hypothetical experiments starting from the same untouched buffer. Each capacity limit reaches zero at a definite volume, and the model doesn't need to be told this. The same charge-balance solve simply stops being able to hold pH steady once that side's species is exhausted, and that half of the curve turns sharply upward or downward exactly like a titration nearing its titre.</p>
-    <p><b>Simplifications.</b> Activity coefficients are ignored, with concentrations standing in for activities; temperature is fixed at 25 °C; and Henderson–Hasselbalch is shown alongside the exact model for comparison. The two agree closely except at very low concentrations or extreme ratios, where H–H's approximation that [HA]≈C<sub>acid</sub> and [A⁻]≈C<sub>base</sub>, ignoring how much each is shifted by water's own autoionisation, starts to break down.</p>
-  </details>
-
 </div>
 
 <script>
@@ -808,21 +797,21 @@
   ChemTour.init([
     { target: null,
       title: 'Buffers resist pH change',
-      body: "This simulation adds acid or base to a buffer, and to two unbuffered comparisons, all at the same time -- so you can see exactly how much protection the buffer provides. Use Next and Back to step through the controls." },
+      body: "This simulation adds acid or base to a buffer, and to two unbuffered comparisons, all at the same time, so you can see how much protection the buffer gives. Use Next and Back to step through the controls." },
 
     { target: '#sysSelect',
       title: 'Choose a buffer system',
-      body: 'Switch between three real conjugate acid/base pairs, each with its own pKa: ethanoic acid / ethanoate, ammonia / ammonium, and a phosphate pair. The last entry, "no buffer", fills the flask with water instead -- the control experiment to compare everything else against.',
+      body: 'Switch between three conjugate acid/base pairs, each with its own pKa: ethanoic acid / ethanoate, ammonia / ammonium, and a phosphate pair. The last entry, "no buffer", fills the flask with water instead. This is the control experiment to compare everything else against.',
       before: () => { el.sysSelect.value = 'acetate'; el.sysSelect.dispatchEvent(new Event('change', { bubbles:true })); } },
 
     { target: '#caSlider',
       title: 'Set the acid:base ratio',
-      body: "These two sliders set the concentration of the acid form and the base form. Their ratio -- not the absolute concentrations -- is what fixes the buffer's starting pH, via Henderson-Hasselbalch. Here they've been set unevenly so you can see the recipe card's ratio and pH update.",
+      body: "These two sliders set the concentration of the acid form and the base form. The buffer's starting pH depends on their ratio, through Henderson–Hasselbalch, and not on the concentrations themselves. Here they've been set unevenly so you can see the recipe card's ratio and pH update.",
       before: () => { setSlider(el.caSlider, 0.05); setSlider(el.cbSlider, 0.2); } },
 
     { target: '#swapBtn',
       title: 'Swap acid and base',
-      body: "This button swaps the two concentrations in one click -- handy for exploring the other side of the buffering region without re-entering numbers.",
+      body: "This button swaps the two concentrations in one click, which is useful for exploring the other side of the buffering region without re-entering numbers.",
       before: () => { el.swapBtn.click(); } },
 
     { target: '#ctSlider',
@@ -832,7 +821,7 @@
 
     { target: '#vAddedSlider',
       title: 'Add acid or base',
-      body: "Drag left to add HCl, right to add NaOH -- or use the cm³ buttons underneath for finer steps. Each side is its own hypothetical experiment starting from the same untouched buffer.",
+      body: "Drag left to add HCl or right to add NaOH, or use the cm³ buttons underneath for finer steps. Each side is its own hypothetical experiment starting from the same untouched buffer.",
       before: () => { setSlider(el.vAddedSlider, 8); } },
 
     { target: '#runBtn',
@@ -847,16 +836,16 @@
 
     { target: '#graph',
       title: 'Reading the curve',
-      body: "The buffer's curve (solid) stays far flatter near the centre than the two unbuffered comparisons. The gold markers show where each side's buffering capacity runs out -- toggle the chips above to show or hide each curve.",
+      body: "The buffer's curve (solid) stays far flatter near the centre than the two unbuffered comparisons. The gold markers show where each side's buffering capacity runs out. Use the chips above to show or hide each curve.",
       before: () => { setRunning(false); setCurveToggles(true); } },
 
     { target: '.recipe-card',
       title: 'Mixing the buffer',
-      body: "This panel shows the Henderson-Hasselbalch estimate alongside the exact model, and how much of each side's capacity remains as titrant is added -- once a bar empties, that side offers no more protection than plain water." },
+      body: "This panel shows the Henderson–Hasselbalch estimate alongside the exact model, and how much of each side's capacity remains as titrant is added. Once a bar empties, that side gives no more protection than plain water." },
 
     { target: null,
       title: 'Now try it yourself',
-      body: "Try a different buffer system, push the ratio further from 1:1, or add enough titrant to exhaust one side's capacity on purpose -- watch how sharply the buffer's own curve turns once that happens." },
+      body: "Try a different buffer system, push the ratio further from 1:1, or add enough titrant to use up one side's capacity, and watch how sharply the buffer's curve turns when that happens." },
   ]);
 })();
 </script>

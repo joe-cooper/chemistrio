@@ -18,13 +18,13 @@ Two dashed gold lines mark the **titre** and **½ titre**. The titre is the volu
 
 ### Suitable indicator
 
-The stats panel computes, from the model, how much the pH changes over a single 0.05 cm³ drop either side of the titre, and checks whether that range covers methyl orange (pH 3.1–4.4) or phenolphthalein (pH 8.2–10.0). For strong-strong titrations both work. For a weak acid with a strong base only phenolphthalein works, since methyl orange would change colour too early, well before the titre. For a weak base with a strong acid only methyl orange works. For anything without a sharp jump, neither does, and that is a limitation of indicator titrations generally rather than an artefact of this simulation.
+The stats panel computes, from the model, how much the pH changes over a single 0.05 cm³ drop either side of the titre, and checks whether that range covers methyl orange (pH 3.1–4.4) or phenolphthalein (pH 8.2–10.0). For strong-strong titrations both work. For a weak acid with a strong base only phenolphthalein works, since methyl orange would change colour too early, well before the titre. For a weak base with a strong acid only methyl orange works. For anything without a sharp jump, neither does, and that is a limitation of indicator titrations in general.
 
 ### Suggested use
 
 1. Leave the defaults (0.100 mol dm⁻³ HCl in the flask, 0.100 mol dm⁻³ NaOH in the burette, 25.0 cm³ flask) and press Run. Watch the pH sit near 1 for most of the run, then leap past 7 in a single drop.
 2. Reset, switch the flask to ethanoic acid, and run again. Compare the shape: a flatter buffer region, a smaller jump, and an equivalence point you can read as being above 7.
-3. Use the ½ titre marker to check a Ka or Kb calculation. Read the pH there, and confirm it matches the pKa printed in the model notes.
+3. Use the ½ titre marker to check a Ka or Kb calculation. Read the pH there, and confirm it matches the pKa given in the model notes below.
 4. Try H₂SO₄ against NaOH and check the titre stat is double what the same concentration of HCl would need.
 5. Set both vessels to acids (or both to bases) and confirm the curve has no jump at all. Then use the swap button to put the same two substances the other way round and see the mirror-image curve.
 
@@ -74,3 +74,13 @@ A sharp jump comes from a neutralisation reaction consuming one reactant faster 
 
 </details>
 
+
+## Model notes and assumptions
+
+**Method.** The simulation solves one charge-balance equation for [H⁺] at every volume added, built from whichever species are present, in place of a separate formula for each type of titration. This is the systematic approach used in quantitative analytical chemistry, and it gives the textbook results for each combination without any of them being written in separately.
+
+**Titre.** The titre is the volume at which the moles of H⁺ equivalents equal the moles of OH⁻ equivalents, counting 2 per mole for H₂SO₄ and 1 for everything else. With two acids or two bases there is no neutralisation, and this "titre" only marks where equal numbers of equivalents have been mixed.
+
+**Constants (25 °C).** K<sub>w</sub> = 1.0×10⁻¹⁴; ethanoic acid K<sub>a</sub> = 1.74×10⁻⁵ (pK<sub>a</sub> = 4.76); ammonia K<sub>b</sub> = 1.8×10⁻⁵ (pK<sub>a</sub> of NH₄⁺ = 9.25). Sulfuric acid's first proton is treated as fully dissociated. Its second, HSO₄⁻ ⇌ H⁺ + SO₄²⁻, is treated as a weak equilibrium with K<sub>a2</sub> = 1.2×10⁻², which is why concentrated H₂SO₄ shows a little buffering near pH 2.
+
+**Simplifications.** Activity coefficients are ignored, which is reasonable at the dilutions used in school titrations, and the temperature is fixed at 25 °C. The "jump per drop" reading always uses a 0.05 cm³ drop.

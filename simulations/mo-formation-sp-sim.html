@@ -144,18 +144,6 @@
   }
   .legend .dot{ display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; }
 
-  .notes{
-    margin-top: 16px;
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px 16px;
-    font-size: 12px;
-    color: var(--text-dim);
-    line-height: 1.55;
-  }
-  .notes b{ color: var(--text); }
-  .notes summary{ cursor:pointer; color: var(--text); font-weight:600; font-size:12.5px; }
 </style>
 </head>
 <body>
@@ -245,45 +233,6 @@
     <div class="panel-title">Overlap integral vs separation <span class="tag">∫ψ_Aψ_B dτ, scaled to the max over all four types</span></div>
     <canvas id="canvas-curve" height="300"></canvas>
   </div>
-</div>
-
-<div class="notes">
-  <details>
-    <summary>Model notes &amp; assumptions</summary>
-    <p style="margin-top:8px;">
-      <b>What changed from the 1s-1s version.</b> The 1s-1s simulation models H₂/He₂-type species exactly (for the one-electron two-centre problem, via closed-form Coulomb/exchange/overlap integrals), including nuclear repulsion, to predict real equilibrium bond lengths and well depths. That approach is specific to two 1s orbitals and doesn't generalise cleanly to p orbitals. This version drops nuclear repulsion and quantitative bond energetics entirely and instead focuses purely on <b>orbital shape, phase and overlap symmetry</b>: how s and p orbitals combine, and why σ and π overlap differ.
-    </p>
-    <p>
-      <b>Orbital shapes.</b> Both "s" and "p" here are simplified Slater-type functions sharing the <i>same</i> exponential decay e<sup>−Zr</sup>, with the p orbital carrying an extra directional factor (x for the axis-aligned lobe, y for the perpendicular one). Real 2p orbitals decay more slowly than 1s, having a different principal quantum number, which this model ignores on purpose. Using a matched decay rate keeps s and p clouds comparably sized, so the overlap comparison is about symmetry rather than incidental differences in size.
-    </p>
-    <p>
-      <b>Why carbon, and why fixed.</b> The orbital exponent ζ used throughout is fixed at 1.625, derived from Slater's rules for one of carbon's own 2s/2p electrons. Slater's rules give an <i>effective nuclear charge</i> Z<sub>eff</sub> = 6 − [3×0.35 for the other three 2s/2p electrons + 2×0.85 for the two 1s electrons] = 6 − 2.75 = 3.25, and the exponent that belongs in e<sup>−ζr</sup> is ζ = Z<sub>eff</sub>/n, with n = 2 for the valence shell, giving ζ = 3.25/2 = 1.625. (An earlier version of this simulation used Z<sub>eff</sub> = 3.25 directly as the decay constant, which is the wrong quantity: it made the orbitals decay about twice as fast as they should, too contracted to overlap meaningfully at any real bond length.) This is no longer a user-adjustable "orbital size" toggle. The simulation is implicitly about carbon's own orbitals throughout, since that is the relevant case for C–C, C=C and C≡C bonding. The "C–C bond length" preset (1.54 Å) is the accepted single-bond length in ethane or diamond.
-    </p>
-    <p>
-      <b>The bonding sign convention for p<sub>σ</sub>.</b> For the p orbital aligned along the bond axis, the lobe facing the other atom is defined as positive on both nuclei. This is a standard convention, and the labels "bonding" and "antibonding" are meaningless without first fixing it. For the perpendicular (π-type) p orbital, no such flip is needed or applied: both atoms use the same lab-frame orientation, which is what makes the in-phase combination constructive above and below the axis.
-    </p>
-    <p>
-      <b>The overlap integral shown is scaled to the largest of all four types.</b> The underlying quantity is ∫ψ_Aψ_B dτ for the actual, un-normalised basis functions used above (e<sup>−ζr</sup> for s, ±(x−n<sub>x</sub>)e<sup>−ζr</sup> or y·e<sup>−ζr</sup> for p), and it is <i>not</i> divided by each orbital's own normalisation constant. That is a different quantity, used only internally for the MO diagram, as described below. Instead, every mode's value is divided by the single largest |∫ψ_Aψ_B dτ| found across <i>all four</i> overlap types over the whole separation range. Dividing by one shared constant, rather than each mode's own maximum, keeps their real relative sizes intact: s–s overlap really is larger than p–p overlap at comparable separations, and this is the one presentation that still shows that, while keeping the numbers in a readable range rather than raw values as small as 10⁻⁴. It is also why the curve panel can show all four types on one shared axis. The underlying integrals are computed by direct numerical quadrature, exploiting cylindrical symmetry about the bond axis to reduce the 3-D integral to two dimensions. They are checked against the exact closed-form Mulliken 1s-1s formula used in the s/p-overlap simulation, and agree to within ~10⁻⁴ across the full separation range.
-    </p>
-    <p>
-      <b>s–p and p–p σ overlap are not monotonic.</b> Unlike s–s overlap, which is maximal at R=0 and decays smoothly, s–p overlap is exactly <i>zero</i> at R=0, since an s and a p orbital centred on the same point are orthogonal by symmetry. It rises to a maximum at an intermediate separation, then decays. Head-on p–p (σ) overlap is stranger still: at very short range it is <i>negative</i> under the sign convention above, crosses zero, rises to a positive maximum at a more typical bonding-range separation, then decays. This is real two-centre overlap behaviour, matching tabulated Slater-orbital integrals in the quantum chemistry literature rather than being a rendering artefact, and it means the naive rule of thumb that the in-phase combination is always lower in energy can invert at very short range. Side-on p–p (π) overlap, by contrast, starts near its maximum at R=0 and decays smoothly throughout, with no sign change.
-    </p>
-    <p>
-      <b>MO energy diagram: the correct secular-equation form, on a schematic energy scale.</b> With nuclear repulsion removed there is no equilibrium bond length to predict, so the atomic-orbital on-site energies (α) and resonance integral (β) are schematic: α=0 for both sides in the three same-kind modes, a common reference, with the next note explaining why s + p differs, and β=−S(R) throughout, the same Wolfsberg–Helmholz-style proportionality to overlap used elsewhere. The two levels are <i>not</i> simply α∓β, though. Solving the proper 2×2 secular determinant for two non-orthogonal basis orbitals (|α<sub>L</sub>−E, β−ES; β−ES, α<sub>R</sub>−E| = 0) gives, in the degenerate case α<sub>L</sub>=α<sub>R</sub>=α, E<sub>bond</sub> = (α+β)/(1+S) and E<sub>anti</sub> = (α−β)/(1−S), which here means E<sub>bond</sub> = −S/(1+S) and E<sub>anti</sub> = S/(1−S). That is exactly the same functional form already used for the exactly-solvable case in the 1s-1s simulation's own level formulas.
-    </p>
-    <p>
-      The 1±S denominators are what produce a well-known asymmetry: the antibonding level always rises <i>more</i> than the bonding level falls, for the same |S|, and can diverge steeply at very close separation. The y-axis is symmetric about zero, the average of the two atomic-orbital references, with its half-range capped at the 90th percentile of |level| sampled across the whole separation range, per overlap type, rather than stretched to the true worst case. Otherwise the split at realistic separations, like the C–C bond length, would be squeezed down to a barely-visible sliver just to make room for an extreme close-approach spike nobody is looking at. Keeping the axis symmetric, rather than independently fitting the top and bottom, is what keeps zero pinned dead centre, so the bonding and antibonding deviations read on one consistent visual scale instead of the axis re-centring itself between modes. When a level does run past that cap, it is shown with a ▲/▼ off-scale marker rather than clipped away silently.
-    </p>
-    <p>
-      S(R) itself is each mode's <i>own</i> normalised overlap integral, bounded to roughly ±1, and not the max-of-all-four-scaled quantity shown in the readout and curve panel above. Normalising each mode to itself is what keeps this diagram meaningful whichever mode is selected. The proportionality constant behind β is still not calibrated to any real system. When S(R) itself goes negative, as in the p–p σ case above, the diagram shows the "bonding" level sitting <i>above</i> the "antibonding" level. That follows directly from the sign flip described above.
-    </p>
-    <p>
-      <b>The s + p mode gives its two atomic orbitals different on-site energies.</b> Every other mode here pairs same-kind orbitals, s with s or p with p at the same n, so a single shared α was always defensible. But s + p really shouldn't have α<sub>s</sub> = α<sub>p</sub>: same-shell s/p degeneracy is a hydrogenic artefact, and screening splits them apart in any real multi-electron atom. Tabulated valence orbital energies for carbon, such as extended-Hückel parameters, put 2s around −19 to −21 eV and 2p around −10 to −11 eV, roughly a 9–10 eV gap, with 2p <i>above</i> 2s. Because this diagram's α/β have no real energy units to begin with (α=0, β=−S throughout, calibrated to nothing), that eV figure can't be dropped in directly. Instead the s + p mode uses a fixed schematic gap (α<sub>s</sub>=−0.4, α<sub>p</sub>=+0.4 in the same schematic units as β), chosen to be a few times the bonding/antibonding splitting that overlap alone produces at the C–C bond length preset. That mirrors the real ratio, where the intrinsic 2s–2p gap is several times larger than a typical bonding-driven splitting and can't be closed by overlap alone. With non-degenerate α, the two MO levels are no longer the closed-form E=(α±β)/(1∓S); they come from solving the full 2×2 secular determinant |α<sub>s</sub>−E, β−ES; β−ES, α<sub>p</sub>−E| = 0 as a quadratic in E, which is still exactly equivalent to the closed form for the other three, degenerate-α modes. One visible consequence is that the bonding MO drops <i>below</i> the s level and the antibonding MO rises <i>above</i> the p level, which is standard two-level mixing behaviour. The orbital-shape panels above still draw the equal-weight ψ = s<sub>A</sub> ± p<sub>B</sub> combinations regardless, exactly as they did before this change; only the energy-level diagram's placement of the two atomic-orbital reference lines and the two MO levels changed.
-    </p>
-    <p>
-      <b>What this model doesn't attempt.</b> No electron filling, bond order, or stable-species prediction is shown here; that machinery, tied to real electron counts and nuclear repulsion, lives in the 1s-1s simulation. There is also no attempt at s–p mixing between different atoms' orbitals of different symmetry-adapted combinations, as happens in real N₂/O₂-type MO diagrams. Each mode here is a single, isolated pair of atomic orbitals.
-    </p>
-  </details>
 </div>
 </div>
 
