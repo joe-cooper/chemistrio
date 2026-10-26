@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Madelung Constant in 1D, 2D and 3D</title>
+<link rel="canonical" href="https://chemistr.io/sims/madelung-sim/">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<link rel="stylesheet" href="../assets/css/theme.css">
+<link rel="stylesheet" href="../assets/css/sim.css">
+<script src="../assets/js/theme.js"></script>
+<style>
+  /* Ion colours match the NaCl lattice in the giant-structures
+     simulation, so a student moving between the two sees the same
+     sodium and chloride throughout. */
+  :root{
+    --pos:#c98cff; --neg:#5ed17a;
+    --ion-edge:rgba(0,0,0,.40);
+    --faint:rgba(139,150,165,.30);
+  }
+  :root[data-theme="light"]{
+    --pos:#8a4fd6; --neg:#2e9e4f;
+    --ion-edge:rgba(0,0,0,.22);
+    --faint:rgba(95,107,122,.32);
+  }
+
+  .tagline{max-width:430px;}
+
+  .stage{display:grid;grid-template-columns:minmax(238px,282px) 1fr;gap:14px;margin-bottom:14px;align-items:start;}
+  @media(max-width:900px){.stage{grid-template-columns:1fr;}}
+
+  #scene{cursor:grab;}
+  #scene.grabbing{cursor:grabbing;}
+  .view-card .card-label .right{font-family:var(--mono);font-size:10.5px;letter-spacing:0;}
+
+  .legend{display:flex;gap:6px 16px;margin-top:10px;font-size:12px;color:var(--muted);flex-wrap:wrap;}
+  .ldot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:-1px;border:1px solid var(--ion-edge);}
+  .ldot.ring{background:transparent;border:2px solid var(--gold);}
+  .ldot.half{background:linear-gradient(to right,var(--pos) 50%,transparent 50%);}
+
+  /* term-by-term table */
+  .tbl-head,.tbl-row{display:grid;grid-template-columns:.95fr .8fr 1.05fr 1fr;gap:4px;}
+  .tbl-head{
+    font-family:var(--font);font-weight:600;font-size:9.5px;letter-spacing:.02em;color:var(--muted-dim);
+    padding-bottom:6px;border-bottom:1px solid var(--border);
+  }
+  .tbl-body{max-height:218px;overflow-y:auto;scrollbar-width:thin;position:relative;}
+  .tbl-row{
+    font-family:var(--mono);font-size:11.5px;color:var(--muted);
+    padding:4px 0;border-bottom:1px solid var(--border-soft);cursor:pointer;
+  }
+  .tbl-row:last-child{border-bottom:none;}
+  .tbl-row:hover{color:var(--text);}
+  .tbl-row.cur{color:var(--gold);}
+  .tbl-row.cur .neg,.tbl-row.cur .pos{color:var(--gold);}
+  .tbl-head span:not(:first-child),.tbl-row span:not(:first-child){text-align:right;}
+  .tbl-row .neg{color:#e0625a;}
+  .tbl-row .pos{color:#5ab478;}
+  .tbl-empty{font-size:12px;color:var(--muted-dim);padding:8px 0;}
+
+  .recipe-card .row .k{line-height:1.3;}
+  .recipe-card .row .v small{font-family:var(--font);font-size:10.5px;color:var(--muted-dim);}
+
+  .stats{grid-template-columns:repeat(4,1fr);}
+  .stat .v{font-size:14.5px;line-height:1.2;}
+  @media(max-width:620px){.stats{grid-template-columns:repeat(2,1fr);}}
+
+  .headline{min-height:44px;}
+  .caveat{min-height:34px;margin-bottom:14px;}
+
+  .dim-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .dim-row .chip-toggle{font-size:10.5px;padding:6px 12px;}
+  .select-block{min-width:238px;}
+  .kbd-hint{font-size:11.5px;color:var(--muted-dim);margin-top:2px;flex-basis:100%;}
+
+  .note li{font-size:12.5px;line-height:1.6;color:var(--muted);margin:5px 0;}
+  .note ul{margin:8px 0 0;padding-left:20px;}
+  .note b{color:var(--text);font-weight:500;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header></header>
+
+  <div class="stage">
+    <div class="left-col">
+      <div class="card recipe-card">
+        <div class="card-label"><span>Where the sum stands</span></div>
+        <div class="row"><span class="k">Lattice</span><span class="v" id="rLat">—</span></div>
+        <div class="row"><span class="k">Summed over</span><span class="v" id="rRegion">—</span></div>
+        <div class="row"><span class="k">Ions in the region</span><span class="v" id="rIons">—</span></div>
+        <div class="row"><span class="k">Net charge in the region</span><span class="v" id="rQ">—</span></div>
+        <div class="row"><span class="k">Term just added</span><span class="v" id="rTerm">—</span></div>
+        <div class="row"><span class="k">Running total, <i>A</i></span><span class="v accent" id="rSum">—</span></div>
+        <div class="row"><span class="k">Coulomb energy at r₀ = 282 pm</span><span class="v" id="rE">—</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-label"><span>Term by term</span><span class="right" id="tblNote">—</span></div>
+        <div class="tbl-head"><span>Out to</span><span>Ions</span><span>Term</span><span>Total</span></div>
+        <div class="tbl-body" id="tbl"></div>
+      </div>
+    </div>
+
+    <div class="card view-card">
+      <div class="card-label"><span id="viewLabel">—</span><span class="right" id="hoverInfo"></span></div>
+      <canvas id="scene" aria-label="An alternating lattice of positive and negative ions, with the region currently included in the Madelung sum outlined"></canvas>
+      <div class="legend">
+        <span><span class="ldot" style="background:var(--pos)"></span>Positive ion</span>
+        <span><span class="ldot" style="background:var(--neg)"></span>Negative ion</span>
+        <span><span class="ldot ring"></span>Added at this step</span>
+        <span id="legHalf" hidden><span class="ldot half"></span>Charge split with the next block</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card readout" style="margin-bottom:14px;">
+    <div class="card-label">
+      <span>Partial sum after each step</span>
+      <span class="right" id="convLabel"></span>
+    </div>
+    <div class="graph-wrap"><canvas id="graph" aria-label="The running partial sum of the Madelung series plotted against step number, with the exact limit marked"></canvas></div>
+    <div class="stats">
+      <div class="stat accent"><span class="k">A so far</span><span class="v" id="sSum">—</span></div>
+      <div class="stat"><span class="k">Exact limit</span><span class="v" id="sExact">—</span></div>
+      <div class="stat"><span class="k">Error</span><span class="v" id="sErr">—</span></div>
+      <div class="stat"><span class="k">Ions in region</span><span class="v" id="sIons">—</span></div>
+    </div>
+  </div>
+
+  <div class="headline" id="headline"></div>
+  <div class="caveat" id="caveat"></div>
+
+  <div class="controls">
+    <div class="ctl-row">
+      <div class="select-block">
+        <span class="ctl-label">Lattice</span>
+        <div class="dim-row">
+          <button type="button" class="chip-toggle" data-dim="1">1D chain</button>
+          <button type="button" class="chip-toggle" data-dim="2">2D square</button>
+          <button type="button" class="chip-toggle active" data-dim="3">3D simple cubic</button>
+        </div>
+      </div>
+      <div class="select-block">
+        <span class="ctl-label">Order of summation</span>
+        <select id="methodSelect"></select>
+      </div>
+    </div>
+
+    <div class="ctl-row">
+      <div class="slider-row">
+        <div class="slider-head"><span class="ctl-label">Step</span><span class="val" id="stepVal">—</span></div>
+        <input type="range" id="stepSlider" min="0" max="10" step="1" value="0">
+      </div>
+      <div class="step-buttons">
+        <button class="btn btn-ghost btn-step" id="backBtn">&minus; Step in</button>
+        <button class="btn btn-ghost btn-step" id="fwdBtn">Step out +</button>
+      </div>
+      <div class="dim-row">
+        <button type="button" class="chip-toggle active" id="beyondToggle">Lattice beyond the region</button>
+        <button type="button" class="chip-toggle" id="spinToggle">Spin</button>
+      </div>
+      <div class="ctl-run">
+        <button class="btn btn-run" id="playBtn">Build up</button>
+        <button class="btn btn-ghost" id="resetBtn">Reset</button>
+      </div>
+      <div class="kbd-hint" id="hint"></div>
+    </div>
+  </div>
+
+  <details class="note">
+    <summary>Model notes &amp; assumptions</summary>
+    <p><b>What is being summed.</b> Every ion sits on a point of a simple cubic lattice, and neighbouring sites carry opposite charges. Taking one ion as the centre, a site a distance <i>d</i> away contributes &minus;<i>z</i>²<i>e</i>²/(4&pi;&epsilon;₀<i>d</i>) if its charge is opposite and +<i>z</i>²<i>e</i>²/(4&pi;&epsilon;₀<i>d</i>) if it is the same. Factoring out the nearest-neighbour distance <i>r</i>₀ leaves a pure number, the Madelung constant: <i>A</i> = &Sigma;&prime; (&minus;1)<sup>n<sub>x</sub>+n<sub>y</sub>+n<sub>z</sub>+1</sup>/&radic;(n<sub>x</sub>²+n<sub>y</sub>²+n<sub>z</sub>²), the prime meaning the central site itself is left out. The lattice energy then follows as <i>E</i> = &minus;<i>A</i>·<i>N</i><sub>A</sub><i>z</i>²<i>e</i>²/(4&pi;&epsilon;₀<i>r</i>₀).</p>
+    <p><b>Exact values.</b> 1D gives 2 ln 2 = 1.386294, which is the alternating harmonic series 2(1 &minus; ½ + ⅓ &minus; ¼ + …). The 2D square lattice gives 1.615543 and the 3D simple cubic (rock-salt) lattice 1.747564. The last two have no closed form in elementary functions; the figures quoted here were checked against an Evjen sum taken to <i>L</i> = 400 and <i>L</i> = 60 respectively, and agree with the standard literature values to every digit shown.</p>
+    <p><b>Why the order of summation matters.</b> A shell of radius <i>d</i> holds a number of ions growing as <i>d</i>² in 3D, while each contributes only 1/<i>d</i>. The individual shell totals therefore <i>grow</i> without limit, and the series converges only through cancellation between positive and negative terms. A series like that is conditionally convergent: rearranging it changes the answer, so "the sum" is not defined until the order is fixed. The three orders offered here make that concrete.</p>
+    <ul>
+      <li><b>Expanding sphere.</b> The obvious chemist's choice — nearest neighbours first, then next-nearest, and so on. A sphere cut through an alternating lattice carries a large and erratic surface charge — in 3D the enclosed charge runs &minus;5, +7, &minus;1, +5, &minus;19, +5, +17, &minus;13 … as each successive shell is taken in — and over the 42 shells available here the partial sums range from &minus;8.9 to +10.7 without ever settling. This order is useless for computation, which is worth seeing once.</li>
+      <li><b>Expanding cube, whole ions.</b> A cube of 2<i>L</i>+1 ions on a side has an odd number of sites and so always carries exactly one surplus ion's worth of charge, whose sign flips with every step. The partial sums therefore straddle the limit, overshooting and undershooting alternately while the gap narrows. In 2D the surplus is +1 at every step rather than alternating, so the sum creeps up from below instead.</li>
+      <li><b>Neutral cube (Evjen's method).</b> The cube is drawn so its faces pass through the centres of the outermost ions, splitting each one's charge with the neighbouring block: an ion on a face counts ½, on an edge ¼, at a corner ⅛. The region is then a cube of side 2<i>L</i>·<i>r</i>₀ containing exactly (2<i>L</i>)³ ions, half positive and half negative, with no net charge at all. In 3D this reaches 1.7476 by the second step and four correct decimal places by the fourth.</li>
+    </ul>
+    <p><b>The energy readout.</b> This is the Coulomb term alone, &minus;<i>A</i>·<i>N</i><sub>A</sub><i>e</i>²/(4&pi;&epsilon;₀<i>r</i>₀), evaluated at NaCl's nearest-neighbour distance of 282 pm with singly charged ions, using the running value of <i>A</i>. At the 3D limit it gives &minus;861 kJ mol⁻¹. The experimental lattice energy of NaCl is about &minus;787 kJ mol⁻¹: the Coulomb attraction is opposed by short-range repulsion between the filled electron shells, which the Born–Landé expression accounts for with a factor (1 &minus; 1/<i>n</i>). The same number is shown for the 1D and 2D lattices, where it answers a hypothetical question — what one ion's Coulomb energy would be at that same spacing if the lattice ran in only one or two directions.</p>
+    <p><b>Simplifications.</b> Point charges throughout: no polarisation, no short-range repulsion, no zero-point or thermal contributions, and no distinction between the sizes of the two ions, which is why the drawn ions are equal in size. The 3D lattice is capped at <i>L</i> = 7 (3,375 ions) and the sphere at <i>d</i> = 7<i>r</i>₀ so the view stays responsive; the convergence behaviour is already unambiguous well before those limits.</p>
+  </details>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- exact limits ----------
+  // 1D is the alternating harmonic series. The 2D and 3D figures were
+  // checked against Evjen sums at L = 400 and L = 60.
+  const EXACT = { 1: 2*Math.LN2, 2: 1.6155426267, 3: 1.7475645946 };
+  const NN    = { 1: 2, 2: 4, 3: 6 };
+  const LAT_NAME = { 1:'Alternating chain', 2:'Alternating square', 3:'Simple cubic (rock salt)' };
+
+  // How far each sum is allowed to run. The cube limits are set by how
+  // many ions can be drawn without the view becoming sluggish; the
+  // sphere limits by how many distinct shells make a usable slider.
+  const CUBE_LIM = { 1: 30, 2: 16, 3: 7 };
+  const SPH_LIM  = { 1: 30, 2: 12, 3: 7 };
+
+  const METHODS = [
+    { key:'sphere', label:'Expanding sphere, whole ions' },
+    { key:'cube',   label:'Expanding cube, whole ions' },
+    { key:'evjen',  label:'Neutral cube, split charges (Evjen)' }
+  ];
+
+  // Coulomb energy per mole for A = 1, at NaCl's nearest-neighbour
+  // distance, with singly charged ions.
+  const NA = 6.02214076e23, ECHG = 1.602176634e-19, EPS0 = 8.8541878128e-12;
+  const R0_PM = 282;
+  const E_UNIT = NA*ECHG*ECHG/(4*Math.PI*EPS0*R0_PM*1e-12)/1000;   // kJ mol^-1
+
+  const FRAC = { 0.5:'½', 0.25:'¼', 0.125:'⅛' };
+
+  // ---------- elements ----------
+  const el = {
+    scene: document.getElementById('scene'),
+    graph: document.getElementById('graph'),
+    methodSelect: document.getElementById('methodSelect'),
+    stepSlider: document.getElementById('stepSlider'),
+    stepVal: document.getElementById('stepVal'),
+    backBtn: document.getElementById('backBtn'),
+    fwdBtn: document.getElementById('fwdBtn'),
+    playBtn: document.getElementById('playBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    beyondToggle: document.getElementById('beyondToggle'),
+    spinToggle: document.getElementById('spinToggle'),
+    viewLabel: document.getElementById('viewLabel'),
+    convLabel: document.getElementById('convLabel'),
+    hoverInfo: document.getElementById('hoverInfo'),
+    legHalf: document.getElementById('legHalf'),
+    tbl: document.getElementById('tbl'),
+    tblNote: document.getElementById('tblNote'),
+    headline: document.getElementById('headline'),
+    caveat: document.getElementById('caveat'),
+    rLat: document.getElementById('rLat'), rRegion: document.getElementById('rRegion'),
+    rIons: document.getElementById('rIons'), rQ: document.getElementById('rQ'),
+    rTerm: document.getElementById('rTerm'), rSum: document.getElementById('rSum'),
+    rE: document.getElementById('rE'),
+    hint: document.getElementById('hint'),
+    sSum: document.getElementById('sSum'), sExact: document.getElementById('sExact'),
+    sErr: document.getElementById('sErr'), sIons: document.getElementById('sIons')
+  };
+  const ctx = el.scene.getContext('2d');
+  const gtx = el.graph.getContext('2d');
+
+  // Re-read on resize rather than caching once: the site viewer raises
+  // the effective ratio while a simulation is zoomed full screen, then
+  // fires a resize (see setSimPixelRatio() in app.js).
+  let dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  window.addEventListener('resize', () => {
+    dpr = Math.min(window.devicePixelRatio || 1, window.__simDprCap || 2);
+  });
+
+  const clamp = (v,a,b) => v<a?a:(v>b?b:v);
+
+  // ---------- theme-aware colour cache ----------
+  let COL = {};
+  function readColours(){
+    const cs = getComputedStyle(document.documentElement);
+    const g = n => cs.getPropertyValue(n).trim();
+    COL = {
+      pos:g('--pos')||'#c98cff', neg:g('--neg')||'#5ed17a',
+      edge:g('--ion-edge')||'rgba(0,0,0,.4)', faint:g('--faint')||'#7a8694',
+      gold:g('--gold')||'#e0a68a', goldDim:g('--gold-dim')||'#b3826c',
+      text:g('--text')||'#e6ebf2', muted:g('--muted')||'#8b96a5',
+      mutedDim:g('--muted-dim')||'#5f6b7a', border:g('--border')||'#2a3441',
+      borderSoft:g('--border-soft')||'#212a35', raised:g('--raised')||'#1c2430',
+      accent:g('--accent')||'#d9735f'
+    };
+    COL.bgRGB = hexToRgb(COL.raised);
+    buildFadeRamps();
+    requestRender();
+  }
+  function hexToRgb(h){
+    h = (h||'').replace('#','');
+    if(h.length===3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    const n = parseInt(h,16);
+    return isFinite(n) ? [(n>>16)&255,(n>>8)&255,n&255] : [28,36,48];
+  }
+  // Fade a colour towards the canvas background, for depth cueing. The
+  // depth is quantised into FADE_N steps and the strings cached: building
+  // one rgb() string per ion per frame is otherwise the single biggest
+  // cost in a full 3D view of several thousand ions.
+  const FADE_N = 24;
+  let FADED = {};
+  function buildFadeRamps(){
+    FADED = {};
+    for(const key of ['pos','neg']){
+      const c = hexToRgb(COL[key]), b = COL.bgRGB, ramp = [];
+      for(let k=0;k<=FADE_N;k++){
+        const f = k/FADE_N;
+        ramp.push('rgb('+c.map((q,i)=>Math.round(q+(b[i]-q)*f)).join(',')+')');
+      }
+      FADED[key] = ramp;
+    }
+  }
+  const fadeIdx = t => Math.round(clamp(t,0,1)*FADE_N);
+  // Used only on the gradient path, which is limited to small ion counts.
+  function fade(hex, t){
+    const c = hexToRgb(hex), b = COL.bgRGB, f = clamp(t,0,1);
+    return 'rgb('+c.map((q,i)=>Math.round(q+(b[i]-q)*f)).join(',')+')';
+  }
+
+  // ---------- lattice enumeration ----------
+  // One lattice point per site, out to the step limit plus one extra
+  // layer so the view can show that the lattice carries on.
+  const latticeCache = new Map();
+  function lattice(dim, lim){
+    const key = dim+':'+lim;
+    if(latticeCache.has(key)) return latticeCache.get(key);
+    const out = [];
+    const a = lim, b = dim>=2?lim:0, c = dim>=3?lim:0;
+    for(let x=-a;x<=a;x++) for(let y=-b;y<=b;y++) for(let z=-c;z<=c;z++){
+      const d2 = x*x+y*y+z*z;
+      out.push({
+        x, y, z, d2, d: Math.sqrt(d2),
+        // Odd coordinate sum means the opposite charge to the centre,
+        // so s = +1 is an attraction and adds to A.
+        s: ((Math.abs(x)+Math.abs(y)+Math.abs(z)) % 2) ? 1 : -1,
+        m: Math.max(Math.abs(x), Math.abs(y), Math.abs(z))
+      });
+    }
+    latticeCache.set(key, out);
+    return out;
+  }
+
+  // Weight of a site under the current region, 0 if outside it.
+  // `ext` is the sphere radius for 'sphere' and the cube half-width L
+  // otherwise.
+  function weightOf(p, method, ext, dim){
+    if(p.d2 === 0) return 0;
+    if(method === 'sphere') return p.d <= ext + 1e-9 ? 1 : 0;
+    if(p.m > ext) return 0;
+    if(method === 'cube') return 1;
+    let w = 1;                                  // Evjen: split the boundary
+    if(Math.abs(p.x) === ext) w *= 0.5;
+    if(dim >= 2 && Math.abs(p.y) === ext) w *= 0.5;
+    if(dim >= 3 && Math.abs(p.z) === ext) w *= 0.5;
+    return w;
+  }
+
+  // ---------- the series ----------
+  // One entry per step: the region, what it holds, and the running sum.
+  const seriesCache = new Map();
+  function series(dim, method){
+    const key = dim+':'+method;
+    if(seriesCache.has(key)) return seriesCache.get(key);
+
+    const lim = method==='sphere' ? SPH_LIM[dim] : CUBE_LIM[dim];
+    const pts = lattice(dim, lim);
+    const exts = [];
+    if(method === 'sphere'){
+      const seen = new Set();
+      for(const p of pts) if(p.d2>0 && p.d2<=lim*lim) seen.add(p.d2);
+      for(const d2 of [...seen].sort((a,b)=>a-b)) exts.push(Math.sqrt(d2));
+    } else {
+      for(let L=1;L<=lim;L++) exts.push(L);
+    }
+
+    const steps = [];
+    let prevSum = 0, prevN = 0;
+    for(const ext of exts){
+      let sum = 0, n = 0, q = 1;                // q: central ion counted as +1
+      for(const p of pts){
+        const w = weightOf(p, method, ext, dim);
+        if(!w) continue;
+        sum += w*p.s/p.d;
+        n += w;
+        q -= w*p.s;                             // s=+1 is the opposite charge
+      }
+      steps.push({
+        ext, sum, q,
+        nIons: n + 1,                           // including the central ion
+        added: n - prevN,
+        term: sum - prevSum
+      });
+      prevSum = sum; prevN = n;
+    }
+    seriesCache.set(key, steps);
+    return steps;
+  }
+
+  // ---------- state ----------
+  let dim = 3, method = 'sphere', step = 0;
+  let showBeyond = true, spinning = false, playing = false;
+  let yaw = 0.62, pitch = 0.34;
+  let dragging = false, lastPtr = null;
+  let hoverIdx = -1, pointer = null;
+  let viewExt = 2, viewExtTarget = 2;           // eased so stepping is not jarring
+  let playAcc = 0, lastT = 0;
+  let dirty = true;
+  const requestRender = () => { dirty = true; };
+
+  const steps = () => series(dim, method);
+  const cur = () => steps()[step];
+
+  // ---------- projection ----------
+  // The eye sits at (0,0,CAM_D) looking down -z, with the picture plane
+  // at z = 0. Coordinates are divided through by the view extent first,
+  // so the camera distance — and with it the strength of the
+  // perspective — stays the same however far the sum has run.
+  const CAM_D = 4.6;
+  let W = 600, H = 420, SCALE = 100;
+  let cy = 1, sy = 0, cp = 1, sp = 0;
+  function updateCam(){
+    cy = Math.cos(yaw); sy = Math.sin(yaw);
+    cp = Math.cos(pitch); sp = Math.sin(pitch);
+  }
+
+  // Offset from the centre of the view, before SCALE is applied.
+  function unit(x, y, z){
+    if(dim < 3) return { dx: x, dy: -y, z: 0, s: 1 };
+    const x1 =  x*cy + z*sy;
+    const z1 = -x*sy + z*cy;
+    const y2 = y*cp - z1*sp;
+    const z2 = y*sp + z1*cp;
+    const s = CAM_D/(CAM_D - z2);
+    return { dx: x1*s, dy: -y2*s, z: z2, s };
+  }
+
+  function project(x, y, z){
+    const u = unit(x, y, z);
+    return { x: W/2 + u.dx*SCALE, y: H/2 + u.dy*SCALE, z: u.z, s: u.s };
+  }
+
+  // How far the block reaches from the centre, per axis, for a unit
+  // half-extent. Perspective throws the near corners well outside the
+  // block's own width, so the scale has to be fitted to the projection
+  // rather than guessed from the lattice size. The yaw is sampled across
+  // a quarter turn instead of being read from the camera, so the lattice
+  // keeps one size as it spins rather than pulsing with each corner that
+  // swings towards the viewer.
+  function fitExtent(){
+    if(dim === 1) return { x:1, y:0 };
+    if(dim === 2) return { x:1, y:1 };
+    // A ball is very nearly its own silhouette whichever way it is turned;
+    // only perspective widens it, and only slightly. Measuring it as the
+    // cube below would waste about half the canvas on empty corners.
+    if(method === 'sphere'){
+      let m = 1;
+      for(let z=0; z<0.9; z+=0.02){
+        const v = Math.sqrt(1-z*z)*CAM_D/(CAM_D-z);
+        if(v > m) m = v;
+      }
+      return { x:m, y:m };
+    }
+    let mx = 0, my = 0;
+    for(let k=0;k<=7;k++){
+      const a = (k/7)*Math.PI/2, ca = Math.cos(a), sa = Math.sin(a);
+      for(const sx of [-1,1]) for(const sy of [-1,1]) for(const sz of [-1,1]){
+        const x1 =  sx*ca + sz*sa;
+        const z1 = -sx*sa + sz*ca;
+        const y2 = sy*cp - z1*sp;
+        const z2 = sy*sp + z1*cp;
+        const sc = CAM_D/(CAM_D - z2);
+        if(Math.abs(x1*sc) > mx) mx = Math.abs(x1*sc);
+        if(Math.abs(y2*sc) > my) my = Math.abs(y2*sc);
+      }
+    }
+    return { x:mx, y:my };
+  }
+
+  // ---------- lattice view ----------
+  function sizeScene(){
+    const w = el.scene.parentElement.clientWidth;
+    const h = dim === 1 ? 190 : Math.round(clamp(w*0.74, 300, 500));
+    W = w; H = h;
+    el.scene.style.height = h+'px';
+    el.scene.width = Math.round(w*dpr);
+    el.scene.height = Math.round(h*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+
+  // Half-width of the region in lattice units. For the whole-ion cube
+  // the cut falls midway between layers; for Evjen it passes through
+  // the outermost ion centres.
+  function regionHalf(){
+    const c = cur();
+    if(method === 'sphere') return c.ext;
+    return method === 'cube' ? c.ext + 0.5 : c.ext;
+  }
+
+  // Half-extent of everything drawn, region plus the thin shell of
+  // uncounted lattice around it.
+  function outerHalf(){
+    const h = regionHalf();
+    if(!showBeyond) return h;
+    return method === 'sphere' ? h + 1.25 : cur().ext + 1;
+  }
+
+  function drawScene(){
+    ctx.clearRect(0,0,W,H);
+    updateCam();
+
+    const c = cur();
+    const oh = outerHalf();
+    const pts = lattice(dim, method==='sphere' ? Math.ceil(oh) : (showBeyond ? c.ext+1 : c.ext));
+
+    const pad = dim === 1 ? 26 : 16;
+    const f = fitExtent();
+    const availX = W/2 - pad, availY = H/2 - pad;
+    const fit = r => Math.min((availX-r)/f.x, f.y > 0 ? (availY-r)/f.y : Infinity);
+    // One pass to size the ions, a second to leave room for them at the edge.
+    SCALE = fit(0);
+    SCALE = fit(clamp(0.32*SCALE/viewExt, 1.1, 16)*1.5);
+
+    // Ion radius: a fraction of the on-screen lattice spacing, with a floor
+    // so a crowded 3D view still reads as a lattice of distinct ions.
+    const spacing = SCALE / viewExt;
+    baseR = clamp(spacing*0.32, 1.1, 16);
+    const gradients = pts.length < 420;
+
+    // Ringing every ion added at this step is helpful while that is a
+    // handful of them, but a cube's new layer is its whole visible
+    // surface, and ringing all of it just floods the picture.
+    const ringNew = (cur().added <= 120);
+
+    // Region outline, drawn behind the ions.
+    drawRegion(c);
+
+    // Build a draw list, depth sorted so near ions cover far ones.
+    const list = [];
+    for(const p of pts){
+      const w = weightOf(p, method, c.ext, dim);
+      const inside = w > 0 || p.d2 === 0;
+      // The cube methods are already bounded by the lattice limit above;
+      // a sphere needs its surrounding shell trimmed to a sphere too.
+      if(!inside && (!showBeyond || (method === 'sphere' && p.d > oh))) continue;
+      const q = project(p.x/viewExt, p.y/viewExt, p.z/viewExt);
+      if(q.x < -20 || q.x > W+20 || q.y < -20 || q.y > H+20) continue;
+      list.push({ p, w, inside, q, isNew: isNewAtThisStep(p, w) });
+    }
+    if(dim === 3) list.sort((a,b)=>a.q.z-b.q.z);
+
+    // Depth fade uses the camera-space z of the whole set, so the back
+    // of the block recedes rather than every ion looking equally near.
+    let zmin = Infinity, zmax = -Infinity;
+    for(const it of list){ if(it.q.z<zmin) zmin=it.q.z; if(it.q.z>zmax) zmax=it.q.z; }
+    const zspan = Math.max(zmax-zmin, 1e-6);
+
+    for(const it of list){
+      const p = it.p;
+      const r = baseR*it.q.s;
+      const centre = p.d2 === 0;
+      const depth = dim===3 ? 1 - (it.q.z-zmin)/zspan : 0;
+
+      if(!it.inside && !centre){
+        // Outside the region: just enough to show the lattice continues.
+        ctx.globalAlpha = 0.42;
+        ctx.fillStyle = COL.faint;
+        ctx.beginPath(); ctx.arc(it.q.x, it.q.y, Math.max(r*0.52,1), 0, 7); ctx.fill();
+        ctx.globalAlpha = 1;
+        continue;
+      }
+
+      // s = +1 is the opposite charge to the centre, and the centre is
+      // positive, so an attracting site is drawn negative.
+      const tone = (centre || p.s <= 0) ? 'pos' : 'neg';
+      const hex = COL[tone];
+      const col = FADED[tone][fadeIdx(depth*0.45)];
+
+      ctx.globalAlpha = it.w > 0 && it.w < 1 ? 0.45 + 0.4*it.w : 1;
+
+      if(gradients && r > 3){
+        const g = ctx.createRadialGradient(it.q.x-r*0.34, it.q.y-r*0.38, r*0.06, it.q.x, it.q.y, r*1.04);
+        g.addColorStop(0, hex);
+        g.addColorStop(0.55, col);
+        g.addColorStop(1, fade(hex, 0.30+depth*0.35));
+        ctx.fillStyle = g;
+      } else {
+        ctx.fillStyle = col;
+      }
+      ctx.beginPath(); ctx.arc(it.q.x, it.q.y, r, 0, 7); ctx.fill();
+
+      if(r > 2.4){
+        ctx.lineWidth = Math.min(r*0.16, 1.4);
+        ctx.strokeStyle = COL.edge;
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+
+      if(centre){
+        ctx.lineWidth = Math.max(r*0.18, 1.4);
+        ctx.strokeStyle = COL.text;
+        ctx.beginPath(); ctx.arc(it.q.x, it.q.y, r*1.32, 0, 7); ctx.stroke();
+      } else if(it.isNew && ringNew && r > 2){
+        ctx.lineWidth = Math.max(r*0.16, 1.2);
+        ctx.strokeStyle = COL.gold;
+        ctx.beginPath(); ctx.arc(it.q.x, it.q.y, r*1.30, 0, 7); ctx.stroke();
+      }
+
+      // Fraction labels for split charges, only where they will fit.
+      if(it.w>0 && it.w<1 && r>8 && list.length<220 && FRAC[it.w]){
+        ctx.fillStyle = COL.text;
+        ctx.font = '600 '+Math.round(r*1.05)+'px var(--font, sans-serif)';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(FRAC[it.w], it.q.x, it.q.y+r*1.9);
+      }
+
+      if(hoverIdx >= 0 && list[hoverIdx] === it){
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = COL.text;
+        ctx.beginPath(); ctx.arc(it.q.x, it.q.y, r*1.8, 0, 7); ctx.stroke();
+      }
+    }
+    hitList = list;
+  }
+
+  // Was this site brought in by the step just taken? For Evjen the
+  // outermost ions were already half-counted, so only the newly
+  // appearing layer is marked.
+  function isNewAtThisStep(p, w){
+    if(w <= 0 || p.d2 === 0 || step === 0) return false;
+    const prev = steps()[step-1];
+    return weightOf(p, method, prev.ext, dim) === 0;
+  }
+
+  function drawRegion(c){
+    const half = regionHalf()/viewExt;
+    ctx.save();
+    ctx.strokeStyle = COL.goldDim;
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([5,4]);
+
+    if(method === 'sphere'){
+      if(dim === 1){
+        const a = project(-half,0,0), b = project(half,0,0);
+        ctx.beginPath();
+        ctx.moveTo(a.x, H*0.18); ctx.lineTo(a.x, H*0.82);
+        ctx.moveTo(b.x, H*0.18); ctx.lineTo(b.x, H*0.82);
+        ctx.stroke();
+      } else {
+        const o = project(0,0,0);
+        ctx.beginPath(); ctx.arc(o.x, o.y, half*SCALE, 0, 7); ctx.stroke();
+      }
+    } else if(dim === 1){
+      const a = project(-half,0,0), b = project(half,0,0);
+      ctx.beginPath();
+      ctx.rect(a.x, H*0.22, b.x-a.x, H*0.56);
+      ctx.stroke();
+    } else if(dim === 2){
+      const a = project(-half,-half,0), b = project(half,half,0);
+      ctx.beginPath(); ctx.rect(a.x, b.y, b.x-a.x, a.y-b.y); ctx.stroke();
+    } else {
+      // Wireframe box: the eight corners, joined along the twelve edges.
+      const v = [];
+      for(const sx of [-1,1]) for(const sy of [-1,1]) for(const sz of [-1,1])
+        v.push(project(sx*half, sy*half, sz*half));
+      const E = [[0,1],[0,2],[0,4],[1,3],[1,5],[2,3],[2,6],[3,7],[4,5],[4,6],[5,7],[6,7]];
+      ctx.beginPath();
+      for(const [i,j] of E){ ctx.moveTo(v[i].x, v[i].y); ctx.lineTo(v[j].x, v[j].y); }
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  let hitList = [], baseR = 6;
+
+  // ---------- convergence graph ----------
+  function sizeGraph(){
+    const w = el.graph.parentElement.clientWidth;
+    const h = Math.round(clamp(w*0.24, 170, 250));
+    el.graph.style.height = h+'px';
+    el.graph.width = Math.round(w*dpr);
+    el.graph.height = Math.round(h*dpr);
+    gtx.setTransform(dpr,0,0,dpr,0,0);
+    el.graph._w = w; el.graph._h = h;
+  }
+
+  function drawGraph(){
+    const w = el.graph._w, h = el.graph._h;
+    gtx.clearRect(0,0,w,h);
+    const S = steps(), A = EXACT[dim];
+    const L = 44, R = 12, T = 12, B = 34;
+
+    // The y range is fixed by the whole series, not by the part drawn
+    // so far, so the axes do not jump about as the sum is built up.
+    let lo = A, hi = A;
+    for(const s of S){ if(s.sum<lo) lo=s.sum; if(s.sum>hi) hi=s.sum; }
+    const padY = Math.max((hi-lo)*0.10, 0.08);
+    lo -= padY; hi += padY;
+
+    const nx = Math.max(S.length, 2);
+    const X = i => L + (w-L-R)*(i/(nx-1));
+    const Y = v => T + (h-T-B)*(1-(v-lo)/(hi-lo));
+
+    // frame
+    gtx.strokeStyle = COL.borderSoft; gtx.lineWidth = 1;
+    gtx.beginPath(); gtx.moveTo(L,T); gtx.lineTo(L,h-B); gtx.lineTo(w-R,h-B); gtx.stroke();
+
+    // y ticks
+    gtx.fillStyle = COL.mutedDim;
+    gtx.font = '10px var(--mono, monospace)';
+    gtx.textAlign = 'right'; gtx.textBaseline = 'middle';
+    const tickStep = niceStep(hi-lo);
+    for(let v=Math.ceil(lo/tickStep)*tickStep; v<=hi; v+=tickStep){
+      const y = Y(v);
+      gtx.strokeStyle = COL.borderSoft;
+      gtx.beginPath(); gtx.moveTo(L,y); gtx.lineTo(w-R,y); gtx.stroke();
+      gtx.fillText(v.toFixed(Math.abs(tickStep)<1?1:0), L-6, y);
+    }
+
+    // the limit
+    gtx.save();
+    gtx.strokeStyle = COL.accent; gtx.lineWidth = 1.4; gtx.setLineDash([6,4]);
+    gtx.beginPath(); gtx.moveTo(L, Y(A)); gtx.lineTo(w-R, Y(A)); gtx.stroke();
+    gtx.restore();
+    gtx.textAlign = 'left'; gtx.textBaseline = 'bottom';
+    const lbl = 'A = '+A.toFixed(6);
+    // The partial-sum line crosses the limit repeatedly, so the label needs
+    // its own backing to stay readable wherever it lands.
+    gtx.fillStyle = COL.raised;
+    gtx.fillRect(L+4, Y(A)-14, gtx.measureText(lbl).width+5, 13);
+    gtx.fillStyle = COL.accent;
+    gtx.fillText(lbl, L+6, Y(A)-3);
+
+    // x ticks
+    gtx.textAlign = 'center'; gtx.textBaseline = 'top';
+    gtx.fillStyle = COL.mutedDim;
+    const xEvery = Math.max(1, Math.round(S.length/9));
+    for(let i=0;i<S.length;i+=xEvery) gtx.fillText(String(i+1), X(i), h-B+5);
+    gtx.fillText(method==='sphere' ? 'shell' : 'half-width L', (L+w-R)/2, h-13);
+
+    // the partial sums so far
+    gtx.strokeStyle = COL.gold; gtx.lineWidth = 1.8;
+    gtx.beginPath();
+    for(let i=0;i<=step;i++){
+      const x = X(i), y = Y(S[i].sum);
+      i ? gtx.lineTo(x,y) : gtx.moveTo(x,y);
+    }
+    gtx.stroke();
+
+    if(S.length <= 34){
+      gtx.fillStyle = COL.gold;
+      for(let i=0;i<=step;i++){
+        gtx.beginPath(); gtx.arc(X(i), Y(S[i].sum), 2.4, 0, 7); gtx.fill();
+      }
+    }
+
+    // current point
+    const cx = X(step), cy = Y(S[step].sum);
+    gtx.fillStyle = COL.gold;
+    gtx.beginPath(); gtx.arc(cx, cy, 4.2, 0, 7); gtx.fill();
+    gtx.strokeStyle = COL.raised; gtx.lineWidth = 1.6; gtx.stroke();
+  }
+
+  function niceStep(range){
+    const raw = range/4;
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw/mag;
+    return (n<1.5?1:n<3?2:n<7?5:10)*mag;
+  }
+
+  // ---------- readouts ----------
+  function fmt(v, n){ return (v>=0?'+':'−')+Math.abs(v).toFixed(n); }
+  function fmtIons(n){
+    return Number.isInteger(n) ? n.toLocaleString('en-GB') : n.toFixed(2);
+  }
+
+  function updateReadouts(){
+    const S = steps(), c = cur(), A = EXACT[dim];
+    const err = c.sum - A;
+
+    el.rLat.textContent = LAT_NAME[dim];
+    el.rRegion.innerHTML = regionText(c);
+    el.rIons.textContent = fmtIons(c.nIons);
+    el.rQ.innerHTML = Math.abs(c.q) < 1e-9
+      ? '<span style="color:#5ab478">0 &mdash; neutral</span>'
+      : fmt(c.q, Number.isInteger(c.q)?0:2)+' <small>e</small>';
+    el.rTerm.textContent = fmt(c.term, 4);
+    el.rSum.textContent = c.sum.toFixed(6);
+    el.rE.textContent = (-c.sum*E_UNIT).toFixed(0)+' kJ mol⁻¹';
+
+    el.sSum.textContent = c.sum.toFixed(5);
+    el.sExact.textContent = A.toFixed(6);
+    el.sErr.textContent = fmt(err,5)+' ('+(Math.abs(err/A)*100).toFixed(2)+'%)';
+    el.sIons.textContent = fmtIons(c.nIons);
+
+    el.stepVal.textContent = (step+1)+' of '+S.length;
+    el.viewLabel.textContent = viewTitle(c);
+    el.convLabel.textContent = METHODS.find(m=>m.key===method).label;
+    el.tblNote.textContent = 'step '+(step+1)+'/'+S.length;
+    el.legHalf.hidden = method !== 'evjen';
+    el.hint.textContent = (dim === 3 ? 'Drag the lattice to turn it. ' : '')+
+      'Arrow keys step in and out. Hover an ion to see its own term, or a row of the table to jump to that step.';
+
+    el.headline.innerHTML = headlineText(c);
+    const cav = caveatText(c);
+    el.caveat.innerHTML = cav.html;
+    el.caveat.className = 'caveat'+(cav.warn?' warn':'');
+  }
+
+  const BLOCK = { 1:'run', 2:'square', 3:'cube' };
+
+  function regionText(c){
+    if(method === 'sphere') return 'every ion with d ≤ '+c.ext.toFixed(3)+' r₀';
+    const side = method==='cube' ? (2*c.ext+1) : (2*c.ext);
+    const lead = (method==='evjen' ? 'neutral ' : '')+BLOCK[dim];
+    return dim===1 ? lead+' of '+side+' ions' : lead+', '+side+' ions a side';
+  }
+
+  function viewTitle(c){
+    const names = {1:'1D chain', 2:'2D square lattice', 3:'3D simple cubic lattice'};
+    return names[dim]+' — '+regionText(c);
+  }
+
+  function headlineText(c){
+    const A = EXACT[dim], err = c.sum - A;
+    const side = c.ext;
+    const close = Math.abs(err) < 0.0005;
+    let s = 'After '+(step+1)+(step?' steps':' step')+' the total stands at <b>'+c.sum.toFixed(5)+'</b>, ';
+    s += close ? 'which is the limit to four decimal places. '
+               : (err>0?'an overshoot of ':'short of the limit by ')+Math.abs(err).toFixed(4)+'. ';
+
+    if(method === 'sphere'){
+      s += 'The sphere holds a net charge of '+fmt(c.q, Number.isInteger(c.q)?0:2)+
+           ', spread over its cut surface. That surface charge is what the running total is still responding to, and growing the sphere only changes its size and sign.';
+    } else if(method === 'cube'){
+      s += 'A '+BLOCK[dim]+' of '+(2*side+1)+(dim===1?' ions':' ions a side')+
+           ' has an odd number of sites, so it cannot be neutral: '+
+           fmt(c.q,0)+' is left over. '+(dim===2
+             ? 'In 2D that surplus has the same sign at every step, so the total always falls short and creeps up from below.'
+             : 'The sign of the surplus flips with each step, which is why the total lands alternately above and below the limit.');
+    } else {
+      s += 'Splitting the charge of the outermost ions with the neighbouring block makes the region exactly neutral, and holding '+
+           fmtIons(c.nIons)+' ions in a '+BLOCK[dim]+' of side '+(2*side)+' r₀, half of each charge. With no surface charge left to answer for, the total settles quickly.';
+    }
+    return s;
+  }
+
+  function caveatText(c){
+    if(method === 'sphere'){
+      const S = steps();
+      let lo = Infinity, hi = -Infinity;
+      for(const s of S){ if(s.sum<lo) lo=s.sum; if(s.sum>hi) hi=s.sum; }
+      if(dim === 1) return { warn:false, html:'In 1D every sphere is also a cube, so these two orders of summation are the same thing. Both give the alternating harmonic series, which converges towards 2 ln 2 but takes thousands of terms to settle.' };
+      return { warn:true, html:'<b>This order does not work.</b> Across the whole series the partial sums range from '+lo.toFixed(2)+' to '+hi.toFixed(2)+', and they are no closer to settling at the end than at the start. The nearest-neighbour-first order that chemical intuition suggests is the one order that fails.' };
+    }
+    if(method === 'cube'){
+      return { warn:false, html:'Averaging two consecutive steps would do much better than either on its own, because the leftover charge changes sign between them. That is the clue Evjen’s method follows.' };
+    }
+    return { warn:false, html:'Every step here is charge neutral, so each cube behaves like a self-contained block of salt rather than a charged droplet. Compare with the expanding sphere, which never is.' };
+  }
+
+  function buildTable(){
+    const S = steps();
+    const frag = document.createDocumentFragment();
+    S.forEach((s,i)=>{
+      const row = document.createElement('div');
+      row.className = 'tbl-row'+(i===step?' cur':'');
+      row.dataset.i = i;
+      const ext = method==='sphere' ? s.ext.toFixed(3) : ('±'+s.ext);
+      row.innerHTML =
+        '<span>'+ext+'</span>'+
+        '<span>'+fmtIons(s.nIons)+'</span>'+
+        '<span class="'+(s.term>=0?'pos':'neg')+'">'+fmt(s.term,4)+'</span>'+
+        '<span>'+s.sum.toFixed(4)+'</span>';
+      frag.appendChild(row);
+    });
+    el.tbl.replaceChildren(frag);
+    scrollTableToCurrent();
+  }
+
+  function markTableRow(){
+    const rows = el.tbl.children;
+    for(let i=0;i<rows.length;i++) rows[i].classList.toggle('cur', i===step);
+    scrollTableToCurrent();
+  }
+
+  // Setting scrollTop by hand rather than scrollIntoView(), which would
+  // scroll the page — and, inside the site viewer, the parent document.
+  function scrollTableToCurrent(){
+    const row = el.tbl.children[step];
+    if(!row) return;
+    const top = row.offsetTop, bot = top + row.offsetHeight;
+    const vt = el.tbl.scrollTop, vb = vt + el.tbl.clientHeight;
+    if(top < vt) el.tbl.scrollTop = top;
+    else if(bot > vb) el.tbl.scrollTop = bot - el.tbl.clientHeight;
+  }
+
+  // ---------- step changes ----------
+  function setStep(i, fromSlider){
+    const S = steps();
+    step = clamp(Math.round(i), 0, S.length-1);
+    viewExtTarget = outerHalf() + 0.4;
+    if(!fromSlider) el.stepSlider.value = String(step);
+    updateReadouts();
+    markTableRow();
+    requestRender();
+  }
+
+  function rebuild(keepStep){
+    const S = steps();
+    el.stepSlider.max = String(S.length-1);
+    step = clamp(keepStep ? step : 0, 0, S.length-1);
+    el.stepSlider.value = String(step);
+    el.spinToggle.disabled = dim < 3;
+    el.spinToggle.style.opacity = dim < 3 ? 0.4 : 1;
+    if(dim < 3) { spinning = false; el.spinToggle.classList.remove('active'); }
+    viewExt = viewExtTarget = outerHalf() + 0.4;
+    sizeScene();
+    buildTable();
+    updateReadouts();
+    requestRender();
+  }
+
+  // ---------- controls ----------
+  METHODS.forEach(m=>{
+    const o = document.createElement('option');
+    o.value = m.key; o.textContent = m.label;
+    el.methodSelect.appendChild(o);
+  });
+  el.methodSelect.value = method;
+
+  el.methodSelect.addEventListener('change', ()=>{
+    method = el.methodSelect.value;
+    rebuild(false);
+  });
+
+  document.querySelectorAll('[data-dim]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      dim = +b.dataset.dim;
+      document.querySelectorAll('[data-dim]').forEach(o=>o.classList.toggle('active', o===b));
+      rebuild(false);
+    });
+  });
+
+  el.stepSlider.addEventListener('input', ()=>{ playing=false; syncPlay(); setStep(+el.stepSlider.value, true); });
+  el.fwdBtn.addEventListener('click', ()=>{ playing=false; syncPlay(); setStep(step+1); });
+  el.backBtn.addEventListener('click', ()=>{ playing=false; syncPlay(); setStep(step-1); });
+  el.resetBtn.addEventListener('click', ()=>{ playing=false; syncPlay(); setStep(0); });
+
+  el.playBtn.addEventListener('click', ()=>{
+    if(!playing && step >= steps().length-1) setStep(0);
+    playing = !playing; playAcc = 0; syncPlay();
+  });
+  function syncPlay(){ el.playBtn.textContent = playing ? 'Pause' : 'Build up'; }
+
+  el.beyondToggle.addEventListener('click', ()=>{
+    showBeyond = !showBeyond;
+    el.beyondToggle.classList.toggle('active', showBeyond);
+    viewExtTarget = outerHalf() + 0.4;
+    requestRender();
+  });
+
+  el.spinToggle.addEventListener('click', ()=>{
+    if(dim < 3) return;
+    spinning = !spinning;
+    el.spinToggle.classList.toggle('active', spinning);
+  });
+
+  el.tbl.addEventListener('click', e=>{
+    const row = e.target.closest('.tbl-row');
+    if(!row) return;
+    playing = false; syncPlay();
+    setStep(+row.dataset.i);
+  });
+
+  // drag to turn the 3D lattice
+  function ptr(e){
+    const r = el.scene.getBoundingClientRect();
+    return { x:e.clientX-r.left, y:e.clientY-r.top };
+  }
+  el.scene.addEventListener('pointerdown', e=>{
+    if(dim < 3) return;
+    dragging = true; lastPtr = ptr(e);
+    el.scene.classList.add('grabbing');
+    el.scene.setPointerCapture(e.pointerId);
+  });
+  el.scene.addEventListener('pointermove', e=>{
+    const p = ptr(e);
+    if(dragging){
+      yaw += (p.x-lastPtr.x)*0.010;
+      pitch = clamp(pitch + (p.y-lastPtr.y)*0.010, -1.45, 1.45);
+      lastPtr = p;
+      requestRender();
+    } else {
+      pointer = p;
+      requestRender();
+    }
+  });
+  el.scene.addEventListener('pointerup', e=>{
+    dragging = false; el.scene.classList.remove('grabbing');
+    try{ el.scene.releasePointerCapture(e.pointerId); }catch(err){}
+  });
+  el.scene.addEventListener('pointerleave', ()=>{
+    pointer = null; hoverIdx = -1; el.hoverInfo.textContent = ''; requestRender();
+  });
+
+  window.addEventListener('keydown', e=>{
+    if(e.key === 'ArrowRight' || e.key === 'ArrowUp'){ playing=false; syncPlay(); setStep(step+1); e.preventDefault(); }
+    else if(e.key === 'ArrowLeft' || e.key === 'ArrowDown'){ playing=false; syncPlay(); setStep(step-1); e.preventDefault(); }
+  });
+
+  // ---------- hover ----------
+  function updateHover(){
+    if(!pointer || dragging){ return; }
+    let best = -1, bestD = 1e9;
+    for(let i=0;i<hitList.length;i++){
+      const it = hitList[i];
+      if(!it.inside && it.p.d2 !== 0) continue;
+      const dx = it.q.x-pointer.x, dy = it.q.y-pointer.y;
+      const d2 = dx*dx+dy*dy;
+      const r = Math.max(baseR*it.q.s, 5);
+      if(d2 < r*r && d2 < bestD){ bestD = d2; best = i; }
+    }
+    if(best !== hoverIdx){ hoverIdx = best; requestRender(); }
+
+    if(hoverIdx < 0){ el.hoverInfo.textContent = ''; return; }
+    const it = hitList[hoverIdx], p = it.p;
+    if(p.d2 === 0){ el.hoverInfo.textContent = 'central ion'; return; }
+    const coords = dim===1 ? p.x : dim===2 ? p.x+','+p.y : p.x+','+p.y+','+p.z;
+    const term = it.w*p.s/p.d;
+    el.hoverInfo.textContent = '('+coords+')  d = '+p.d.toFixed(3)+' r₀  '+
+      (it.w<1 ? 'weight '+(FRAC[it.w]||it.w.toFixed(3))+'  ' : '')+
+      'term '+fmt(term,4);
+  }
+
+  // ---------- main loop ----------
+  function frame(t){
+    if(!document.hidden){
+      const dt = lastT ? Math.min((t-lastT)/1000, 0.1) : 0;
+      lastT = t;
+
+      if(spinning && !dragging){ yaw += dt*0.35; dirty = true; }
+
+      if(playing){
+        playAcc += dt;
+        if(playAcc > 0.62){
+          playAcc = 0;
+          if(step >= steps().length-1){ playing = false; syncPlay(); }
+          else setStep(step+1);
+        }
+      }
+
+      // Ease the view extent so a step out does not jump the scale.
+      if(Math.abs(viewExt-viewExtTarget) > 1e-4){
+        viewExt += (viewExtTarget-viewExt)*Math.min(dt*7, 1);
+        dirty = true;
+      } else viewExt = viewExtTarget;
+
+      if(dirty){
+        dirty = false;
+        drawScene();
+        drawGraph();
+        updateHover();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- resize ----------
+  let rt;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(rt);
+    rt = setTimeout(()=>{ sizeScene(); sizeGraph(); requestRender(); reportHeight(); }, 120);
+  });
+  function reportHeight(){
+    const h = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
+    window.parent.postMessage({ type:'simHeight', height:h }, '*');
+  }
+
+  // ---------- boot ----------
+  readColours();
+  new MutationObserver(readColours).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] });
+  sizeGraph();
+  rebuild(false);
+  syncPlay();
+  requestAnimationFrame(frame);
+  requestAnimationFrame(() => requestAnimationFrame(reportHeight));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Madelung Constant Simulation | Pre-University Chemistry</title>
+<meta name="description" content="Build the Madelung constant up term by term for alternating lattices of ions in one, two and three dimensions. Sum shell by shell, over expanding cubes, or…">
+<link rel="canonical" href="https://chemistr.io/sims/madelung-sim/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="chemistr.io">
+<meta property="og:title" content="The Madelung Constant Simulation | Pre-University Chemistry">
+<meta property="og:description" content="Build the Madelung constant up term by term for alternating lattices of ions in one, two and three dimensions. Sum shell by shell, over expanding cubes, or…">
+<meta property="og:url" content="https://chemistr.io/sims/madelung-sim/">
+<meta name="twitter:card" content="summary_large_image">
+<!--prerender:head:start-->
+<meta property="og:image" content="https://chemistr.io/assets/img/og/madelung-sim.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Screenshot of the The Madelung Constant in 1D, 2D and 3D chemistry simulation">
+<meta name="twitter:image" content="https://chemistr.io/assets/img/og/madelung-sim.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://chemistr.io/#organization",
+      "name": "chemistr.io",
+      "url": "https://chemistr.io/",
+      "description": "Free interactive chemistry simulations and teaching notes for GCSE, A-level and pre-university chemistry."
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://chemistr.io/#website",
+      "url": "https://chemistr.io/",
+      "name": "chemistr.io",
+      "publisher": {
+        "@id": "https://chemistr.io/#organization"
+      },
+      "inLanguage": "en-GB"
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://chemistr.io/sims/madelung-sim/#webpage",
+      "url": "https://chemistr.io/sims/madelung-sim/",
+      "name": "The Madelung Constant Simulation | Pre-University Chemistry",
+      "description": "Build the Madelung constant up term by term for alternating lattices of ions in one, two and three dimensions. Sum shell by shell, over expanding cubes, or…",
+      "isPartOf": {
+        "@id": "https://chemistr.io/#website"
+      },
+      "inLanguage": "en-GB",
+      "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "breadcrumb": {
+        "@id": "https://chemistr.io/sims/madelung-sim/#breadcrumb"
+      },
+      "mainEntity": {
+        "@id": "https://chemistr.io/sims/madelung-sim/#resource"
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://chemistr.io/sims/madelung-sim/#breadcrumb",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://chemistr.io/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Simulations",
+          "item": "https://chemistr.io/sims/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "The Madelung Constant in 1D, 2D and 3D",
+          "item": "https://chemistr.io/sims/madelung-sim/"
+        }
+      ]
+    },
+    {
+      "@type": "LearningResource",
+      "@id": "https://chemistr.io/sims/madelung-sim/#resource",
+      "name": "The Madelung Constant in 1D, 2D and 3D",
+      "url": "https://chemistr.io/sims/madelung-sim/",
+      "description": "Build the Madelung constant up term by term for alternating lattices of ions in one, two and three dimensions. Sum shell by shell, over expanding cubes, or over Evjen's neutral blocks, and see why the order of summation decides whether the series converges at all.",
+      "learningResourceType": "Interactive simulation",
+      "educationalLevel": "Pre-University",
+      "about": {
+        "@type": "Thing",
+        "name": "Chemistry"
+      },
+      "teaches": "Bonding & Structure",
+      "audience": {
+        "@type": "EducationalAudience",
+        "educationalRole": "student"
+      },
+      "inLanguage": "en-GB",
+      "isAccessibleForFree": true,
+      "license": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+      "author": {
+        "@id": "https://chemistr.io/#organization"
+      },
+      "publisher": {
+        "@id": "https://chemistr.io/#organization"
+      },
+      "isPartOf": {
+        "@id": "https://chemistr.io/#website"
+      },
+      "image": "https://chemistr.io/assets/img/og/madelung-sim.png",
+      "datePublished": "2026-10-24",
+      "dateModified": "2026-10-24"
+    }
+  ]
+}
+</script>
+<!--prerender:head:end-->
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+<!-- KaTeX and marked are vendored under /assets/vendor and loaded on
+     demand by app.js (see ASSET_VERSION there): marked when notes have
+     to be fetched, KaTeX when the notes panel is first opened. They
+     used to be four render-blocking CDN requests on every route,
+     including the ones with no maths anywhere on them. -->
+<link rel="stylesheet" href="/assets/css/site.css?v=400f0ef2">
+<script src="/assets/js/theme.js?v=f516d968"></script>
+</head>
+<body>
+
+<div class="home-bg" aria-hidden="true">
+  <canvas id="homeBgCanvas"></canvas>
+</div>
+
+<header class="site">
+  <div class="wrap nav">
+    <a class="brand" href="/">
+      <span class="mark">chemistr.io</span>
+    </a>
+    <!-- Nav links, the page content below, and the viewer's notes are
+         all filled in at build time by scripts/build-seo-pages.js, which
+         rewrites whatever sits between each pair of prerender markers.
+         app.js re-renders the same content on boot. -->
+    <nav class="nav-links" id="navLinks"><!--prerender:nav:start--><a data-nav="home" href="/">Home</a><a data-nav="sims" href="/sims">Simulations</a><a data-nav="resources" href="/resources">Resources</a><a data-nav="about" href="/about">About</a><!--prerender:nav:end--></nav>
+    <button class="menu-btn" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- Ordinary content pages (home, simulations, resources, ...) live in
+       pages/<id>.html and are mounted here. The build script inlines the
+       current route's copy between the markers below so it's in the HTML
+       a crawler receives; app.js fetches and mounts it for every later
+       in-page navigation. See PAGES in assets/js/app.js. -->
+  <div class="page" id="pageMount"><!--prerender:page:start--><!--prerender:page:end--></div>
+
+  <!-- SIMULATION VIEWER -->
+  <section class="viewer active" id="page-viewer">
+    <div class="viewer-bar">
+      <a class="back-link" href="/sims">&larr; Back to simulations</a>
+      <h1 class="vtitle" id="viewerTitle">The Madelung Constant in 1D, 2D and 3D</h1>
+      <button class="fullscreen-btn tour-btn" id="tourBtn" onclick="startSimTour()" style="display:none;">Walk me through</button>
+      <button class="fullscreen-btn" id="fullscreenBtn" onclick="toggleFullscreen()">
+        <svg id="fsIcon" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M1 5V1h4M9 1h4v4M13 9v4h-4M5 13H1V9"/>
+        </svg>
+        <span id="fsLabel">Full screen</span>
+      </button>
+    </div>
+    <p class="vdesc" id="viewerDesc">Build the Madelung constant up term by term for alternating lattices of ions in one, two and three dimensions. Sum shell by shell, over expanding cubes, or over Evjen's neutral blocks, and see why the order of summation decides whether the series converges at all.</p>
+    <div class="viewer-layout">
+      <!-- app.js clears this and drops the simulation's iframe in. Until
+           then it holds a plain link to the simulation's own page, which
+           gives crawlers something to follow and anyone without JS a way
+           through to the simulation itself. -->
+      <div class="viewer-frame" id="viewerFrame"><!--prerender:frame:start-->
+        <p class="sim-fallback"><a href="/simulations/madelung-sim.html">Open the The Madelung Constant in 1D, 2D and 3D simulation</a></p>
+      <!--prerender:frame:end--></div>
+      <aside class="notes-sidebar" id="notesSidebar" style="display:none;">
+        <button class="notes-toggle" id="notesToggle" onclick="toggleNotes()" aria-expanded="false" aria-controls="notesContent">
+          <span class="notes-toggle-arrow">&#9664;</span>
+          <span class="notes-toggle-label">Teaching notes</span>
+        </button>
+        <div class="notes-body" id="notesBody">
+          <div class="notes-content prose" id="notesContent"><!--prerender:notes:start--><!--prerender:notes:end--></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span></span>
+    <nav class="footer-links">
+      <a href="/about#contact">Get in touch</a>
+      <a href="/about#support">Donate</a>
+      <a href="/about#privacy">Privacy</a>
+      <a href="/about#license">License</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="/assets/js/home-bg.js?v=c5e865e9"></script>
+<script src="/assets/js/data.js?v=f2803a93"></script>
+<script src="/assets/js/render.js?v=9f5aba17"></script>
+<script src="/assets/js/app.js?v=73d8f9a9"></script>
+</body>
+</html>

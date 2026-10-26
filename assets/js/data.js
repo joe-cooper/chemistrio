@@ -114,6 +114,8 @@ const simulations = [
     { id:"mo-formation-heteronuclear-sim", title:"Molecular Orbital Formation - Heteronuclear Diatomic Molecules", seoTitle:"Molecular Orbitals: Heteronuclear", topic:"Quantum", level:"Pre-University",
     desc:"Molecular orbital diagrams for Period 2 heteronuclear diatomic molecules.",  file:"/simulations/mo-formation-heteronuclear-sim.html",
     notes:"/simulations/notes/mo-formation-heteronuclear-sim.md", added:"2026-07-24" },
+  { id:"madelung-sim", title:"The Madelung Constant in 1D, 2D and 3D", seoTitle:"The Madelung Constant", topic:"Bonding & Structure", level:"Pre-University",
+    desc:"Build the Madelung constant up term by term for alternating lattices of ions in one, two and three dimensions. Sum shell by shell, over expanding cubes, or over Evjen's neutral blocks, and see why the order of summation decides whether the series converges at all.", file:"/simulations/madelung-sim.html", notes:"", added:"2026-10-24" },
   { id:"electronic-structure-sim", title:"Electronic Structure", topic:"Atomic Structure", level:"GCSE",
     desc:"Electron shell diagram for every element up to calcium. Step through the elements one at a time to watch the shells fill by the 2,8,8 rule. The outer shell tells you the group, and electrons can be added or removed to form ions.", file:"/simulations/electronic-structure-sim.html", notes:"", added:"2026-09-20" },
   { id:"electron-config-sim", title:"Electron Configuration", topic:"Atomic Structure", level:"A-level",
